@@ -1,0 +1,19 @@
+# Keil MDK 编译输出目录（构建产物，不纳入版本控制）
+MDK-ARM/Lab2and3_MXGen/
+
+# Keil 用户工作区配置（包含窗口布局、断点等本地状态，不共享）
+MDK-ARM/*.uvguix.*
+
+# Keil 调试会话日志
+MDK-ARM/*.uvoptx
+
+# VSCode 插件运行日志
+MDK-ARM/.vscode/*.log
+MDK-ARM/.vscode/*.log.lock
+
+# Claude Code 本地配置（仅对当前用户有效）
+MDK-ARM/.claude/
+
+# 操作系统缓存
+Thumbs.db
+.DS_Store
