@@ -1,0 +1,24 @@
+# Common embedded / Keil temporary files
+**/*.uvguix.*
+**/*.uvoptx
+**/*.bak
+**/*.dep
+**/*.crf
+**/*.d
+**/*.o
+**/*.axf
+**/*.bin
+**/*.hex
+**/*.elf
+**/*.map
+**/*.lst
+**/*.sbr
+**/*.log
+**/*.tmp
+**/.vscode/
+**/.vs/
+**/Objects/
+**/Listings/
+**/DebugConfig/
+Thumbs.db
+.DS_Store
