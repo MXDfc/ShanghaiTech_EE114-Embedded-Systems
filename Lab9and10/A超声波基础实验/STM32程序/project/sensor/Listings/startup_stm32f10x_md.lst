@@ -465,13 +465,12 @@ ARM Macro Assembler    Page 8
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=.\objects\startup_stm32f10x_md.d -o.\objects\startup_stm32f10x_md.
-o -I"E:\02. ÌÔ±¦×ÊÁÏ\02. ÇßºÍÖÇÄÜ\02. Ð¡³µ\STM32_4WD\06.³¬Éù²¨»ù´¡ÊµÑé\STM32³ÌÐ
-ò\project\sensor\RTE" -I"E:\02. ÌÔ±¦×ÊÁÏ\02. ÇßºÍÖÇÄÜ\02. Ð¡³µ\STM32_4WD\06.³¬É
-ù²¨»ù´¡ÊµÑé\STM32³ÌÐò\project\sensor\RTE\Device\STM32F103C8" -ID:\keil5\02\ARM\
-CMSIS\4.2.0\CMSIS\Include -ID:\keil5\02\Keil\STM32F1xx_DFP\1.1.0\Device\Include
- --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 514" --pre
-define="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --list=.\listings\start
-up_stm32f10x_md.lst RTE\Device\STM32F103C8\startup_stm32f10x_md.s
+o -I.\RTE\Device\STM32F103C8 -I.\RTE\_exm -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0
+\CMSIS\Core\Include -IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Inclu
+de --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 536" --p
+redefine="_RTE_ SETA 1" --predefine="STM32F10X_MD SETA 1" --predefine="_RTE_ SE
+TA 1" --list=.\listings\startup_stm32f10x_md.lst RTE\Device\STM32F103C8\startup
+_stm32f10x_md.s
 
 
 

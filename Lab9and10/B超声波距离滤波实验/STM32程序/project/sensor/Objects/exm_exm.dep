@@ -1,6 +1,6 @@
 Dependencies for Project 'exm', Target 'exm': (DO NOT MODIFY !)
 CompilerVersion: 5060960::V5.06 update 7 (build 960)::.\ARMCC
-F (.\user\main.c)(0x6A171077)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc -I ..\..\wenchao_lib\inc -I ..\..\core -I ..\..\wenchao_lib\user-I.\RTE\Device\STM32F103C8-I.\RTE\_exm-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include-D__UVISION_VERSION="536" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER-o .\objects\main.o --omf_browse .\objects\main.crf --depend .\objects\main.d)
+F (.\user\main.c)(0x6A1BF703)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc -I ..\..\wenchao_lib\inc -I ..\..\core -I ..\..\wenchao_lib\user-I.\RTE\Device\STM32F103C8-I.\RTE\_exm-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include-D__UVISION_VERSION="536" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER-o .\objects\main.o --omf_browse .\objects\main.crf --depend .\objects\main.d)
 I (..\..\wenchao_lib\inc\sysinc.h)(0x6A171077)
 I (..\..\wenchao_lib\inc\uart.h)(0x6A171077)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
@@ -52,7 +52,7 @@ I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_sdio.h)(0x6A171075)
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_wwdg.h)(0x6A171075)
 I (..\..\wenchao_lib\user\car_ctrl.h)(0x6A171077)
-I (..\..\wenchao_lib\user\hc_sr04.h)(0x6A171077)
+I (..\..\wenchao_lib\user\hc_sr04.h)(0x6A1BF6BF)
 F (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\src\misc.c)(0x6A171075)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc -I ..\..\wenchao_lib\inc -I ..\..\core -I ..\..\wenchao_lib\user-I.\RTE\Device\STM32F103C8-I.\RTE\_exm-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include-D__UVISION_VERSION="536" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER-o .\objects\misc.o --omf_browse .\objects\misc.crf --depend .\objects\misc.d)
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\misc.h)(0x6A171075)
 I (C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include\stm32f10x.h)(0x61AD795E)
@@ -639,8 +639,8 @@ I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_rtc.h)(0x6A171075)
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_sdio.h)(0x6A171075)
 I (..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc\stm32f10x_wwdg.h)(0x6A171075)
-F (..\..\wenchao_lib\user\hc_sr04.c)(0x6A171077)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc -I ..\..\wenchao_lib\inc -I ..\..\core -I ..\..\wenchao_lib\user-I.\RTE\Device\STM32F103C8-I.\RTE\_exm-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include-D__UVISION_VERSION="536" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER-o .\objects\hc_sr04.o --omf_browse .\objects\hc_sr04.crf --depend .\objects\hc_sr04.d)
-I (..\..\wenchao_lib\user\hc_sr04.h)(0x6A171077)
+F (..\..\wenchao_lib\user\hc_sr04.c)(0x6A1BF703)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ..\..\STM32F10x_StdPeriph_Lib_V3.5.0\Libraries\STM32F10x_StdPeriph_Driver\inc -I ..\..\wenchao_lib\inc -I ..\..\core -I ..\..\wenchao_lib\user-I.\RTE\Device\STM32F103C8-I.\RTE\_exm-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.8.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.0\Device\Include-D__UVISION_VERSION="536" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER-o .\objects\hc_sr04.o --omf_browse .\objects\hc_sr04.crf --depend .\objects\hc_sr04.d)
+I (..\..\wenchao_lib\user\hc_sr04.h)(0x6A1BF6BF)
 I (..\..\wenchao_lib\inc\sysinc.h)(0x6A171077)
 I (..\..\wenchao_lib\inc\uart.h)(0x6A171077)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x60252374)
