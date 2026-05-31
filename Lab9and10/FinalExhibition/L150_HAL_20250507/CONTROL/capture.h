@@ -39,9 +39,7 @@ Distance_1,Distance_2,Distance_3,Distance_4;//超声波相关变量
 
 
 
-//超声波和航模遥控的宏定义，只能使用其一
-//选择不需要使用的注释掉
-//#define Distance_Capture
+// 当前工程同时使用 TIM2 CH2 做超声波、CH3/CH4 做航模 PWM 捕获
 #define PWM_Capture
 
 
@@ -188,4 +186,11 @@ void Distance_Cap_Init(u16 arr,u16 psc);
 void PWM_Cap_Init(u16 arr,u16 psc);
 void MX_TIM2_Init(u16 arr,u16 psc);//超声波初始化
 void TIM1_Init(u16 arr,u16 psc);
+
+// 超声波单模块驱动接口
+#define HC_SR04_TIMEOUT_MS 60
+#define HC_SR04_TIMEOUT_VALUE 65535
+void HC_SR04_Init(void);
+u16 HC_SR04_Read(void);
+u16 HC_SR04_ReadMedian(void);
 #endif

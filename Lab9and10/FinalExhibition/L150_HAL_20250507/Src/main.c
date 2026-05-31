@@ -113,6 +113,7 @@ int main(void)
 	OLED_Init();
 //Distance_Cap_Init(65535,72-1);//用于测量超声波的距离，默认注释，具体看capture.h
   PWM_Cap_Init(65535,72-1);  //航模初始化
+  HC_SR04_Init();            //超声波初始化
   MPU6050_Init();           //MPU6050初始化	
     PS2_SetInit();                //手柄配置初始化
     Robot_Select();

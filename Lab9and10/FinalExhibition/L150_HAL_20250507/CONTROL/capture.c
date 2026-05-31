@@ -31,6 +31,11 @@ int L_Remoter_Ch1=1500,L_Remoter_Ch2=1500;
 
 u16 Distance1,Distance2,Distance3,Distance4;	//4¸ö³¬Éù²¨²â¾à¾àÀë±äÁ¿
 
+static volatile u8 HC_SR04_CaptureStart = 0;
+static volatile u8 HC_SR04_CaptureDone = 0;
+static volatile u16 HC_SR04_CaptureRise = 0;
+static volatile u16 HC_SR04_CaptureWidth = 0;
+
 // ¶¨Ê±Æ÷ÊäÈë²¶»ñÓÃ»§×Ô¶¨Òå±äÁ¿½á¹¹Ìå¶¨Òå
 TIM_ICUserValueTypeDef Distance_TIM2_CH2_ICUserValueStructure = {0,0,0,0};//³¬Éù²¨Ä£¿é1²¶»ñÏàÓ¦µÄ±äÁ¿
 TIM_ICUserValueTypeDef Distance_TIM2_CH3_ICUserValueStructure = {0,0,0,0};//³¬Éù²¨Ä£¿é2²¶»ñÏàÓ¦µÄ±äÁ¿
@@ -87,6 +92,10 @@ void MX_TIM2_Init(u16 arr,u16 psc) //³¬Éù²¨³õÊ¼»¯
   sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
   sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
   sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
@@ -96,6 +105,7 @@ void MX_TIM2_Init(u16 arr,u16 psc) //³¬Éù²¨³õÊ¼»¯
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
+  HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_2);//´ò¿ª¶¨Ê±Æ÷2Í¨µÀ2µÄÊäÈë²¶»ñÖÐ¶Ï
   HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_3);//´ò¿ª¶¨Ê±Æ÷2Í¨µÀ3µÄÊäÈë²¶»ñÖÐ¶Ï
   HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_4);//´ò¿ª¶¨Ê±Æ÷2Í¨µÀ4µÄÊäÈë²¶»ñÖÐ¶Ï
   HAL_TIM_Base_Start_IT(&htim2);            //´ò¿ª¶¨Ê±Æ÷2Í¨µÀ
@@ -232,6 +242,75 @@ void PWM_Cap_Init(u16 arr,u16 psc) //º½Ä£µÄºÍ³¬Éù²¨µÄÒ»ÖÂ£¬Ö»ÊÇº½Ä£²»ÐèÒªÊä³öÒý½
 }
 
 
+static u16 HC_SR04_Median3(u16 a, u16 b, u16 c)
+{
+	u16 t;
+
+	if(a > b){ t = a; a = b; b = t; }
+	if(b > c){ t = b; b = c; c = t; }
+	if(a > b){ t = a; a = b; b = t; }
+	return b;
+}
+
+void HC_SR04_Init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_15;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	HC_SR04_CaptureStart = 0;
+	HC_SR04_CaptureDone = 0;
+	HC_SR04_CaptureRise = 0;
+	HC_SR04_CaptureWidth = 0;
+	__HAL_TIM_SET_CAPTUREPOLARITY(&htim2, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
+	TRIG_LOW1;
+}
+
+u16 HC_SR04_Read(void)
+{
+	u16 wait_ms = 0;
+
+	HC_SR04_CaptureStart = 0;
+	HC_SR04_CaptureDone = 0;
+	HC_SR04_CaptureRise = 0;
+	HC_SR04_CaptureWidth = 0;
+	__HAL_TIM_SET_CAPTUREPOLARITY(&htim2, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
+
+	TRIG_HIGH1;
+	delay_us(15);
+	TRIG_LOW1;
+
+	while(!HC_SR04_CaptureDone && wait_ms < HC_SR04_TIMEOUT_MS)
+	{
+		delay_ms(1);
+		wait_ms++;
+	}
+
+	if(!HC_SR04_CaptureDone || HC_SR04_CaptureWidth == 0)
+	{
+		return HC_SR04_TIMEOUT_VALUE;
+	}
+
+	return (u16)((u32)HC_SR04_CaptureWidth * 340u / 2000u);
+}
+
+u16 HC_SR04_ReadMedian(void)
+{
+	u16 d1, d2, d3;
+
+	d1 = HC_SR04_Read();
+	delay_ms(60);
+	d2 = HC_SR04_Read();
+	delay_ms(60);
+	d3 = HC_SR04_Read();
+	return HC_SR04_Median3(d1, d2, d3);
+}
 /**************************************************************************
 Function: Read_Distane
 Input   : none
@@ -436,6 +515,35 @@ Output  : none
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 { 	
 	static u8 ch1_filter_times=0,ch2_filter_times=0,ch3_filter_times=0,ch4_filter_times=0;
+	u16 fall = 0;
+
+	if(htim == &htim2 && htim->Channel==HAL_TIM_ACTIVE_CHANNEL_2)
+	{
+		if(HC_SR04_CaptureDone == 0)
+		{
+			if(HC_SR04_CaptureStart == 0)
+			{
+				HC_SR04_CaptureRise = HAL_TIM_ReadCapturedValue(&htim2,TIM_CHANNEL_2);
+				HC_SR04_CaptureStart = 1;
+				__HAL_TIM_SET_CAPTUREPOLARITY(&htim2,TIM_CHANNEL_2,TIM_INPUTCHANNELPOLARITY_FALLING);
+			}
+			else
+			{
+				fall = HAL_TIM_ReadCapturedValue(&htim2,TIM_CHANNEL_2);
+				if(fall >= HC_SR04_CaptureRise)
+				{
+					HC_SR04_CaptureWidth = fall - HC_SR04_CaptureRise;
+				}
+				else
+				{
+					HC_SR04_CaptureWidth = 0xFFFF - HC_SR04_CaptureRise + fall + 1;
+				}
+				HC_SR04_CaptureStart = 0;
+				HC_SR04_CaptureDone = 1;
+				__HAL_TIM_SET_CAPTUREPOLARITY(&htim2,TIM_CHANNEL_2,TIM_INPUTCHANNELPOLARITY_RISING);
+			}
+		}
+	}
 	//Á¬½Óº½Ä£Ò£Ò£¿ØÆ÷ºó£¬ÐèÒªÍÆÏÂÇ°½ø¸Ë£¬²Å¿ÉÒÔÕýÊ½º½Ä£¿ØÖÆÐ¡³µ
 	//After connecting the remote controller of the model aircraft, 
 	//you need to push down the forward lever to officially control the car of the model aircraft
@@ -510,7 +618,3 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 }
 
 #endif
-
-
-
-
