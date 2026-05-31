@@ -190,6 +190,8 @@ void TIM1_Init(u16 arr,u16 psc);
 // 超声波单模块驱动接口
 #define HC_SR04_TIMEOUT_MS 60
 #define HC_SR04_TIMEOUT_VALUE 65535
+#define HC_SR04_WAIT_ECHO_RISE_US 30000u
+#define HC_SR04_WAIT_ECHO_FALL_US 60000u
 void HC_SR04_Init(void);
 u16 HC_SR04_Read(void);
 u16 HC_SR04_ReadMedian(void);

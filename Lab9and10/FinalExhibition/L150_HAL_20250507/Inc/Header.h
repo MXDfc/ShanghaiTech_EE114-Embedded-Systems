@@ -22,6 +22,7 @@ All rights reserved
 
 //头文件包含
 #include "main.h"
+#include <stdio.h>
 #include <string.h>
 #include "bsp_SysTick.h"
 #include "bsp_led.h"
@@ -52,6 +53,10 @@ All rights reserved
 #include "dmpmap.h"
 #include "inv_mpu.h"
 #include "filter.h"
+
+#ifndef USART1_TEXT_DEBUG_ONLY
+#define USART1_TEXT_DEBUG_ONLY 1
+#endif
 
 extern u16 Voltage;						//电压变量，放大100倍储存
 extern u8 Flag_Stop;					//电机启停标志位

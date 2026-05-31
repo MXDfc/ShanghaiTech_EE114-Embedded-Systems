@@ -252,9 +252,19 @@ static u16 HC_SR04_Median3(u16 a, u16 b, u16 c)
 	return b;
 }
 
+static u8 HC_SR04_EchoRead(void)
+{
+	return (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) ? 1 : 0;
+}
 void HC_SR04_Init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	GPIO_InitStruct.Pin = GPIO_PIN_1;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
@@ -268,38 +278,68 @@ void HC_SR04_Init(void)
 	HC_SR04_CaptureDone = 0;
 	HC_SR04_CaptureRise = 0;
 	HC_SR04_CaptureWidth = 0;
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+	__HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_CC2 | TIM_FLAG_UPDATE);
 	__HAL_TIM_SET_CAPTUREPOLARITY(&htim2, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
+	__HAL_TIM_ENABLE(&htim2);
 	TRIG_LOW1;
 }
 
 u16 HC_SR04_Read(void)
 {
-	u16 wait_ms = 0;
+	u32 pulse_us = 0;
 
 	HC_SR04_CaptureStart = 0;
 	HC_SR04_CaptureDone = 0;
 	HC_SR04_CaptureRise = 0;
 	HC_SR04_CaptureWidth = 0;
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+	__HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_CC2 | TIM_FLAG_UPDATE);
 	__HAL_TIM_SET_CAPTUREPOLARITY(&htim2, TIM_CHANNEL_2, TIM_INPUTCHANNELPOLARITY_RISING);
+
+	while(HC_SR04_EchoRead())
+	{
+		if(__HAL_TIM_GET_COUNTER(&htim2) >= HC_SR04_WAIT_ECHO_FALL_US)
+		{
+			return HC_SR04_TIMEOUT_VALUE;
+		}
+	}
 
 	TRIG_HIGH1;
 	delay_us(15);
 	TRIG_LOW1;
 
-	while(!HC_SR04_CaptureDone && wait_ms < HC_SR04_TIMEOUT_MS)
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+	while(!HC_SR04_EchoRead())
 	{
-		delay_ms(1);
-		wait_ms++;
+		if(__HAL_TIM_GET_COUNTER(&htim2) >= HC_SR04_WAIT_ECHO_RISE_US)
+		{
+			return HC_SR04_TIMEOUT_VALUE;
+		}
 	}
 
-	if(!HC_SR04_CaptureDone || HC_SR04_CaptureWidth == 0)
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+	while(HC_SR04_EchoRead())
+	{
+		if(__HAL_TIM_GET_COUNTER(&htim2) >= HC_SR04_WAIT_ECHO_FALL_US)
+		{
+			return HC_SR04_TIMEOUT_VALUE;
+		}
+	}
+
+	pulse_us = __HAL_TIM_GET_COUNTER(&htim2);
+	if(pulse_us == 0)
 	{
 		return HC_SR04_TIMEOUT_VALUE;
 	}
 
-	return (u16)((u32)HC_SR04_CaptureWidth * 340u / 2000u);
+	pulse_us = pulse_us * 340u / 2000u;
+	if(pulse_us > HC_SR04_TIMEOUT_VALUE)
+	{
+		return HC_SR04_TIMEOUT_VALUE;
+	}
+	return (u16)pulse_us;
 }
-
 u16 HC_SR04_ReadMedian(void)
 {
 	u16 d1, d2, d3;

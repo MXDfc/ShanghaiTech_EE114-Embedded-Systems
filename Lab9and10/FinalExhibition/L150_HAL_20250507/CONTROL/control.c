@@ -122,7 +122,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			{
 				Get_Angle(2);     //获取角度，2.卡尔曼滤波 3.互补滤波
 				data_transition();
+#if !USART1_TEXT_DEBUG_ONLY
 				USART1_SEND();                //给ros端发送数据 50ms一次
+#endif
 				Ros_count=0;
 			}
 			if(APP_ON_Flag == RC_ON)								//开启蓝牙控制时，需上拉轮盘直到显示屏出现 bluetooth 字样

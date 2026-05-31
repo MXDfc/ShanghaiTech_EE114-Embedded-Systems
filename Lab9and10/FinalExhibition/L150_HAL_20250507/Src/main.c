@@ -80,6 +80,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   u32 Voltage_Sum = 0;
 	u8 Voltage_Count = 0;				
+	u16 Ultrasonic_Distance = 0;
 	/* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -110,10 +111,26 @@ int main(void)
   MX_USART3_UART_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
+  printf("[UART] USART1 ready: 9600 8N1, HCLK=%lu, PCLK1=%lu, PCLK2=%lu, BRR=0x%04lX\r\n",
+         HAL_RCC_GetHCLKFreq(),
+         HAL_RCC_GetPCLK1Freq(),
+         HAL_RCC_GetPCLK2Freq(),
+         (unsigned long)USART1->BRR);
+#if !USART1_TEXT_DEBUG_ONLY
 	OLED_Init();
+#endif
 //Distance_Cap_Init(65535,72-1);//用于测量超声波的距离，默认注释，具体看capture.h
   PWM_Cap_Init(65535,72-1);  //航模初始化
   HC_SR04_Init();            //超声波初始化
+#if USART1_TEXT_DEBUG_ONLY
+  printf("[HC_SR04] streaming start\r\n");
+  while (1)
+  {
+    Ultrasonic_Distance = HC_SR04_ReadMedian();
+    printf("distance = %u\r\n", (unsigned int)Ultrasonic_Distance);
+    delay_ms(200);
+  }
+#endif
   MPU6050_Init();           //MPU6050初始化	
     PS2_SetInit();                //手柄配置初始化
     Robot_Select();
@@ -139,7 +156,9 @@ int main(void)
 			PS2_Read();											//手柄数据读取
 			
 			Show();												//显示屏
+#if !USART1_TEXT_DEBUG_ONLY
 			APP_Show();											//手机蓝牙显示
+#endif
 
 			Voltage_Sum += Get_Voltage();						//电压测量，每5次取一次平均
 			if((++Voltage_Count) == 5)
@@ -148,8 +167,15 @@ int main(void)
 		else													//进入上位机模式
 		{
 			LED2_ON;											//LED2常亮指示进入了上位机模式
+#if !USART1_TEXT_DEBUG_ONLY
 			DataScope();										//上位机示波器显示
+#endif
 		}
+#if USART1_TEXT_DEBUG_ONLY
+
+		Ultrasonic_Distance = HC_SR04_ReadMedian();
+		printf("distance = %u\r\n", (unsigned int)Ultrasonic_Distance);
+#endif
 		delay_flag=1;	
 		delay_50=0;
 		while(delay_flag);	     								//通过定时中断实现的50ms延时，主要用于示波
