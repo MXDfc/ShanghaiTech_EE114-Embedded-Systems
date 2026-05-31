@@ -41,8 +41,7 @@ void _sys_exit(int x)
 //�ض���fputc���� 
 int fputc(int ch, FILE *f)
 {
-	while((USART1->SR&0X40)==0);
-	USART1->DR = (u8)ch;
+	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xffff);
 	return ch;
 }
 
