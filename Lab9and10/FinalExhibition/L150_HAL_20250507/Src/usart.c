@@ -41,14 +41,16 @@ void _sys_exit(int x)
 //�ض���fputc���� 
 int fputc(int ch, FILE *f)
 {
-	HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, 0xffff);
+	USART1->DR = (u8)ch;
+	while((USART1->SR&0X40)==0);
 	return ch;
 }
 
 int fgetc(FILE *f)
 {
   uint8_t ch = 0;
-  HAL_UART_Receive(&huart3, &ch, 1, 0xffff);
+  while (!(USART1->SR & USART_FLAG_RXNE));
+  ch = (uint8_t)(USART1->DR & 0x1FF);
   return ch;
 }
 
@@ -129,7 +131,7 @@ void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 9600;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
