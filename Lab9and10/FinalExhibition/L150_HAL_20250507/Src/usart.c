@@ -49,7 +49,7 @@ int fputc(int ch, FILE *f)
 int fgetc(FILE *f)
 {
   uint8_t ch = 0;
-  while (!(USART1->SR & USART_FLAG_RXNE));
+  while((USART1->SR&0X20)==0);
   ch = (uint8_t)(USART1->DR & 0x1FF);
   return ch;
 }
