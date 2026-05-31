@@ -40,17 +40,9 @@ void _sys_exit(int x)
 } 
 //�ض���fputc���� 
 int fputc(int ch, FILE *f)
-{      
-	if(Flag_Show)
-	{	
-	  while((USART3->SR&0X40)==0);//Flag_Show=0  ʹ�ô���3   
-	  USART3->DR = (u8) ch;      
-	}
-	else
-	{	
-		while((USART1->SR&0X40)==0);//Flag_Show!=0  ʹ�ô���1   
-		USART1->DR = (u8) ch;      
-	}	
+{
+	while((USART1->SR&0X40)==0);
+	USART1->DR = (u8)ch;
 	return ch;
 }
 
