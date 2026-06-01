@@ -116,13 +116,13 @@ int main(void)
          HAL_RCC_GetPCLK1Freq(),
          HAL_RCC_GetPCLK2Freq(),
          (unsigned long)USART1->BRR);
-#if !USART1_TEXT_DEBUG_ONLY
+#if !USART1_TEXT_DEBUG_ONLY || FINAL_EXHIBITION_AUTO_SCAN
 	OLED_Init();
 #endif
 //Distance_Cap_Init(65535,72-1);//用于测量超声波的距离，默认注释，具体看capture.h
   PWM_Cap_Init(65535,72-1);  //航模初始化
   HC_SR04_Init();            //超声波初始化
-#if USART1_TEXT_DEBUG_ONLY
+#if USART1_TEXT_DEBUG_ONLY && HC_SR04_STREAMING_DEBUG
   printf("[HC_SR04] streaming start\r\n");
   while (1)
   {
@@ -140,7 +140,22 @@ int main(void)
 	if(Car_Num == Akm_Car)
 		  MX_TIM1_Init();									//阿克曼车型初始化舵机
 	Car_Perimeter_Init();										//初始化轮子周长和轮距
-    MX_TIM5_Init();								//5ms中断控制，大部分控制逻辑在里面
+	// Auto_Demo relies on Turn_Off() in the TIM5 interrupt. Initialize Voltage before TIM5 starts,
+	// otherwise the default value 0 is treated as low battery and the auto task is stopped immediately.
+	Voltage_Sum = 0;
+	for(Voltage_Count = 0; Voltage_Count < 5; Voltage_Count++)
+	{
+		Voltage_Sum += Get_Voltage();
+		delay_ms(2);
+	}
+	Voltage = Voltage_Sum / 5;
+	Voltage_Sum = 0;
+	Voltage_Count = 0;
+    MX_TIM5_Init();							//5ms中断控制，大部分控制逻辑在里面
+#if FINAL_EXHIBITION_AUTO_SCAN
+    Auto_Demo_Start();
+    printf("[AUTO] start: car=%u voltage=%u\r\n", (unsigned int)Car_Num, (unsigned int)Voltage);
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -150,6 +165,9 @@ int main(void)
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
 	    Robot_Select();
+#if FINAL_EXHIBITION_AUTO_SCAN
+		Auto_Demo_Service_Main();
+#endif
 		if(Flag_Show)											//正常显示，非上位机模式
 		{
 			LED2_OFF;
@@ -171,11 +189,6 @@ int main(void)
 			DataScope();										//上位机示波器显示
 #endif
 		}
-#if USART1_TEXT_DEBUG_ONLY
-
-		Ultrasonic_Distance = HC_SR04_ReadMedian();
-		printf("distance = %u\r\n", (unsigned int)Ultrasonic_Distance);
-#endif
 		delay_flag=1;	
 		delay_50=0;
 		while(delay_flag);	     								//通过定时中断实现的50ms延时，主要用于示波

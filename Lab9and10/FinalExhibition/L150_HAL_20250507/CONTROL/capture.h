@@ -1,18 +1,18 @@
 /***********************************************
-¹«Ë¾£ºÂÖÈ¤¿Æ¼¼£¨¶«Ý¸£©ÓÐÏÞ¹«Ë¾
-Æ·ÅÆ£ºWHEELTEC
-¹ÙÍø£ºwheeltec.net
-ÌÔ±¦µêÆÌ£ºshop114407458.taobao.com 
-ËÙÂôÍ¨: https://minibalance.aliexpress.com/store/4455017
-°æ±¾£ºV1.0
-ÐÞ¸ÄÊ±¼ä£º2023-03-02
+ï¿½ï¿½Ë¾ï¿½ï¿½ï¿½ï¿½È¤ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾
+Æ·ï¿½Æ£ï¿½WHEELTEC
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½wheeltec.net
+ï¿½Ô±ï¿½ï¿½ï¿½ï¿½Ì£ï¿½shop114407458.taobao.com 
+ï¿½ï¿½ï¿½ï¿½Í¨: https://minibalance.aliexpress.com/store/4455017
+ï¿½æ±¾ï¿½ï¿½V1.0
+ï¿½Þ¸ï¿½Ê±ï¿½ä£º2023-03-02
 
 Brand: WHEELTEC
 Website: wheeltec.net
 Taobao shop: shop114407458.taobao.com 
 Aliexpress: https://minibalance.aliexpress.com/store/4455017
 Version: V1.0
-Update£º2023-03-02
+Updateï¿½ï¿½2023-03-02
 
 All rights reserved
 ***********************************************/
@@ -22,15 +22,15 @@ All rights reserved
 
 
 
-/*-------------³¬Éù²¨²â¾à³ÌÐòÊ¹ÓÃ-----------
-³¬Éù²¨³õÊ¼»¯Ö®ºó£¬ÔÚcontrol.cµÄÖÐ¶Ï·þÎñº¯ÊýÀïÃæ¿ÉÒÔÖ±½ÓÍ¨¹ýRead_Distaneº¯Êý¶ÁÈ¡
-·ÅÔÚÏÂÁÐµÄ±äÁ¿ÀïÃæ
-Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿ 
------------³¬Éù²¨²â¾à³ÌÐòÊ¹ÓÃ-----------*/
+/*-------------ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½-----------
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½control.cï¿½ï¿½ï¿½Ð¶Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¨ï¿½ï¿½Read_Distaneï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+Distance_1,Distance_2,Distance_3,Distance_4;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø±ï¿½ï¿½ï¿½ 
+-----------ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½-----------*/
 
-/*-------------º½Ä£Ò£¿Ø³ÌÐòÊ¹ÓÃºÍ½ÓÏß-----------
-´úÂë½ö½öÊÇ¼ÆËãPWMµÄ¸ßµçÆ½Ê±¼ä£¬¾ßÌåÐèÒªÈçÊ¹ÓÃÕâ¸öÖ¸Áî¿ÉÒÔ±à³ÌÉè¶¨
--------------º½Ä£Ò£¿Ø³ÌÐòÊ¹ÓÃºÍ½ÓÏß-----------*/
+/*-------------ï¿½ï¿½Ä£Ò£ï¿½Ø³ï¿½ï¿½ï¿½Ê¹ï¿½ÃºÍ½ï¿½ï¿½ï¿½-----------
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¼ï¿½ï¿½ï¿½PWMï¿½Ä¸ßµï¿½Æ½Ê±ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½è¶¨
+-------------ï¿½ï¿½Ä£Ò£ï¿½Ø³ï¿½ï¿½ï¿½Ê¹ï¿½ÃºÍ½ï¿½ï¿½ï¿½-----------*/
 
 
 #include "control.h"
@@ -39,12 +39,12 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 
 
 
-// µ±Ç°¹¤³ÌÍ¬Ê±Ê¹ÓÃ TIM2 CH2 ×ö³¬Éù²¨¡¢CH3/CH4 ×öº½Ä£ PWM ²¶»ñ
+// ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Í¬Ê±Ê¹ï¿½ï¿½ TIM2 CH2 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½CH3/CH4 ï¿½ï¿½ï¿½ï¿½Ä£ PWM ï¿½ï¿½ï¿½ï¿½
 #define PWM_Capture
 
 
-//³¬Éù²¨´¥·¢Òý½Å
-//Ê¹ÓÃ¶Ë¿ÚPC15´¥·¢£¨ÆÕÍ¨IO£©,³¬Éù²¨Ä£¿é²¶»ñÊÇ¶¨Ê±Æ÷2Í¨µÀ2//³¬Éù²¨Ä£¿é1
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//Ê¹ï¿½Ã¶Ë¿ï¿½PC15ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨IOï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½é²¶ï¿½ï¿½ï¿½Ç¶ï¿½Ê±ï¿½ï¿½2Í¨ï¿½ï¿½2//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½1
 #define 			CAPTURE_TRIG_GPIO_CLK1			RCC_APB2Periph_GPIOC
 #define            	CAPTURE_TRIG_PORT1         		GPIOC
 #define            	CAPTURE_TRIG_PIN1           	GPIO_Pin_15
@@ -52,7 +52,7 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 #define 			TRIG_HIGH1						PCout(15) = 1
 #define 			TRIG_LOW1						PCout(15) = 0
 
-//Ê¹ÓÃ¶Ë¿ÚPA12´¥·¢£¨ÆÕÍ¨IO£©,³¬Éù²¨Ä£¿é²¶»ñÊÇ¶¨Ê±Æ÷2Í¨µÀ3//³¬Éù²¨Ä£¿é2
+//Ê¹ï¿½Ã¶Ë¿ï¿½PA12ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨IOï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½é²¶ï¿½ï¿½ï¿½Ç¶ï¿½Ê±ï¿½ï¿½2Í¨ï¿½ï¿½3//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½2
 #define 			CAPTURE_TRIG_GPIO_CLK2			RCC_APB2Periph_GPIOA
 #define            	CAPTURE_TRIG_PORT2          	GPIOA
 #define            	CAPTURE_TRIG_PIN2          		GPIO_Pin_12
@@ -60,7 +60,7 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 #define 			TRIG_HIGH2						PAout(12) = 1
 #define 			TRIG_LOW2						PAout(12) = 0
 
-//Ê¹ÓÃ¶Ë¿ÚPB13´¥·¢£¨ÆÕÍ¨IO£©,³¬Éù²¨Ä£¿é²¶»ñÊÇ¶¨Ê±Æ÷2Í¨µÀ4//³¬Éù²¨Ä£¿é3
+//Ê¹ï¿½Ã¶Ë¿ï¿½PB13ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨IOï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½é²¶ï¿½ï¿½ï¿½Ç¶ï¿½Ê±ï¿½ï¿½2Í¨ï¿½ï¿½4//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½3
 #define 			CAPTURE_TRIG_GPIO_CLK3			RCC_APB2Periph_GPIOB
 #define            	CAPTURE_TRIG_PORT3          	GPIOB
 #define            	CAPTURE_TRIG_PIN3          		GPIO_Pin_13
@@ -68,7 +68,7 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 #define 			TRIG_HIGH3						PBout(13) = 1
 #define 			TRIG_LOW3						PBout(13) = 0
 
-//Ê¹ÓÃ¶Ë¿ÚPB12´¥·¢£¨ÆÕÍ¨IO£©,³¬Éù²¨Ä£¿é²¶»ñÊÇ¶¨Ê±Æ÷1Í¨µÀ4//³¬Éù²¨Ä£¿é4
+//Ê¹ï¿½Ã¶Ë¿ï¿½PB12ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨IOï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½é²¶ï¿½ï¿½ï¿½Ç¶ï¿½Ê±ï¿½ï¿½1Í¨ï¿½ï¿½4//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½4
 #define 			CAPTURE_TRIG_GPIO_CLK4			RCC_APB2Periph_GPIOB
 #define            	CAPTURE_TRIG_PORT4         		GPIOB
 #define            	CAPTURE_TRIG_PIN4          		GPIO_Pin_12
@@ -76,8 +76,8 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 #define 			TRIG_HIGH4						PBout(12) = 1
 #define 			TRIG_LOW4						PBout(12) = 0
 
-//Ê¹ÓÃ¸ßµçÆ½²¶»ñ¹¦ÄÜ
-//¶¨Ê±Æ÷TIM2¡ªCH2,CH3,Ch4
+//Ê¹ï¿½Ã¸ßµï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//ï¿½ï¿½Ê±ï¿½ï¿½TIM2ï¿½ï¿½CH2,CH3,Ch4
 #define 			CAPTURE_TIM2_CH2_GPIO_CLK		RCC_APB2Periph_GPIOA
 #define            	CAPTURE_TIM2_CH2_PORT          	GPIOA
 #define            	CAPTURE_TIM2_CH2_PIN           	GPIO_Pin_1
@@ -97,9 +97,9 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 #define            	CAPTURE_TIM2_IRQ               	TIM2_IRQn
 #define           	CAPTURE_TIM2_IRQHandler       	TIM2_IRQHandler
 //#define 			CAPTURE_TIM2_CHx					TIM_Channel_2
-//#define 			CAPTURE_TIM_IT_CCX 				TIM_IT_CC2//²¶»ñÍ¨µÀ
+//#define 			CAPTURE_TIM_IT_CCX 				TIM_IT_CC2//ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
 
-//Ê¹ÓÃTIM1_CH4
+//Ê¹ï¿½ï¿½TIM1_CH4
 #define 			CAPTURE_TIM1_CH4_GPIO_CLK		RCC_APB2Periph_GPIOA
 #define            	CAPTURE_TIM1_CH4_PORT          	GPIOA
 #define            	CAPTURE_TIM1_CH4_PIN           	GPIO_Pin_11
@@ -118,9 +118,9 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 
 
 
-//º½Ä£Ò£¿Ø³õÊ¼»¯
-//Ê¹ÓÃTIM2_CH4,CH3,TIM1_CH4,CH1·Ö±ðÊÇ4Â·º½Ä£
-//²¶»ñPWMµÄ¸ßµçÆ½
+//ï¿½ï¿½Ä£Ò£ï¿½Ø³ï¿½Ê¼ï¿½ï¿½
+//Ê¹ï¿½ï¿½TIM2_CH4,CH3,TIM1_CH4,CH1ï¿½Ö±ï¿½ï¿½ï¿½4Â·ï¿½ï¿½Ä£
+//ï¿½ï¿½ï¿½ï¿½PWMï¿½Ä¸ßµï¿½Æ½
 #define 			PWM_TIM2_CH4_GPIO_CLK		RCC_APB2Periph_GPIOA
 #define            	PWM_TIM2_CH4_PORT          	GPIOA
 #define            	PWM_TIM2_CH4_PIN           	GPIO_Pin_3
@@ -153,43 +153,44 @@ Distance_1,Distance_2,Distance_3,Distance_4;//³¬Éù²¨Ïà¹Ø±äÁ¿
 
 
 
-//// »ñÈ¡²¶»ñ¼Ä´æÆ÷Öµº¯Êýºê¶¨Òå
+//// ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ê¶¨ï¿½ï¿½
 //#define            CAPTURE_TIM_GetCapturex_FUN                 TIM_GetCapture2
-//// ²¶»ñÐÅºÅ¼«ÐÔº¯Êýºê¶¨Òå
+//// ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ¼ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½ê¶¨ï¿½ï¿½
 //#define            CAPTURE_TIM_OCxPolarityConfig_FUN           TIM_OC2PolarityConfig
-// ²âÁ¿µÄÆðÊ¼±ßÑØ
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½
 #define            CAPTURE_TIM_STRAT_ICPolarity                TIM_ICPolarity_Rising
-// ²âÁ¿µÄ½áÊø±ßÑØ
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ä½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #define            CAPTURE_TIM_END_ICPolarity                  TIM_ICPolarity_Falling
-//¹âËÙºê¶¨Òå
+//ï¿½ï¿½ï¿½Ùºê¶¨ï¿½ï¿½
 #define 			Light_Speed								   340
 
-// ¶¨Ê±Æ÷ÊäÈë²¶»ñÓÃ»§×Ô¶¨Òå±äÁ¿½á¹¹ÌåÉùÃ÷
+// ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ë²¶ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 typedef struct
 {   
-	uint8_t   Capture_FinishFlag;   // ²¶»ñ½áÊø±êÖ¾Î»
-	uint8_t   Capture_StartFlag;    // ²¶»ñ¿ªÊ¼±êÖ¾Î»
-	int  	  Capture_CcrValue;     // ²¶»ñ¼Ä´æÆ÷µÄÖµ
-	uint16_t  Capture_Period;       // ×Ô¶¯ÖØ×°ÔØ¼Ä´æÆ÷¸üÐÂ±êÖ¾ 
+	uint8_t   Capture_FinishFlag;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾Î»
+	uint8_t   Capture_StartFlag;    // ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ö¾Î»
+	int  	  Capture_CcrValue;     // ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+	uint16_t  Capture_Period;       // ï¿½Ô¶ï¿½ï¿½ï¿½×°ï¿½Ø¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â±ï¿½Ö¾ 
 }TIM_ICUserValueTypeDef;
 
 //Variables related to remote control acquisition of model aircraft
-//º½Ä£Ò£¿Ø²É¼¯Ïà¹Ø±äÁ¿
+//ï¿½ï¿½Ä£Ò£ï¿½Ø²É¼ï¿½ï¿½ï¿½Ø±ï¿½ï¿½ï¿½
 extern int Remoter_Ch1,Remoter_Ch2,Remoter_Ch3;
 //Model aircraft remote control receiver variable
-//º½Ä£Ò£¿Ø½ÓÊÕ±äÁ¿
+//ï¿½ï¿½Ä£Ò£ï¿½Ø½ï¿½ï¿½Õ±ï¿½ï¿½ï¿½
 extern int L_Remoter_Ch1,L_Remoter_Ch2,L_Remoter_Ch2;  
 extern u16 Distance1,Distance2,Distance3,Distance4;	
 
 void Read_Distane(void);        
 void Distance_Cap_Init(u16 arr,u16 psc);
 void PWM_Cap_Init(u16 arr,u16 psc);
-void MX_TIM2_Init(u16 arr,u16 psc);//³¬Éù²¨³õÊ¼»¯
+void MX_TIM2_Init(u16 arr,u16 psc);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
 void TIM1_Init(u16 arr,u16 psc);
 
-// ³¬Éù²¨µ¥Ä£¿éÇý¶¯½Ó¿Ú
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿ï¿½
 #define HC_SR04_TIMEOUT_MS 60
 #define HC_SR04_TIMEOUT_VALUE 65535
+#define HC_SR04_MAX_VALID_MM 6000u
 #define HC_SR04_WAIT_ECHO_RISE_US 30000u
 #define HC_SR04_WAIT_ECHO_FALL_US 60000u
 void HC_SR04_Init(void);

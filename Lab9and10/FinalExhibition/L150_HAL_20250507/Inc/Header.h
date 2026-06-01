@@ -58,6 +58,14 @@ All rights reserved
 #define USART1_TEXT_DEBUG_ONLY 1
 #endif
 
+#ifndef HC_SR04_STREAMING_DEBUG
+#define HC_SR04_STREAMING_DEBUG 0
+#endif
+
+#ifndef FINAL_EXHIBITION_AUTO_SCAN
+#define FINAL_EXHIBITION_AUTO_SCAN 1
+#endif
+
 extern u16 Voltage;						//电压变量，放大100倍储存
 extern u8 Flag_Stop;					//电机启停标志位
 extern volatile u8 delay_50,delay_flag; 			//延时变量

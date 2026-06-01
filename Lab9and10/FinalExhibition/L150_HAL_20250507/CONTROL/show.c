@@ -30,6 +30,48 @@ Output  : none
 void Show(void)
 {
 	memset(OLED_GRAM,0, 128*8*sizeof(u8));	//GRAM清零但不立即刷新，防止花屏
+#if FINAL_EXHIBITION_AUTO_SCAN
+	if(Auto_Demo_Active)
+	{
+		OLED_ShowString(0,0,"AUTO:");
+		OLED_ShowString(36,0,(u8 *)Auto_Demo_State_Name());
+		OLED_ShowString(78,0,"PT:");
+		OLED_ShowNumber(102,0,Auto_Scan_Debug_Point,2,12);
+
+		OLED_ShowString(0,10,"N:");
+		OLED_ShowNumber(18,10,Auto_Scan_Debug_Sample_Count,3,12);
+		OLED_ShowString(48,10,"D:");
+		OLED_ShowNumber(66,10,Auto_Scan_Debug_Distance,5,12);
+
+		if(Auto_Scan_Debug_Valid)
+			OLED_ShowString(0,20,"OK ");
+		else
+			OLED_ShowString(0,20,"BAD");
+		OLED_ShowString(30,20,"B:");
+		OLED_ShowNumber(48,20,Auto_Scan_Debug_Best_Distance,5,12);
+		OLED_ShowString(90,20,"BP:");
+		OLED_ShowNumber(114,20,Auto_Scan_Debug_Best_Point,2,12);
+
+		OLED_ShowString(0,30,"L:");
+		if(MotorA.Motor_Pwm<0)	{OLED_ShowString(18,30,"-"); OLED_ShowNumber(24,30,-MotorA.Motor_Pwm,4,12);}
+		else					{OLED_ShowString(18,30,"+"); OLED_ShowNumber(24,30, MotorA.Motor_Pwm,4,12);}
+		OLED_ShowString(66,30,"R:");
+		if(MotorB.Motor_Pwm<0)	{OLED_ShowString(84,30,"-"); OLED_ShowNumber(90,30,-MotorB.Motor_Pwm,4,12);}
+		else					{OLED_ShowString(84,30,"+"); OLED_ShowNumber(90,30, MotorB.Motor_Pwm,4,12);}
+
+		OLED_ShowString(0,40,"V:");
+		OLED_ShowNumber(18,40,Voltage/100,2,12);
+		OLED_ShowString(30,40,".");
+		OLED_ShowNumber(36,40,Voltage/10%10,1,12);
+		OLED_ShowString(54,40,"RUN:");
+		if(Flag_Stop)	OLED_ShowString(90,40,"OFF");
+		else			OLED_ShowString(90,40,"ON ");
+
+		OLED_ShowString(0,50,"BAD:<5cm/TIMEOUT");
+		OLED_Refresh_Gram();
+		return;
+	}
+#endif
 	if(Mode==ELE_Line_Patrol_Mode)			//电磁巡线模式显示
 	{
 		//=============第一行显示小车模式=======================//	

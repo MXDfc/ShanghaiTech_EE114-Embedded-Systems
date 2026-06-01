@@ -105,7 +105,8 @@ void MX_TIM2_Init(u16 arr,u16 psc) //超声波初始化
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-  HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_2);//打开定时器2通道2的输入捕获中断
+  // HC-SR04 now polls PA1 and TIM2 directly; keep CH2 capture interrupt disabled to avoid racing the polling read.
+  // HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_2);//打开定时器2通道2的输入捕获中断
   HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_3);//打开定时器2通道3的输入捕获中断
   HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_4);//打开定时器2通道4的输入捕获中断
   HAL_TIM_Base_Start_IT(&htim2);            //打开定时器2通道
@@ -252,6 +253,11 @@ static u16 HC_SR04_Median3(u16 a, u16 b, u16 c)
 	return b;
 }
 
+static u8 HC_SR04_IsValidDistance(u16 distance)
+{
+	return (distance != HC_SR04_TIMEOUT_VALUE && distance <= HC_SR04_MAX_VALID_MM) ? 1 : 0;
+}
+
 static u8 HC_SR04_EchoRead(void)
 {
 	return (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) ? 1 : 0;
@@ -334,22 +340,40 @@ u16 HC_SR04_Read(void)
 	}
 
 	pulse_us = pulse_us * 340u / 2000u;
-	if(pulse_us > HC_SR04_TIMEOUT_VALUE)
+	if(pulse_us > HC_SR04_MAX_VALID_MM)
 	{
-		return HC_SR04_TIMEOUT_VALUE;
+		return HC_SR04_MAX_VALID_MM;
 	}
 	return (u16)pulse_us;
 }
 u16 HC_SR04_ReadMedian(void)
 {
 	u16 d1, d2, d3;
+	u8 v1, v2, v3;
 
 	d1 = HC_SR04_Read();
 	delay_ms(60);
 	d2 = HC_SR04_Read();
 	delay_ms(60);
 	d3 = HC_SR04_Read();
-	return HC_SR04_Median3(d1, d2, d3);
+	v1 = HC_SR04_IsValidDistance(d1);
+	v2 = HC_SR04_IsValidDistance(d2);
+	v3 = HC_SR04_IsValidDistance(d3);
+	if(v1 && v2 && v3)
+		return HC_SR04_Median3(d1, d2, d3);
+	if(v1 && v2)
+		return (u16)((d1 + d2) / 2u);
+	if(v1 && v3)
+		return (u16)((d1 + d3) / 2u);
+	if(v2 && v3)
+		return (u16)((d2 + d3) / 2u);
+	if(v1)
+		return d1;
+	if(v2)
+		return d2;
+	if(v3)
+		return d3;
+	return HC_SR04_TIMEOUT_VALUE;
 }
 /**************************************************************************
 Function: Read_Distane

@@ -1,4 +1,4 @@
-﻿/***********************************************
+/***********************************************
 公司：轮趣科技（东莞）有限公司
 品牌：WHEELTEC
 官网：wheeltec.net
@@ -35,7 +35,13 @@ Encoder OriginalEncoder; //Encoder raw data //编码器原始数据
 short Accel_Y,Accel_Z,Accel_X,Accel_Angle_x,Accel_Angle_y,Gyro_X,Gyro_Z,Gyro_Y;
 u8 Auto_Demo_Active = 0;
 u8 Auto_Demo_State = AUTO_DEMO_IDLE;
-static u16 Auto_Demo_Tick = 0;
+volatile u8 Auto_Scan_Debug_Valid = 0;
+volatile u16 Auto_Scan_Debug_Point = 0;
+volatile u16 Auto_Scan_Debug_Distance = 0;
+volatile u16 Auto_Scan_Debug_Sample_Count = 0;
+volatile u16 Auto_Scan_Debug_Best_Point = 0;
+volatile u16 Auto_Scan_Debug_Best_Distance = 0;
+static volatile u16 Auto_Demo_Tick = 0;
 static int Auto_Demo_Left_Output = 0;
 static int Auto_Demo_Right_Output = 0;
 
@@ -45,6 +51,87 @@ static int Auto_Demo_Right_Output = 0;
 #define AUTO_DEMO_TICKS_2S        400
 #define AUTO_DEMO_TICKS_3S        600
 #define AUTO_DEMO_LEFT_TURN_ANGLE Bluetooth_Turn_Angle
+#define AUTO_SCAN_STEER_ANGLE     Bluetooth_Turn_Angle
+/* Old raw PWM scan drive is kept disabled; scan now uses Ackermann kinematics. */
+/* #define AUTO_SCAN_PWM             ((PWM_MAX * 38) / 100) */
+#define AUTO_SCAN_SPEED_MPS       0.25f
+#define AUTO_SCAN_DRIVE_SPEED_MPS 0.25f
+#define AUTO_SCAN_MOVE_TRIM_PC    100
+#define AUTO_SCAN_MIN_MOVE_TICKS  20
+#define AUTO_SCAN_PREPARE_TICKS   200
+#define AUTO_SCAN_POINT_COUNT     30
+#define AUTO_SCAN_SETTLE_TICKS    20
+#define AUTO_SCAN_SAMPLE_TICKS    250
+#define AUTO_SCAN_SAMPLE_INTERVAL_TICKS 20
+#define AUTO_SCAN_MIN_VALID_MM    50    // Ignore car-body echoes within 5 cm.
+#define AUTO_SCAN_MAX_VALID_MM    HC_SR04_MAX_VALID_MM
+#define AUTO_SCAN_DRIVE_TICKS     800
+#define AUTO_BEEP_SHORT_TICKS     4
+#define AUTO_BEEP_NORMAL_TICKS    8
+#define AUTO_BEEP_LONG_TICKS      24
+#define AUTO_BEEP_GAP_TICKS       6
+
+static u8 Auto_Scan_Best_Found = 0;
+static u8 Auto_Scan_Sample_Taken = 0;
+static volatile u8 Auto_Scan_Sampling = 0;
+static volatile u8 Auto_Scan_Point_Commit_Pending = 0;
+static u16 Auto_Scan_Point_Index = 0;
+static u16 Auto_Scan_Best_Point = 0;
+static u16 Auto_Scan_Best_Distance = 0;
+static u16 Auto_Scan_Point_Max_Distance = 0;
+static u16 Auto_Scan_Point_Valid_Count = 0;
+static u16 Auto_Scan_Next_Sample_Tick = 0;
+static u16 Auto_Scan_Return_Steps_Left = 0;
+static volatile u8 Auto_Beep_Pulses_Left = 0;
+static volatile u8 Auto_Beep_Is_On = 0;
+static volatile u16 Auto_Beep_Timer = 0;
+static volatile u16 Auto_Beep_On_Ticks = 0;
+static volatile u16 Auto_Beep_Off_Ticks = 0;
+
+static void Auto_Demo_Beep_Start(u8 pulses, u16 on_ticks, u16 off_ticks)
+{
+	if(pulses == 0 || on_ticks == 0)
+		return;
+	Auto_Beep_Pulses_Left = pulses;
+	Auto_Beep_Is_On = 1;
+	Auto_Beep_Timer = on_ticks;
+	Auto_Beep_On_Ticks = on_ticks;
+	Auto_Beep_Off_Ticks = off_ticks;
+	BEEP_ON();
+}
+
+static void Auto_Demo_Beep_Stop(void)
+{
+	Auto_Beep_Pulses_Left = 0;
+	Auto_Beep_Is_On = 0;
+	Auto_Beep_Timer = 0;
+	BEEP_OFF();
+}
+
+static void Auto_Demo_Beep_Update_5ms(void)
+{
+	if(Auto_Beep_Pulses_Left == 0)
+		return;
+	if(Auto_Beep_Timer > 0)
+		Auto_Beep_Timer--;
+	if(Auto_Beep_Timer > 0)
+		return;
+	if(Auto_Beep_Is_On)
+	{
+		BEEP_OFF();
+		Auto_Beep_Is_On = 0;
+		Auto_Beep_Pulses_Left--;
+		if(Auto_Beep_Pulses_Left == 0)
+			return;
+		Auto_Beep_Timer = Auto_Beep_Off_Ticks;
+	}
+	else
+	{
+		BEEP_ON();
+		Auto_Beep_Is_On = 1;
+		Auto_Beep_Timer = Auto_Beep_On_Ticks;
+	}
+}
 
 static int Auto_Demo_Get_Servo_Pwm(float angle_r)
 {
@@ -76,10 +163,62 @@ static void Auto_Demo_Set_Output(int left_output, int right_output)
 	Auto_Demo_Set_Output_With_Servo(left_output,right_output,SERVO_INIT);
 }
 
+static float Auto_Demo_Get_Effective_Steer(float angle_r)
+{
+	return target_limit_float(angle_r,-0.49f,0.32f);
+}
+
+static u16 Auto_Demo_Get_Move_Ticks(void)
+{
+	float angle_r = Auto_Demo_Get_Effective_Steer(AUTO_SCAN_STEER_ANGLE);
+	float radius_m;
+	float lap_ticks;
+	u16 move_ticks;
+
+	if(angle_r == 0 || AUTO_SCAN_SPEED_MPS <= 0)
+		return AUTO_SCAN_MIN_MOVE_TICKS;
+	radius_m = Akm_axlespacing / tan(angle_r) - 0.5f * Akm_wheelspacing;
+	if(radius_m < 0)
+		radius_m = -radius_m;
+	lap_ticks = (2.0f * Pi * radius_m * Frequency) / AUTO_SCAN_SPEED_MPS;
+	lap_ticks = lap_ticks * AUTO_SCAN_MOVE_TRIM_PC / 100.0f;
+	move_ticks = (u16)(lap_ticks / AUTO_SCAN_POINT_COUNT + 0.5f);
+	if(move_ticks < AUTO_SCAN_MIN_MOVE_TICKS)
+		move_ticks = AUTO_SCAN_MIN_MOVE_TICKS;
+	return move_ticks;
+}
+
+static void Auto_Demo_Set_Velocity(float vx, float steer_angle)
+{
+	Move_X = vx;
+	Move_Z = steer_angle;
+	Get_Target_Encoder(Move_X,Move_Z);
+	Get_Motor_PWM();
+	Auto_Demo_Left_Output = -MotorA.Motor_Pwm;
+	Auto_Demo_Right_Output = MotorB.Motor_Pwm;
+}
+
+static void Auto_Demo_Set_Scan_Move(u8 reverse)
+{
+	float vx = reverse ? -AUTO_SCAN_SPEED_MPS : AUTO_SCAN_SPEED_MPS;
+	Auto_Demo_Set_Velocity(vx, AUTO_SCAN_STEER_ANGLE);
+}
+
+static void Auto_Scan_Reset_Point_Samples(void)
+{
+	Auto_Scan_Sample_Taken = 0;
+	Auto_Scan_Point_Commit_Pending = 0;
+	Auto_Scan_Point_Max_Distance = 0;
+	Auto_Scan_Point_Valid_Count = 0;
+	Auto_Scan_Next_Sample_Tick = 0;
+}
+
 static void Auto_Demo_Goto_State(u8 next_state)
 {
 	Auto_Demo_State = next_state;
 	Auto_Demo_Tick = 0;
+	if(next_state == AUTO_SCAN_DRIVE_BEST)
+		Auto_Demo_Beep_Start(3, AUTO_BEEP_NORMAL_TICKS, AUTO_BEEP_GAP_TICKS);
 }
 /**************************************************************************
 Function: Control Function
@@ -94,6 +233,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim== &htim5)
 	{
 		static u8 Count_CCD = 0;								   //调节CCD控制频率
+		Auto_Demo_Beep_Update_5ms();
 		Get_Velocity_From_Encoder();								//读取左右编码器的值且转换成速度
         Get_KeyVal();		
 		if(delay_flag)												//50ms延时
@@ -185,24 +325,33 @@ void Auto_Demo_Start(void)
 	Remote_ON_Flag = RC_OFF;
 	Mode = Normal_Mode;
 	Auto_Demo_Active = 1;
-//	Auto_Demo_Goto_State(AUTO_DEMO_WAIT_START);
-	Auto_Demo_Goto_State(AUTO_DEMO_FORWARD);
-	Auto_Demo_Set_Output(0,0);
+	Auto_Demo_State = AUTO_SCAN_PREPARE;
+	Auto_Demo_Tick = 0;
+	Auto_Scan_Best_Found = 0;
+	Auto_Scan_Sample_Taken = 0;
+	Auto_Scan_Point_Commit_Pending = 0;
+	Auto_Scan_Point_Index = 0;
+	Auto_Scan_Best_Point = 0;
+	Auto_Scan_Best_Distance = 0;
+	Auto_Scan_Point_Max_Distance = 0;
+	Auto_Scan_Point_Valid_Count = 0;
+	Auto_Scan_Next_Sample_Tick = 0;
+	Auto_Scan_Return_Steps_Left = 0;
+	Auto_Scan_Debug_Valid = 0;
+	Auto_Scan_Debug_Point = 0;
+	Auto_Scan_Debug_Distance = 0;
+	Auto_Scan_Debug_Sample_Count = 0;
+	Auto_Scan_Debug_Best_Point = 0;
+	Auto_Scan_Debug_Best_Distance = 0;
+	Auto_Demo_Set_Output_With_Servo(0,0,SERVO_INIT);
+	Auto_Demo_Beep_Start(2, AUTO_BEEP_NORMAL_TICKS, AUTO_BEEP_GAP_TICKS);
 }
-
-/**************************************************************************
-Function: Stop auto demo task
-Input   : none
-Output  : none
-函数功能：停止自动演示流程
-入口参数: 无
-返回  值：无
-**************************************************************************/
 void Auto_Demo_Stop(void)
 {
 	Auto_Demo_Active = 0;
 	Auto_Demo_Goto_State(AUTO_DEMO_IDLE);
 	Auto_Demo_Set_Output(0,0);
+	Auto_Demo_Beep_Stop();
 }
 
 /**************************************************************************
@@ -215,65 +364,73 @@ Output  : none
 **************************************************************************/
 void Auto_Demo_Update_5ms(void)
 {
+	if(Auto_Scan_Sampling)
+	{
+		Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE));
+		return;
+	}
 	Auto_Demo_Tick++;
+	Auto_Scan_Debug_Point = Auto_Scan_Point_Index;
 	switch(Auto_Demo_State)
 	{
-		case AUTO_DEMO_FORWARD:
-			Auto_Demo_Set_Output(-AUTO_DEMO_PWM_50,AUTO_DEMO_PWM_50);
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_1S)
-				Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_FORWARD);
+		case AUTO_SCAN_PREPARE:
+			Auto_Demo_Set_Output_With_Servo(0,0,SERVO_INIT);
+			if(Auto_Demo_Tick >= AUTO_SCAN_PREPARE_TICKS)
+			{
+				Auto_Scan_Point_Index = 0;
+				Auto_Demo_Goto_State(AUTO_SCAN_LAP_MOVE);
+			}
 			break;
-		case AUTO_DEMO_WAIT_AFTER_FORWARD:
-			Auto_Demo_Set_Output(0,0);
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_2S)
-//				Auto_Demo_Goto_State(AUTO_DEMO_TURN_LEFT);
-				Auto_Demo_Goto_State(AUTO_DEMO_STEER_LEFT);
+		case AUTO_SCAN_LAP_MOVE:
+			/* Auto_Demo_Set_Output_With_Servo(-AUTO_SCAN_PWM, AUTO_SCAN_PWM, Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE)); */
+			Auto_Demo_Set_Scan_Move(0);
+			if(Auto_Demo_Tick >= Auto_Demo_Get_Move_Ticks())
+				Auto_Demo_Goto_State(AUTO_SCAN_LAP_SETTLE);
 			break;
-		case AUTO_DEMO_STEER_LEFT:
-			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_DEMO_LEFT_TURN_ANGLE));
-			Auto_Demo_Goto_State(AUTO_DEMO_FORWARD_LEFT);
+		case AUTO_SCAN_LAP_SETTLE:
+			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE));
+			if(Auto_Demo_Tick >= AUTO_SCAN_SETTLE_TICKS)
+			{
+				Auto_Scan_Reset_Point_Samples();
+				Auto_Demo_Goto_State(AUTO_SCAN_LAP_SAMPLE);
+			}
 			break;
-		case AUTO_DEMO_FORWARD_LEFT:
-//			Auto_Demo_Set_Output(AUTO_DEMO_PWM_42,AUTO_DEMO_PWM_42);
-			Auto_Demo_Set_Output_With_Servo(-AUTO_DEMO_PWM_42,AUTO_DEMO_PWM_42,Auto_Demo_Get_Servo_Pwm(AUTO_DEMO_LEFT_TURN_ANGLE));
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_3S)
-//				Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_LEFT);
-				Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_FORWARD_LEFT);
+		case AUTO_SCAN_LAP_SAMPLE:
+			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE));
+			if(Auto_Demo_Tick >= AUTO_SCAN_SAMPLE_TICKS)
+			{
+				Auto_Scan_Point_Commit_Pending = 1;
+			}
 			break;
-		case AUTO_DEMO_WAIT_AFTER_FORWARD_LEFT:
-			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_DEMO_LEFT_TURN_ANGLE));
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_2S)
-//				Auto_Demo_Goto_State(AUTO_DEMO_TURN_RIGHT);
-				Auto_Demo_Goto_State(AUTO_DEMO_BACKWARD_LEFT);
+		case AUTO_SCAN_TURN_MOVE:
+			/* Auto_Demo_Set_Output_With_Servo(-AUTO_SCAN_PWM, AUTO_SCAN_PWM, Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE)); */
+			/* Re-aim by reversing along the scanned arc, so lap closure error is not added again. */
+			Auto_Scan_Debug_Point = Auto_Scan_Return_Steps_Left;
+			Auto_Demo_Set_Scan_Move(1);
+			if(Auto_Demo_Tick >= Auto_Demo_Get_Move_Ticks())
+				Auto_Demo_Goto_State(AUTO_SCAN_TURN_SETTLE);
 			break;
-		case AUTO_DEMO_BACKWARD_LEFT:
-//			Auto_Demo_Set_Output(-AUTO_DEMO_PWM_42,-AUTO_DEMO_PWM_42);
-			Auto_Demo_Set_Output_With_Servo(AUTO_DEMO_PWM_42,-AUTO_DEMO_PWM_42,Auto_Demo_Get_Servo_Pwm(AUTO_DEMO_LEFT_TURN_ANGLE));
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_3S)
-//				Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_RIGHT);
-				Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_BACKWARD_LEFT);
+		case AUTO_SCAN_TURN_SETTLE:
+			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE));
+			Auto_Scan_Debug_Point = Auto_Scan_Return_Steps_Left;
+			if(Auto_Demo_Tick >= AUTO_SCAN_SETTLE_TICKS)
+			{
+				if(Auto_Scan_Return_Steps_Left > 0)
+					Auto_Scan_Return_Steps_Left--;
+				Auto_Scan_Debug_Point = Auto_Scan_Return_Steps_Left;
+				if(Auto_Scan_Return_Steps_Left == 0)
+					Auto_Demo_Goto_State(AUTO_SCAN_DRIVE_BEST);
+				else
+					Auto_Demo_Goto_State(AUTO_SCAN_TURN_MOVE);
+			}
 			break;
-		case AUTO_DEMO_WAIT_AFTER_BACKWARD_LEFT:
-			Auto_Demo_Set_Output_With_Servo(0,0,Auto_Demo_Get_Servo_Pwm(AUTO_DEMO_LEFT_TURN_ANGLE));
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_2S)
-//				Auto_Demo_Goto_State(AUTO_DEMO_BACKWARD);
-				Auto_Demo_Goto_State(AUTO_DEMO_STEER_CENTER);
+		case AUTO_SCAN_DRIVE_BEST:
+			/* Auto_Demo_Set_Output_With_Servo(-AUTO_DEMO_PWM_50, AUTO_DEMO_PWM_50, SERVO_INIT); */
+			Auto_Demo_Set_Velocity(AUTO_SCAN_DRIVE_SPEED_MPS,0);
+			if(Auto_Demo_Tick >= AUTO_SCAN_DRIVE_TICKS)
+				Auto_Demo_Goto_State(AUTO_SCAN_FINISHED);
 			break;
-		case AUTO_DEMO_STEER_CENTER:
-			Auto_Demo_Set_Output(0,0);
-			Auto_Demo_Goto_State(AUTO_DEMO_WAIT_AFTER_CENTER);
-			break;
-		case AUTO_DEMO_WAIT_AFTER_CENTER:
-			Auto_Demo_Set_Output(0,0);
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_2S)
-				Auto_Demo_Goto_State(AUTO_DEMO_BACKWARD_FINAL);
-			break;
-		case AUTO_DEMO_BACKWARD_FINAL:
-			Auto_Demo_Set_Output(AUTO_DEMO_PWM_50,-AUTO_DEMO_PWM_50);
-			if(Auto_Demo_Tick >= AUTO_DEMO_TICKS_1S)
-				Auto_Demo_Goto_State(AUTO_DEMO_FINISHED);
-			break;
-		case AUTO_DEMO_FINISHED:
+		case AUTO_SCAN_FINISHED:
 			Auto_Demo_Stop();
 			break;
 		default:
@@ -282,33 +439,110 @@ void Auto_Demo_Update_5ms(void)
 	}
 }
 
-/**************************************************************************
-Function: Get auto demo state text
-Input   : none
-Output  : state name
-函数功能：获取自动演示状态文本
-入口参数: 无
-返回  值：状态字符串
-**************************************************************************/
+void Auto_Demo_Service_Main(void)
+{
+	u16 distance;
+	u8 new_best = 0;
+
+	if(!Auto_Demo_Active)
+		return;
+	if(Auto_Demo_State != AUTO_SCAN_LAP_SAMPLE)
+		return;
+	if(Auto_Scan_Point_Commit_Pending)
+	{
+		Auto_Scan_Point_Commit_Pending = 0;
+		if(Auto_Scan_Point_Valid_Count > 0)
+		{
+			distance = Auto_Scan_Point_Max_Distance;
+			Auto_Scan_Debug_Distance = distance;
+			Auto_Scan_Debug_Valid = 1;
+			if(!Auto_Scan_Best_Found || distance > Auto_Scan_Best_Distance)
+			{
+				Auto_Scan_Best_Found = 1;
+				Auto_Scan_Best_Distance = distance;
+				Auto_Scan_Best_Point = Auto_Scan_Point_Index;
+				Auto_Scan_Debug_Best_Distance = Auto_Scan_Best_Distance;
+				Auto_Scan_Debug_Best_Point = Auto_Scan_Best_Point;
+				new_best = 1;
+			}
+			if(new_best)
+				Auto_Demo_Beep_Start(2, AUTO_BEEP_SHORT_TICKS, AUTO_BEEP_GAP_TICKS);
+			else
+				Auto_Demo_Beep_Start(1, AUTO_BEEP_SHORT_TICKS, AUTO_BEEP_GAP_TICKS);
+			printf("[SCAN] pt=%u max=%u n=%u best=%u@%u\r\n",
+			       (unsigned int)Auto_Scan_Point_Index,
+			       (unsigned int)distance,
+			       (unsigned int)Auto_Scan_Point_Valid_Count,
+			       (unsigned int)Auto_Scan_Best_Distance,
+			       (unsigned int)Auto_Scan_Best_Point);
+		}
+		else
+		{
+			Auto_Scan_Debug_Valid = 0;
+			Auto_Demo_Beep_Start(1, AUTO_BEEP_LONG_TICKS, AUTO_BEEP_GAP_TICKS);
+			printf("[SCAN] pt=%u invalid n=0 best=%u@%u\r\n",
+			       (unsigned int)Auto_Scan_Point_Index,
+			       (unsigned int)Auto_Scan_Best_Distance,
+			       (unsigned int)Auto_Scan_Best_Point);
+		}
+		if(Auto_Scan_Point_Index + 1 >= AUTO_SCAN_POINT_COUNT)
+		{
+			if(!Auto_Scan_Best_Found)
+			{
+				Auto_Demo_Goto_State(AUTO_SCAN_FINISHED);
+			}
+			/* Forward re-aim used Auto_Scan_Best_Point > 0 here. Reverse re-aim only skips the last point. */
+			else if(Auto_Scan_Best_Point < AUTO_SCAN_POINT_COUNT - 1)
+			{
+				/* Count reverse motion segments explicitly. BP=0 needs a full 36-step return. */
+				Auto_Scan_Return_Steps_Left = AUTO_SCAN_POINT_COUNT - Auto_Scan_Best_Point;
+				Auto_Scan_Point_Index = Auto_Scan_Return_Steps_Left;
+				Auto_Demo_Goto_State(AUTO_SCAN_TURN_MOVE);
+			}
+			else
+			{
+				Auto_Demo_Goto_State(AUTO_SCAN_DRIVE_BEST);
+			}
+		}
+		else
+		{
+			Auto_Scan_Point_Index++;
+			Auto_Demo_Goto_State(AUTO_SCAN_LAP_MOVE);
+		}
+		return;
+	}
+	if(Auto_Scan_Sample_Taken && Auto_Demo_Tick < Auto_Scan_Next_Sample_Tick)
+		return;
+	Auto_Scan_Sampling = 1;
+	distance = HC_SR04_ReadMedian();
+	Auto_Scan_Sampling = 0;
+	Auto_Scan_Sample_Taken = 1;
+	Auto_Scan_Next_Sample_Tick = Auto_Demo_Tick + AUTO_SCAN_SAMPLE_INTERVAL_TICKS;
+	Auto_Scan_Debug_Distance = distance;
+	Auto_Scan_Debug_Sample_Count++;
+	Auto_Scan_Debug_Valid = (distance != HC_SR04_TIMEOUT_VALUE && distance >= AUTO_SCAN_MIN_VALID_MM && distance <= AUTO_SCAN_MAX_VALID_MM);
+	if(distance != HC_SR04_TIMEOUT_VALUE && distance >= AUTO_SCAN_MIN_VALID_MM && distance <= AUTO_SCAN_MAX_VALID_MM)
+	{
+		Auto_Scan_Point_Valid_Count++;
+		if(distance > Auto_Scan_Point_Max_Distance)
+			Auto_Scan_Point_Max_Distance = distance;
+	}
+}
 const char *Auto_Demo_State_Name(void)
 {
 	switch(Auto_Demo_State)
 	{
-		case AUTO_DEMO_FORWARD: return "FWD ";
-		case AUTO_DEMO_WAIT_AFTER_FORWARD: return "WAIT";
-		case AUTO_DEMO_STEER_LEFT: return "SLFT";
-		case AUTO_DEMO_FORWARD_LEFT: return "LFWD";
-		case AUTO_DEMO_WAIT_AFTER_FORWARD_LEFT: return "WAIT";
-		case AUTO_DEMO_BACKWARD_LEFT: return "LBAK";
-		case AUTO_DEMO_WAIT_AFTER_BACKWARD_LEFT: return "WAIT";
-		case AUTO_DEMO_STEER_CENTER: return "SCEN";
-		case AUTO_DEMO_WAIT_AFTER_CENTER: return "WAIT";
-		case AUTO_DEMO_BACKWARD_FINAL: return "BACK";
-		case AUTO_DEMO_FINISHED: return "DONE";
+		case AUTO_SCAN_PREPARE: return "PREP";
+		case AUTO_SCAN_LAP_MOVE: return "SCAN";
+		case AUTO_SCAN_LAP_SETTLE: return "WAIT";
+		case AUTO_SCAN_LAP_SAMPLE: return "READ";
+		case AUTO_SCAN_TURN_MOVE: return "TURN";
+		case AUTO_SCAN_TURN_SETTLE: return "WAIT";
+		case AUTO_SCAN_DRIVE_BEST: return "GO";
+		case AUTO_SCAN_FINISHED: return "DONE";
 		default: return "IDLE";
 	}
 }
-
 /**************************************************************************
 Function: Bluetooth_Control
 Input   : none
@@ -463,13 +697,14 @@ void Get_Target_Encoder(float Vx,float Vz)
 			// For Ackerman small car, Vz represents the front wheel steering Angle
 			//对于阿克曼小车Vz代表右前轮转向角度
 			AngleR=Vz;
-			R=Akm_axlespacing/tan(AngleR)-0.5f*Wheelspacing;
 			// Front wheel steering Angle limit (front wheel steering Angle controlled by steering engine), unit: rad
 			//前轮转向角度限幅(舵机控制前轮转向角度)，单位：rad
 			AngleR=target_limit_float(AngleR,-0.49f,0.32f);
 			//Inverse kinematics //运动学逆解
 			if(AngleR!=0)
 			{
+				/* R=Akm_axlespacing/tan(Vz)-0.5f*Wheelspacing; */
+				R=Akm_axlespacing/tan(AngleR)-0.5f*Wheelspacing;
 				MotorA.Target_Encoder = Vx*(R-0.081f)/R;
 				MotorB.Target_Encoder = Vx*(R+0.081f)/R;			
 			}

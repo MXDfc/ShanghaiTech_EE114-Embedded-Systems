@@ -1,18 +1,18 @@
 ﻿/***********************************************
-公司：轮趣科技（东莞）有限公司
-品牌：WHEELTEC
-官网：wheeltec.net
-淘宝店铺：shop114407458.taobao.com 
-速卖通: https://minibalance.aliexpress.com/store/4455017
-版本：V1.0
-修改时间：2023-03-02
+???????????????
+???WHEELTEC
+???wheeltec.net
+?????shop114407458.taobao.com
+???: https://minibalance.aliexpress.com/store/4455017
+???V1.0
+?????2023-03-02
 
 Brand: WHEELTEC
 Website: wheeltec.net
-Taobao shop: shop114407458.taobao.com 
+Taobao shop: shop114407458.taobao.com
 Aliexpress: https://minibalance.aliexpress.com/store/4455017
 Version: V1.0
-Update：2023-03-02
+Update?2023-03-02
 
 All rights reserved
 ***********************************************/
@@ -24,26 +24,26 @@ All rights reserved
 #include "Lidar.h"
 #include "Header.h"
 
-//PWM限制最大最小值
+//PWM???????
 #define PWM_MAX  6900
 #define PWM_MIN  -6900
 
 
-#define Default_Velocity					350			//默认遥控速度，单位mm/s
-#define Default_Turn_Bias					73			//默认遥控速度，单位度/s
-#define Bluetooth_Turn_Angle				Pi/5		//阿克曼车蓝牙默认转向角度，单位rad
-#define PS2_Turn_Angle						Pi/4		//阿克曼车手柄默认转向角度，单位rad
+#define Default_Velocity					350			//?????????mm/s
+#define Default_Turn_Bias					73			//??????????/s
+#define Bluetooth_Turn_Angle				Pi/5		//???????????????rad
+#define PS2_Turn_Angle						Pi/4		//???????????????rad
 
-#define forward_velocity 0.25  //Move_X速度
+#define forward_velocity 0.25  //Move_X??
 
-#define Follow_Distance 1200  //跟随距离
-#define Keep_Follow_Distance 400  //跟随保持距离
+#define Follow_Distance 1200  //????
+#define Keep_Follow_Distance 400  //??????
 
-#define Aovid_Speed 0.3        //避障速度
+#define Aovid_Speed 0.3        //????
 
-#define FILTERING_TIMES 					10			//滑动滤波
+#define FILTERING_TIMES 					10			//????
 
-//小车各模式定义
+//???????
 #define Normal_Mode							0
 #define Lidar_Avoid_Mode					1
 #define Lidar_Follow_Mode					2
@@ -51,9 +51,9 @@ All rights reserved
 #define ELE_Line_Patrol_Mode				4
 #define CCD_Line_Patrol_Mode				5
 #define ROS_Mode				            6
-#define Measure_Distance_Mode				7			//默认没有使用
+#define Measure_Distance_Mode				7			//??????
 
-// 自动演示任务状态
+// ????????
 #define AUTO_DEMO_IDLE                       0
 #define AUTO_DEMO_FORWARD                    1
 #define AUTO_DEMO_WAIT_AFTER_FORWARD         2
@@ -67,75 +67,85 @@ All rights reserved
 #define AUTO_DEMO_BACKWARD_FINAL             10
 #define AUTO_DEMO_FINISHED                   11
 
+// Final exhibition auto scan states. The old Auto Demo states above are kept for reference.
+#define AUTO_SCAN_PREPARE                    20
+#define AUTO_SCAN_LAP_MOVE                   21
+#define AUTO_SCAN_LAP_SETTLE                 22
+#define AUTO_SCAN_LAP_SAMPLE                 23
+#define AUTO_SCAN_TURN_MOVE                  24
+#define AUTO_SCAN_TURN_SETTLE                25
+#define AUTO_SCAN_DRIVE_BEST                 26
+#define AUTO_SCAN_FINISHED                   27
 
-//指示遥控控制的开关
+
+//?????????
 #define RC_ON								1	
 #define RC_OFF								0
-//遥控控制前后速度最大值
+//???????????
 #define MAX_RC_Velocity						800
-//遥控控制转向速度最大值
+//???????????
 #define	MAX_RC_Turn_Bias					1
-//遥控控制前后速度最小值
+//???????????
 #define MINI_RC_Velocity					210
-//遥控控制转向速度最小值
+//???????????
 #define	MINI_RC_Turn_Velocity				Pi/20
 
-//前进加减速幅度值，每次遥控加减的步进值
+//???????????????????
 #define X_Step								25
-//转弯加减速幅度值
+//????????
 #define Z_Step								0.1
 
-//车轮直径
-#define Diff_Car_Wheel_diameter				0.0670f			//差速车和阿克曼车，单位mm
-#define Small_Tank_WheelDiameter			0.0430f			//小履带车
-#define Big_Tank_WheelDiameter				0.0440f			//大履带车
+//????
+#define Diff_Car_Wheel_diameter				0.0670f			//???????????mm
+#define Small_Tank_WheelDiameter			0.0430f			//????
+#define Big_Tank_WheelDiameter				0.0440f			//????
 
-//车轮轮距
-#define Diff_wheelspacing					0.164f			//差速车轮距
-#define Akm_wheelspacing					0.164f			//阿克曼车轮距
-#define Small_Tank_wheelspacing				0.135f			//小履带车轮距
-#define Big_Tank_wheelspacing				0.233f			//大履带车轮距
-#define Akm_axlespacing           			0.144f			//阿克曼车轴距
-#define Diff_axlespacing                    0.155f           //差速车轴距
-
-
-#define Gear_Ratio							30.0f			//电机的减速比
+//????
+#define Diff_wheelspacing					0.164f			//?????
+#define Akm_wheelspacing					0.164f			//??????
+#define Small_Tank_wheelspacing				0.135f			//??????
+#define Big_Tank_wheelspacing				0.233f			//??????
+#define Akm_axlespacing           			0.144f			//??????
+#define Diff_axlespacing                    0.155f           //?????
 
 
-#define Pi									3.1415926523f	//圆周率
-#define Angle_To_Rad						57.295779513f	//角度制转弧度制，除以这个参数
-#define Frequency							200.0f			//每5ms读取一次编码器的值
-#define SERVO_INIT 							1500  			//舵机零点PWM值
+#define Gear_Ratio							30.0f			//??????
 
 
-#define Encoder_resolution_Photoelectric	500.0f			//光电编码器500线
-#define Encoder_resolution_Hall 			13.0f			//霍尔编码器13线
-#define Encoder_resolution 					Encoder_resolution_Hall		//使用13线霍尔编码器
+#define Pi									3.1415926523f	//???
+#define Angle_To_Rad						57.295779513f	//??????????????
+#define Frequency							200.0f			//?5ms?????????
+#define SERVO_INIT 							1500  			//????PWM?
 
-#define Angle_TO_PWM						640.62f			//用于计算pwm和角度的关系
 
-#define Normal								0				//检测异常状态，0为正常
+#define Encoder_resolution_Photoelectric	500.0f			//?????500?
+#define Encoder_resolution_Hall 			13.0f			//?????13?
+#define Encoder_resolution 					Encoder_resolution_Hall		//??13??????
+
+#define Angle_TO_PWM						640.62f			//????pwm??????
+
+#define Normal								0				//???????0???
 #define Abnormal							1
 
 
-#define Lidar_Detect_ON						1				//电磁巡线是否开启雷达检测障碍物
+#define Lidar_Detect_ON						1				//???????????????
 #define Lidar_Detect_OFF					0
 
 
-//编码器结构体
+//??????
 typedef struct  
 {
   int A;      
   int B;  
 }Encoder;
 
-//电机速度控制相关参数结构体
+//?????????????
 typedef struct  
 {
-	float Current_Encoder;     	//编码器数值，读取电机实时速度
-	float Motor_Pwm;     		//电机PWM数值，控制电机实时速度
-	float Target_Encoder;  		//电机目标编码器速度值，控制电机目标速度
-	float Velocity; 	 		//电机速度值
+	float Current_Encoder;     	//??????????????
+	float Motor_Pwm;     		//??PWM???????????
+	float Target_Encoder;  		//???????????????????
+	float Velocity; 	 		//?????
 }Motor_parameter;
 
 
@@ -153,6 +163,12 @@ extern u8 Ros_count;
 extern short Accel_Y,Accel_Z,Accel_X,Accel_Angle_x,Accel_Angle_y,Gyro_X,Gyro_Z,Gyro_Y;
 extern u8 Auto_Demo_Active;
 extern u8 Auto_Demo_State;
+extern volatile u8 Auto_Scan_Debug_Valid;
+extern volatile u16 Auto_Scan_Debug_Point;
+extern volatile u16 Auto_Scan_Debug_Distance;
+extern volatile u16 Auto_Scan_Debug_Sample_Count;
+extern volatile u16 Auto_Scan_Debug_Best_Point;
+extern volatile u16 Auto_Scan_Debug_Best_Distance;
 void Bluetooth_Control(void);
 void PS2_Control(void);
 void Get_Target_Encoder(float Vx,float Vz);
@@ -178,5 +194,6 @@ void Remote_Control(void);
 void Auto_Demo_Start(void);
 void Auto_Demo_Stop(void);
 void Auto_Demo_Update_5ms(void);
+void Auto_Demo_Service_Main(void);
 const char *Auto_Demo_State_Name(void);
 #endif
