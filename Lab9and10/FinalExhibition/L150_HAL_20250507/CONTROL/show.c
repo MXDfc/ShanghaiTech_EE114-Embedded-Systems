@@ -67,7 +67,13 @@ void Show(void)
 		if(Flag_Stop)	OLED_ShowString(90,40,"OFF");
 		else			OLED_ShowString(90,40,"ON ");
 
-		OLED_ShowString(0,50,"BAD:<5cm/TIMEOUT");
+		OLED_ShowString(0,50,"S:");
+		OLED_ShowNumber(12,50,Auto_Scan_Debug_Move_Mm,4,12);
+		OLED_ShowString(40,50,"/");
+		OLED_ShowNumber(48,50,Auto_Scan_Debug_Target_Mm,4,12);
+		OLED_ShowString(78,50,"Y:");
+		if(Auto_Scan_Debug_Yaw_Deg10<0)	{OLED_ShowString(96,50,"-"); OLED_ShowNumber(102,50,-Auto_Scan_Debug_Yaw_Deg10,4,12);}
+		else							{OLED_ShowString(96,50,"+"); OLED_ShowNumber(102,50, Auto_Scan_Debug_Yaw_Deg10,4,12);}
 		OLED_Refresh_Gram();
 		return;
 	}

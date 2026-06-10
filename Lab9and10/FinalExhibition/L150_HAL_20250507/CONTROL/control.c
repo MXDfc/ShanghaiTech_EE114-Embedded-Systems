@@ -1,4 +1,4 @@
-/***********************************************
+﻿/***********************************************
 公司：轮趣科技（东莞）有限公司
 品牌：WHEELTEC
 官网：wheeltec.net
@@ -59,9 +59,9 @@ static int Auto_Demo_Right_Output = 0;
 #define AUTO_SCAN_MOVE_TRIM_PC    100
 #define AUTO_SCAN_MIN_MOVE_TICKS  20
 #define AUTO_SCAN_PREPARE_TICKS   200
-#define AUTO_SCAN_POINT_COUNT     30
+#define AUTO_SCAN_POINT_COUNT     36
 #define AUTO_SCAN_SETTLE_TICKS    20
-#define AUTO_SCAN_SAMPLE_TICKS    250
+#define AUTO_SCAN_SAMPLE_TICKS    300
 #define AUTO_SCAN_SAMPLE_INTERVAL_TICKS 20
 #define AUTO_SCAN_MIN_VALID_MM    50    // Ignore car-body echoes within 5 cm.
 #define AUTO_SCAN_MAX_VALID_MM    HC_SR04_MAX_VALID_MM
@@ -196,12 +196,6 @@ static void Auto_Demo_Set_Velocity(float vx, float steer_angle)
 	Get_Motor_PWM();
 	Auto_Demo_Left_Output = -MotorA.Motor_Pwm;
 	Auto_Demo_Right_Output = MotorB.Motor_Pwm;
-}
-
-static void Auto_Demo_Set_Scan_Move(u8 reverse)
-{
-	float vx = reverse ? -AUTO_SCAN_SPEED_MPS : AUTO_SCAN_SPEED_MPS;
-	Auto_Demo_Set_Velocity(vx, AUTO_SCAN_STEER_ANGLE);
 }
 
 static void Auto_Scan_Reset_Point_Samples(void)
@@ -383,7 +377,7 @@ void Auto_Demo_Update_5ms(void)
 			break;
 		case AUTO_SCAN_LAP_MOVE:
 			/* Auto_Demo_Set_Output_With_Servo(-AUTO_SCAN_PWM, AUTO_SCAN_PWM, Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE)); */
-			Auto_Demo_Set_Scan_Move(0);
+			Auto_Demo_Set_Velocity(AUTO_SCAN_SPEED_MPS,AUTO_SCAN_STEER_ANGLE);
 			if(Auto_Demo_Tick >= Auto_Demo_Get_Move_Ticks())
 				Auto_Demo_Goto_State(AUTO_SCAN_LAP_SETTLE);
 			break;
@@ -406,7 +400,7 @@ void Auto_Demo_Update_5ms(void)
 			/* Auto_Demo_Set_Output_With_Servo(-AUTO_SCAN_PWM, AUTO_SCAN_PWM, Auto_Demo_Get_Servo_Pwm(AUTO_SCAN_STEER_ANGLE)); */
 			/* Re-aim by reversing along the scanned arc, so lap closure error is not added again. */
 			Auto_Scan_Debug_Point = Auto_Scan_Return_Steps_Left;
-			Auto_Demo_Set_Scan_Move(1);
+			Auto_Demo_Set_Velocity(-AUTO_SCAN_SPEED_MPS,AUTO_SCAN_STEER_ANGLE);
 			if(Auto_Demo_Tick >= Auto_Demo_Get_Move_Ticks())
 				Auto_Demo_Goto_State(AUTO_SCAN_TURN_SETTLE);
 			break;
