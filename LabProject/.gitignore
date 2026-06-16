@@ -1,0 +1,26 @@
+# Keil/uVision generated object and listing files.
+*.o
+*.d
+*.crf
+*.lst
+*.map
+*.dep
+*.lnp
+*.sct
+*.axf
+*.build_log.htm
+Output.htm
+ExtDll.iex
+
+# Local uVision UI/session state.
+*.uvguix.*
+uvgui_backup/
+
+# Temporary local checks.
+codex_check*
+*.tmp
+*.bak
+*.log
+
+# Keep the latest burnable image for quick hardware testing.
+!L150Smart/Output/Output.hex
