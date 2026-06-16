@@ -22,6 +22,14 @@ Recommended Keil project path:
 LabProject/L150Smart/MDK-ARM/miniBlance.uvprojx
 ```
 
+LD14 migration variant:
+
+```text
+LabProject/L150Smart_LD14/MDK-ARM/miniBlance.uvprojx
+```
+
+Use `L150Smart` for the LD14P lidar car and `L150Smart_LD14` for the LD14 lidar car. The smart cruise behavior is intended to stay the same in both builds. The key porting differences are `CONTROL/Lidar.h` selecting the LD14 parser/data layout and UART5 running at `115200` baud for LD14 instead of `230400` baud for LD14P.
+
 This short ASCII path is recommended because older Keil/uVision builds can be unstable with long paths that contain Chinese characters and parentheses.
 
 The original copied project folder is also kept here:

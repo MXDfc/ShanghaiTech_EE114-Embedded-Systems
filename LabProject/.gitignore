@@ -24,3 +24,4 @@ codex_check*
 
 # Keep the latest burnable image for quick hardware testing.
 !L150Smart/Output/Output.hex
+!L150Smart_LD14/Output/Output.hex
