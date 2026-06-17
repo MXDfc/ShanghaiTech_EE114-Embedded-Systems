@@ -54,6 +54,7 @@ All rights reserved
 #define ROS_Mode			            7
 #define Measure_Distance_Mode				8			//默认没有使用
 #define Smart_Cruise_Mode                  9           //EE114 smart cruise project
+#define Lidar_Mapping_Nav_Mode             10          //EE114 local mapping navigation
 
 
 //指示遥控控制的开关
@@ -168,6 +169,8 @@ void Lab_Lidar_Radar_Reset(void);
 void Lab_Lidar_Update_Sector_Distance(void);
 void Smart_Cruise_Task(void);
 void Smart_Cruise_Reset(void);
+void Lidar_Mapping_Nav_Task(void);
+void Lidar_Mapping_Nav_Reset(void);
 void Get_Target_Encoder(float Vx,float Vz);
 float target_limit_float(float insert,float low,float high);
 int target_limit_int(int insert,int low,int high);

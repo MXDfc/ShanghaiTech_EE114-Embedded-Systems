@@ -13,6 +13,7 @@ Smart cruise obstacle avoidance for EE114 project.
 #define SMART_STATE_ESCAPE_BACK    3
 #define SMART_STATE_PAUSE_STOP     4
 #define SMART_STATE_EXIT_STRAIGHT  5
+#define SMART_STATE_ESCAPE_TURN    6
 
 typedef struct
 {

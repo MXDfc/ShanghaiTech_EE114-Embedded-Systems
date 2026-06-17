@@ -137,7 +137,7 @@
             <DriverSelection>4101</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>BIN\UL2V8M.DLL</Flash2>
+          <Flash2>BIN\UL2CM3.DLL</Flash2>
           <Flash3></Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
@@ -622,6 +622,11 @@
               <FileName>smart_cruise.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\CONTROL\smart_cruise.c</FilePath>
+            </File>
+            <File>
+              <FileName>lidar_mapping_nav.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CONTROL\lidar_mapping_nav.c</FilePath>
             </File>
           </Files>
         </Group>

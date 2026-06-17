@@ -135,6 +135,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 #endif
 		if(Mode == Smart_Cruise_Mode)
 			Smart_Cruise_Task();
+		else if(Mode == Lidar_Mapping_Nav_Mode)
+			Lidar_Mapping_Nav_Task();
+		else if(Mode == Normal_Mode)
+		{
+			if(APP_ON_Flag == RC_ON)
+				Bluetooth_Control();
+			else
+				Move_X = 0,Move_Z = 0;
+		}
 		else
 			Lab_Lidar_Radar_Task();
 		Get_Target_Encoder(Move_X,Move_Z);							        //运动学逆解解，转换成编码器的目标速度
