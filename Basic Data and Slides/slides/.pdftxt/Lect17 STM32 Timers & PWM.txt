@@ -1,0 +1,2033 @@
+                                 EE114: Introduction to
+                                  Embedded Systems
+                  Dr. Tao Wu          吴涛 研究员，博导
+                  wutao@shanghaitech.edu.cn
+                  Office: SIST Bldg 3-326
+                  CourseWeb: http://10.15.25.5/
+                  Website: http://small.shanghaitech.edu.cn
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+              Demo Task
+
+       • 能够讲解每个模块的硬件 和 状态机设计程序
+       • 完成至少2个定时器和一个PWM输出范例
+       • 学会举一反三 ！
+              – 通用/高级定时器 精确定时与中断
+              – Systick 定时器 精确定时
+              – 通用/高级定时器 PWM输出
+              – （进阶）输入捕获 & 输出比较
+              – （平衡车）电机驱动与编码器的使用
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (2/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ STM32 Timer & PWM
+
+            ◆ 了解和掌握定时器的基本功能；
+            ◆ 理解和掌握STM32定时器的内部结构、
+              工作模式和主要特性；
+            ◆ 掌握STM32通用定时器延时的工作原理；
+            ◆ 熟悉STM32标准外设库和HAL库中有关定时器的函数；
+            ◆ 掌握SysTick定时器定时功能；
+            ◆ 了解基于HAL库实现定时器精确延时功能。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (3/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   STM32 定时器
+
+               1                 STM32定时器模块
+               9.1                    定时器模块的标准外设库接口函数及应用
+                  2
+                    9.1                   PWM输出
+                      3
+
+                             4                 SysTick定时器
+
+                                  5                 定时器模块的HAL库接口函数及应用
+
+                                         6               编程思想之状态机设计思想
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (4/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+   8051 timer/counter (hardware)
+   •    There are two 16 bits
+        timers/counters in 8051                              Do you remember ?                 (P3.4)
+
+
+       – Timer 0
+                                                                                               (P3.2)
+
+
+
+
+       – Timer 1
+
+
+
+
+   •    Related SFR                                                       T1M1       T1M0       Mode        Function
+                                                                             0         0            0     13-bit timer
+                                                                             0         1            1     16-bit timer
+                                                                             1         0            2   8-bit auto-reload
+                                                                             1         1            3      Split mode
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                      (5/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ STM32
+ 第9章   定时器
+     定时器
+                                                               STM32 far more
+        STM32定时器种类多，功能                                          complicated !                         按钮
+                                                                                                    高级定时器
+   强大，这些定时器完全独立、
+                                                                           按钮
+                                                                         常规定时器                        按钮
+                                                                                                    通用定时器
+   互不干扰，可以同步操作。
+                                                                                                      按钮
+                                                                                                    基本定时器
+                                                 按钮
+                                               外设定时器
+                                                                                                      按钮
+                                                                                                    看门狗定时器
+
+                 STM32
+                  按钮                                                       按钮
+                                                                         专用定时器                        按钮
+                                                                                                     实时时钟
+                定时器家族
+
+                                                                                                      按钮
+                                                                                                    低功耗定时器
+                                                 按钮
+                                               核内定时器                     按钮
+                                                                      系统节拍定时器
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                       (6/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ STM32F1 时钟系统                                                    STM32CubeMX RCC 图形化配置
+  HSE 高速外部时钟
+  通常8M
+  HSI 高速内部时钟
+  内部固定8M
+  PLLCLK 锁相环时钟
+  通常最大72M
+  源为HSI/2时64M
+  SYSCLK 系统时钟
+  通常配置
+  SYSCLK=PLLCLK=72M
+  HCLK 时钟
+  AHB高速总线时钟(72M)
+  PCLK1 时钟
+  APB1低速总线时钟，
+  最高36M
+  PCLK2时钟
+  APB2高速总线时钟，
+  最高72M
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (7/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ STM32
+ 第9章   定时器
+     定时器
+
+                      SysTick定时器                                                  WatchDog看门狗
+
+           SysTick系统时钟位于                                              作用：当微控制器受到外部干扰或程
+         Cortex-M3内核，是一个24位                                           序中出现不可预知的逻辑故障导致应
+         的递减计数器，主要用于：                                                 用程序脱离正常的执行流程时（俗称
+           精确延时，在多任务操作                                                程序跑飞），在一定的时间间隔内使
+           系统中为系统提供时间基准                                               系统复位，回到初始状态；
+           （时基）；                                                      看门狗设计是用来监视MCU程序运
+           任务切换，为每个任务分配                                               行状态的，是确保系统可靠稳定运行
+           时间片。                                                       的一种有效措施。
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (8/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ STM32
+ 第9章   定时器
+     定时器                                                                    达到
+                                                                           溢出条件
+
+                                                         计数             对计数
+            WatchDog看门狗                                                                             MCU复位
+                                                                        进行重置
+
+                                                         采用独立时钟，不受                            适用于独立于主程
+                               独立看门狗                     其他时钟和总线影响，                           序之外、能够独立
+                                IWDG                     可在停机和待机模式                            工作且对时间精度
+                                                         下工作                                  要求不高的场合
+         看门狗
+                                                         计数值有一个上限时
+                                                                                              适用于精确计时
+                               窗口看门狗                     间和下限时间，低于
+                                                                                              窗口起作用的
+                                WWDG                     下限时间或高于上限
+                                                                                              应用程序
+                                                         时间都会触发复位
+                                                         下限时间：固定值0X40
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                      (9/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+                  独立看门狗(IWDG)                                                    窗口看门狗(WWDG)
+ int main(void)                                    int main(void)
+ { NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); { NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+     delay_init(168);         //初始化延时函数                delay_init(168);    //初始化延时函数
+     LED_Init();              //初始化LED端口（灭）            LED_Init();         //初始化LED端口
+     KEY_Init();              //初始化按键                  KEY_Init();         //初始化按键
+     delay_ms(100);           //延时100ms                LED0=0;             //点亮LED0
+     IWDG_Init(4, 500);                                delay_ms(300);      //延时300ms
+        //预分频数为64, 重载值为500, 溢出时间约为 1s                  WWDG_Init(0x7F, 0X5F, WWDG_Prescaler_8);
+     LED0=0;                  //先点亮红灯                     //计数器值为7f, 窗口寄存器为5f, 分频数为8
+     while(1)                 //如果WK_UP按下,则喂狗          while(1)
+        {     if(KEY_Scan(0)==WKUP_PRES)                  { LED0=1;        //熄灭LED0/DS0
+               { IWDG_Feed(); }      //喂狗                 }
+              delay_ms(10);
+                                                   }
+        }
+                                                   void WWDG_IRQHandler(void)
+ }
+ void IWDG_Feed(void)                              { WWDG_SetCounter(0x7f);        //重新赋值
+ { // 重装载寄存器值到计数器中喂狗，防止IWDG复位                          WWDG_ClearFlag();   //清除窗口看门狗状态标志
+    IWDG_ReloadCounter(); // 当计数器到0时产生复位               LED1=!LED1;         //LED/DS1 翻转闪烁
+ }                                                 }
+   独立看门狗 (IWDG) 实验现象: 如果看门狗没有复位，开发板的DS0将常亮，如果WK_UP按键按下，就喂狗，只要WK_UP不停的按，看门狗就
+   一直不会产生复位，保持DS0的常亮，一旦超过看门狗定溢出时间（Tout=1s）还没按，那么将会导致程序重启，这将导致DS0熄灭一次。
+   窗口看门狗 (WWDG) 实验现象: 程序一运行则开启WWDG, 并使得DS0亮300ms后关闭，进入死循环。
+   等待WWDG中断的到来，在中断里面，喂狗，并执行DS1的翻转操作。所以可以看到DS1不停的闪烁，而DS0只在刚启动的时候闪一下。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (10/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   STM32 定时器
+                                                   基本定时器
+                                                                                      TIM6和TIM7
+                                                   Basic timers
+
+
+        STM32F1                                  通用定时器
+      微控制器内部的                                  General-purpose                    TIM2、TIM3、TIM4和TIM5
+                                                   timers
+      可编程定时器
+
+                                                   高级定时器
+                                              Advanced-control timers                         TIM1和TIM8
+                                              （STM32F103/107系列）
+
+   高级定时器的功能强于通用定时器，通用定时器的功能强于基本定时器。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                    (11/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   STM32 定时器                                      STM32定时器分类比较表
+                                          基本定时器                     通用定时器                            高级定时器
+                 定时器
+                                         (TIM6、TIM7)                TIMx(x=2~5)                     (TIM1、TIM8)
+                                                                    16位，      16位，
+                                                                    向上、       向上、
+             计数器类型                           16位，向上
+                                                                    向下、       向下、
+                                                                   向上/向下     向上/向下
+                                            1～65535                1～65535   1～65535
+             预分频系数                         之间的任意数                 之间的任意数    之间的任意数
+                                                                 四个独立通道：输入捕获、输出比较、
+          输入/捕获通道                                   无
+                                                                    PWM生成、单脉冲模式输出
+         产生中断/DMA                                 可以                 可以        可以
+           刹车
+                                                    无                        无                         可以
+         （电机控制）
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                            (12/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   STM32 定时器                                             定时器的主要功能
+
+
+                      计数                                 定时               输入捕获                      输出比较
+                                                                         对输入信号进                     将计数器计数
+               脉冲计数，使
+                                               时间控制，通                    行捕获，实现                     值和设定值进
+               用使用微控制
+                                               过对微控制器                    对脉冲的频率                     行比较，根据
+               器内部的外部
+                                                                         测量，可用于                     比较结果输出
+               时钟（PCLK）                        内部的时钟脉
+                                                                         对外部输入信                     不同电平，用
+               来计数，是对                          冲进行计数实                    号脉冲宽度的                     于控制输出波
+               固定周期的脉
+                                               现定时功能。                    测量，比如测                     形，比如直流
+               冲信号计数。
+                                                                         量电机转速。                     电机的调速。
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                       (13/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   STM32 定时器                                                                                        STM32F103x
+                                                                                                     family lines
+
+
+
+
+                                                                                                               F103ZET6
+                                                                                                               F103VET6
+
+
+
+                                                                               F103RCT6
+                                                  F103C8T6
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                              (14/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+  1 STM32定时器模块
+
+
+                                       1                 基本定时器
+                                                             Basic timers
+
+                                               2             通用定时器
+                                                                     General-Purpose timers
+
+                                                         3        高级定时器
+                                                                             Advanced-control timers
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                 (15/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                    复位、使能、计数、触发DAC
+   1.1 基本定时器                                                       寄存器：CR1/2、DIER、EGR、SR
+
+    STM32（HD）有2个基本定时器
+ TIM6和TIM7，可用作：
+ ➢ （只有HD型号才有）
+ ➢ 通用的16位计数器
+ ➢ 产生DAC触发信号
+ ➢ 没有外部的GPIO，是内部资源，
+   只能用来定时
+ ➢ 时钟来自PCLK1，为36MHz，
+   可实现1~65536分频
+ ➢ 基本定时器的计数模式只有
+   向上计数模式。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (16/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                                                     高级定时器
+                                                                                                     通用定时器
+1.2 通用(高级)定时器                                                                                       内部结构框图
+ TIM1、TIM8为STM32独立的16位高级
+ 定时器；TIM2、TIM3、TIM4、TIM5为
+ STM32独立的16位通用定时器；
+ 共性：
+ 每个具有4个独立通道，具有基础定时、
+ 输入捕获（测量输入信号脉冲长度/频
+ 率，边沿捕获、编码器接口等）、
+ 输出波形（输出比较、产生PWM、单
+ 脉冲输出等）等功能；
+ 具有6个独立的IRQ/DMA请求。
+ 差异：
+ 高级定时器具有“刹车 BRK ”功能!
+ （作为电机方向进阶，本课程不涵盖）                                                     通用定时器 没有 BRK 部分
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                       (17/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器
+
+
+   外部时钟1: TIx (x=1,2,3,4)
+   外部时钟2: ETR
+   内部时钟源 CK_INT
+   内部触发输入 (ITRx)
+
+   时基单元（黄色部分）
+
+   输入捕获（绿色部分）
+
+   输出比较（紫色部分）                                                                           通用定时器
+                                                                                       没有 BRK 部分
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (18/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器                                                    通用定时器内部简化图
+
+                            触发           TRGO     至其他定时器
+        内部时钟               控制器                    至DAC/ADC                             STM32F103系列微控制器
+ 来自RCC的（CK_INT）                                                                       的定时器功能十分强大，
+  TIMxCLK                               复位、使能、向上/向下、计数
+   开发板的晶振频率为               控制器                                                        内部结构也比较复杂；
+    8MHz，默认的
+   系统时钟为 72MHz                                                                         STM32通用定时器 TIMx
+                                             U
+                                                          自动装载寄存器                     （x=2，3，4，5）主要由
+                       当CNT计数溢出时，将自动装
+                       载寄存器保存的值赋给CNT，
+                                                                         产生中断
+                                                                         或DMA输
+                                                                                      时钟源、时钟单元、捕获
+                                                         停止、清
+                            继续计数                                 比较 UI
+                                                         除或向上/             出          和比较通道等构成，核心
+                                                          向下
+                                                                    U
+                                                                          更新事         是可编程预分频驱动的
+                                                                           件
+         时钟源            预分频器               CK_CNT            计数器                      16位自动装载计数器。
+         CK_PSC          PSC                                 CNT
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                               (19/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器
+        1        时钟源
+
+
+         当定时器使用内部时钟时，定时器的时
+        钟源统称为TIMxCLK。虽然在系统默认的
+        配置中，TIMxCLK的时钟频率都是72MHz，
+        但其时钟来源并不相同。
+
+        ➢ 定时器TIM2 ~ TIM7 挂接在APB1上
+        ➢ 定时器TIM1和TIM8 挂接在APB2上
+                                       注意配置区别！
+
+                                                                                   通用定时器内部结构框图
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (20/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器
+        1        时钟源
+
+      若外部晶振的频率为 8MHz，则系统默认的
+      时钟频率为72MHz
+      ➢ APB1预分频器的分频系数设置为2，则
+          PCLK1=36MHz；
+      ➢ APB2预分频系数设置为 1，则PCLK2 = 72MHz，
+          TIM1和TIM8的 时钟频率 TIMxCLK = 72MHz；
+      ➢ Cortex系统时钟由AHB时钟（HCLK）
+          8分频得到，即 SysTick的频率为9MHz。
+                                                                                   通用定时器内部结构框图
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (21/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器
+                                                          时基单元
+
+         2       预分频器PSC
+
+         可以以1～65535之间的                               ➢ TIMxCNT是一个16位的寄存器，计数范围为1～65535，
+         任意数值对时钟源                                      可以向上计数、向下计数或向下向上双向计数。
+         CK_PSC的时钟频率进行                               ➢ 要得到计数值，需要对输入时钟频率进行分频。
+         分频，输出CK_CNT脉冲                               ➢ 当计数值达到设定值时，便产生溢出事件，溢出时
+         供计数器CNT进行计数。                                  产生中断或DMA请求，然后再由自动装载寄存器进
+                                                         行重新加载或更新。
+                                         ➢ 计数器溢出中断属于软件中断，执行相应的定时器
+                             3     计数器CNT 中断服务程序。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (22/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器
+                                                         4   自动装载寄存器ARR
+
+           定时器的定时时间主要取决于定时周期和预分频因子，计算公式为：
+                                    预装载值   𝐴𝑅𝑅 + 1 ∗ (𝑃𝑆𝐶 + 1)
+                                𝑇=       =
+                                   分频后频率           𝐹𝑡          → 输入时钟频率
+           或     T = (TIM_Period +1) * (TIM_Prescaler +1) / TIMxCLK
+           这里 ARR+1 是因为计数器都是从 0 开始计数的。
+
+           例如：使用通用定时器定时1s。假设系统时钟为72MHz，通用定时器时钟
+           TIMxCLK为72MHz，设置如下：
+                     预分频系数PSC = 36000-1； ARR = 2000-1；
+           则，定时时间 = 2000×36000/72000000 = 1s。
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (23/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                                    ①比较寄存器          ③输出控制
+1.2 通用(高级)定时器                                                       输出比较
+                                                                                    ②死区发生器          ④输出引脚
+                    ①输入通道  ③捕获通道                                                                      主要掌
+  输入捕获              ②输入滤波器和边沿检测器                                                                      握输出
+                    ④预分频器  ⑤捕获寄存器                                                                     PWM
+  应用？                              时基
+
+
+
+
+                                              这些通道 CH 对应的 IO 在哪 ？
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                  (24/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+1.2 通用(高级)定时器                                                                   2. PWM输入模式 (专用测量模式)
+
+
+
+
+    1、测量脉宽和频率
+
+
+
+
+                                                                             PWM输入捕获时序， TI1FP1捕获周期，
+                                                                             只能使用Ch1 和Ch2 TI2FP2捕获占空比
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                  (25/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   1.3 高级定时器
+         TIM1和TIM8是STM32
+        的2个16位的高级定时器
+
+       1-时钟源                   2-控制器
+       3-时基                    4-输入捕获
+       5-输出比较                  6-断路功能
+      BRK: 断路功能就是电机控制
+      的刹车功能。在任何情况下，
+      OCx 和OCxN 输出都不能同时
+      为有效电平，这关系到电机控
+      制常用的H 桥电路结构.
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (28/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+   1.4 定时器小结                                                      常规功能(与通用定时器相同)：
+                                                                  定时、输入捕获(测量脉宽、频率等)、
+      1）16位的预分频器 PSC                                              输出波形(输出比较、产生PWM、
+      2）16位的计数器 CNT                                               单脉冲输出等)
+      3）16位的自动重装载寄存器 ARR                                          高级(TIM1/8)还提供控制三相六步电机
+      4）8位的重复计数器 RCR                                              的接口，具有刹车功能、死区时间控制
+        （高级定时器独有）                                                 等功能，主要用于电机控制。
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (29/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+2 定时器模块的标准外设库接口函数及应用
+
+
+
+                                                 2.1     定时器标准外设库接口函数
+
+                                       2.2        定时器标准外设库配置过程
+
+                            2.3         定时器标准外设库应用实例
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (30/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.1 定时器标准外设库接口函数
+
+
+          STM32F103系列微控制器的定时器
+      库函数存放在STM32标准外设库的
+      stm32f10x_tim.c和stm32f10x_tim.h
+      文件中，stm32f10x_tim.h头文件中
+      声明了定时器有关的库函数以及相
+      关的宏定义、结构体等。
+          STM32的定时器功能较为强大，
+      其库函数也较多。
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (31/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                                    TIM_TimeBaseInit()库函数
+ 2.1 定时器标准外设库接口函数                                                                      基本初始化结构体
+
+     用于定时器TIMx的参数初始化，函数原型：
+    void TIM_TimeBaseInit(TIM_TypeDef* TIMx, TIM_TimeBaseInitTypeDef* TIM_TimeBaseInitStruct);
+
+
+        typedef struct                              定义在stm32f10x_tim.h头文件中
+        {
+          uint16_t TIM_Prescaler;                                      TIMx预分频寄存器TIMx_PSC
+          uint16_t TIM_CounterMode;                                    的值，数值上等于TIMx计数
+          uint16_t TIM_Period;                                         器TIMxCNT的预分频系数减1
+          uint16_t TIM_ClockDivision;
+          uint8_t TIM_RepetitionCounter;                                    为TIM1和TIM8
+        } TIM_TimeBaseInitTypeDef;                                         高级定时器所特有
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                      (32/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.1 定时器标准外设库接口函数
+                        TIM_CounterMode：TIMx计数器TIMxCNT的计数模式
+
+               TIM_CounterMode_Up                        向上计数模式，从0递增，计到TIMx_ARR
+                                                         计数器的自动装载值，并产生计数溢出脉冲
+
+             TIM_CounterMode_Down 向下计数模式，从TIMx_ARR计数器的自动
+                                  装载值递减，计到0，并产生计数溢出脉冲
+
+             TIM_CounterMode_CenterAligned1 中央对齐模式1计数模式
+             TIM_CounterMode_CenterAligned2 中央对齐模式2计数模式
+             TIM_CounterMode_CenterAligned3 中央对齐模式3计数模式
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (33/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.1 定时器标准外设库接口函数
+
+            3种中央对齐计数模式
+
+                             计到TIMx_ARR                                  从TIMx_ARR计数                又从0
+                                                         产生计
+             从0                                                          器的自动装载值递
+                             计数器的自动                      数溢出             减，计到0，并产                   开始循
+             递增
+                             装载值                          脉冲             生计数溢出脉冲                    环计数
+
+                          中央对齐模式1计数器交替地向上和向下计数，输出比较
+                          中断标志位，只在计数器向下计数时被设置；
+                          中央对齐模式2计数器交替地向上和向下计数，输出比较
+                          中断标志位，只在计数器向上计数时被设置；
+                          中央对齐模式3计数器交替地向上和向下计数，输出比较
+                          中断标志位，在计数器向下和向上计数时均可被设置。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                    (34/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.1 定时器标准外设库接口函数
+
+          下一个更新事件时装入自动重装载                                                         typedef struct
+        寄存器TIMx_ARR的周期值，数值上等于                                                     {
+        TIMx计数器TIMxCNT的计数周期减1。                                                     uint16_t TIM_Prescaler;
+          TIM_Period是一个16位无符号整型数据，                                                 uint16_t TIM_CounterMode;
+        取值范围为0~65535。                                                              uint16_t TIM_Period;
+          定时器定时时间主要取决于预分频因子                                                        uint16_t TIM_ClockDivision;
+        TIM_Prescaler和定时周期TIM_Period                                               uint8_t TIM_RepetitionCounter;
+         T = (TIM_Prescaler+1)*(TIM_Period+1) /TIMxCLK
+                                                                                  } TIM_TimeBaseInitTypeDef;
+          TIMxCLK为定时器TIMx的时钟频率，
+        STM32F103的TIMxCLK默认设置为72MHz。
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                         (35/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.1 定时器标准外设库接口函数
+
+
+                                                                          typedef struct
+             与TIMx_CR寄存器中bit[9:8]的                                        {
+           CKD[1:0]对应，用于计数器工作模                                              uint16_t TIM_Prescaler;
+           式时滤除高频干扰，有如下选择：                                                  uint16_t TIM_CounterMode;
+               “00”——采样频率基准                                                 uint16_t TIM_Period;
+                fDTS=定时器输入频率fCK_INT；                                        uint16_t TIM_ClockDivision;
+               “01”——fDTS=fCK_INT/2；                                        uint8_t TIM_RepetitionCounter;
+               “10”——fDTS=fCK_INT/4。                                      } TIM_TimeBaseInitTypeDef;
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                       (36/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.2 定时器标准外设库配置过程
+                                                                                                    TIMx_IRQHandler()
+                                                   Void TIM_ITConfig()
+                                                   NVIC_Init()                                          编写中
+                                                                                        使能              断服务
+                                                                      TIM2中             TIM2            函数
+                                                         设置           断优先            TIM_Cmd()
+                                     初始化                 TIM2         级设置
+                 TIM2时               定时器                 允许更
+                 钟使能                 参数                  新中断
+                                           结构体初始化 TIM_TimeBaseInit()
+
+  Step1 RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                             (37/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.2 定时器标准外设库配置过程
+         Step2           初始化定时器参数，设置自动重装值，分频系数，计数方式
+        定时器初始化使用TIM_TimeBaseInit()函数
+       void TIM_TimeBaseInit(TIM_TypeDef*TIMx, TIM_TimeBaseInitTypeDef* TIM_TimeBaseInitStruct);
+
+                              第一个参数TIMx是具体                                   第二个参数为
+                              定时器，x可为2~4                                     TimeBaseInitStruct结构体指针。
+          以初始化通用定时器TIM2为例，配置如下：
+          TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure; // 定义TIM初始化类型结构体变量
+          TIM_TimeBaseStructure.TIM_Period = (36000-1);    // 设置自动重载计数周期值
+          TIM_TimeBaseStructure.TIM_Prescaler = (2000-1);  // 设置分频系数
+          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;     // 设置时钟分频因子
+          TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; // 设置为向上计数方式
+          TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure); // 初始化定时器TIM2
+          TIM_ClearFlag(TIM2, TIM_FLAG_Update);            // 清标志位
+          TIM_Cmd(TIM2, ENABLE);                           // 使能TIM2定时器
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (38/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.2 定时器标准外设库配置过程
+                                                                    为了避免在初始化定时器时进入中断，
+         Step3           设置TIM2允许更新中断
+                                                                   需要在初始化过程中清除中断标志。
+
+               中断在使用前必须先使能再使用，如使能定时器TIM2的更新模式中断，
+              则调用库函数TIM_ITConfig()，函数原型为：
+
+        void TIM_ITConfig(TIM_TypeDef* TIMx, uint16_t TIM_IT, FunctionalState NewState)；
+
+                         第一个参数TIMx                           第二个参数用来                     第三个参数为TIMx
+                         是具体定时器，                             指明所使能定时                     中断的状态，该参
+                         x可为2~4                              器的中断类型。                     数可取值为ENABLE
+                                                                                         （使能）或者
+                                                                                         DISABLE（失能）
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                 (39/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.2 定时器标准外设库配置过程                                                           Step4
+                                                                                           TIM2中断优先级设置
+                                                                                           （顺序可调整）
+         NVIC_InitTypeDef NVIC_InitStructure;
+         NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+         NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+         NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+         NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+         NVIC_Init(&NVIC_InitStructure);
+
+      Step5            使能TIM2（调用TIM_Cmd()函数）
+                    void TIM_Cmd(TIM_TypeDef* TIMx, FunctionalState NewState) ;
+
+                             第一个参数TIMx是具                           第二个参数为TIMx的状态，该
+                             体定时器，x可为2~4                           参数可取值为ENABLE（使能）
+                                                                     或者DISABLE（失能）
+                      使能定时器TIM2的更新中断：
+                         TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                   (40/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.2 定时器标准外设库配置过程
+
+                           编写中断服务函数     例如，定时器TIM2的中断服务函数，代码如下：
+       Step6
+                                        void TIM2_IRQHandler(void)
+   STM32标准外设库函数中用来读取                    {
+                                          if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+   中断状态的库函数为：
+                                                   // 检查TIM2更新中断发生与否
+     ITStatus TIM_GetITStatus              {      // LED的状态翻转
+     (TIM_TypeDef* TIMx, uint16_t) ;         GPIO_WriteBit(GPIOB, GPIO_Pin_5, (BitAction)
+                                        ((1- GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_5))));
+                                           TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+   清除定时器相应中断标志位的函数：
+                                         //TIM_ClearITPendingBit(TIM2, TIM_FLAG_Update);
+  void TIM_ClearITPendingBit                      // 清除 TIM2 更新中断标志
+  (TIM_TypeDef* TIMx, uint16_t TIM_IT) ; }
+                                        }
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (42/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.3 定时器标准外设库应用实例                                                                          程序编写
+
+                                                                    Timer.h          Timer.c         主程序             LED相关
+         硬件设计                               软件设计                     文件               文件             main.c            程序
+
+                                                                  #include "stm32f10x.h"
+                                             开启系统时钟
+                                                                  #include "led.h"                     主程序main.c
+    利用通用定时器                                                       #include "Timer.h"
+                                                                  int main(void)
+  TIM2实现LED精确                                 LED初始化              { LED_Init();                  //LED初始化
+                                                                    Timer_Init();                //定时器初始化
+  延时1s闪烁，硬件                                                         TIM2_NVIC_Configuration(); //NVIC配置
+                                                                    while(1) { }                 //为空，什么都不做
+  设计上只需要一个                                 TIM2定时器配置              }
+                                                                  void TIM2_IRQHandler(void)     //定时器TIM2中断处理函数
+  LED灯通过串联一                                                       {
+                                                                    if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+  个限流电阻连接到                                     NVIC配置               {        // 将LED的状态翻转
+                                                                        GPIO_WriteBit(GPIOB, GPIO_Pin_5, \
+  STM32F103控制器                                                      (BitAction)((1- GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_5))));
+                                                                        TIM_ClearITPendingBit(TIM2, TIM_IT_Update); // 清中断标志
+  的PB5引脚即可。                               编写中断处理函数                  }
+                                                                  }
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                     (44/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.3 定时器标准外设库应用实例                                                                          程序编写
+
+        Timer.h和Timer.c文件，代码如下                                      Timer.h          Timer.c        主程序         LED相关
+          #ifndef __TIMER_H                                          文件               文件            main.c        程序
+          #define __TIMER_H
+          #include "stm32f10x.h"                                   led.h头文件，代码如下：
+          void Timer_Init(void);                                   #ifndef __LED_H
+          void TIM2_NVIC_Configuration(void);                      #define __LED_H
+          #endif                                                   #include "stm32f10x.h"
+  #include "Timer.h"                                               void LED_Init(void);             LED相关的程序
+  void TIM2_NVIC_Configuration(void)                               #endif
+  {     // TIM2中断优先级设置                                           led.c文件，主要是LED灯的初始化，代码如下
+        ……
+  }                                                              #include "led.h"
+  void Timer_Init(void) //定时器TIM2初始化                             void LED_Init(void)
+  { RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);         {
+     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;                GPIO_InitTypeDef GPIO_InitStructure;
+     TIM_TimeBaseStructure.TIM_Period = (36000-1);                 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+     TIM_TimeBaseStructure.TIM_Prescaler = (2000-1);               GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+     ……                                                            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);                        /*设置引脚模式为通用推挽输出*/
+     TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+                                                                   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+     TIM_Cmd(TIM2, ENABLE);      //使能TIM2定时器
+     TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);                    GPIO_Init(GPIOB, &GPIO_InitStructure);
+  }                                                              }
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                               (44/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.4 应用实例 – 基本定时器                                                                  开定时器时钟TIMx_CLK, x[6,7]；
+                                                                                   初始化时基 + 初始化结构体；
+                   宏定义                        配置中断
+
+
+
+
+uint16_t time=0;                              中断服务程序
+
+
+
+                                                定时器中断一次的时间
+                                                是 1ms；
+                                                在中断服务程序最后，
+                                                要把相应的中断标志位
+                                                清除掉，切记！
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                   (46/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.5 实验小车 – 定时器自定义函数                                                                       小车代码
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (47/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 应用实例 – 输入捕获                                                                   2. PWM输入模式
+
+
+
+
+    1、测量脉宽和频率
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (48/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 实例 – 输入捕获测量脉宽
+  HC-SR04 超声模块还记得？
+
+
+
+
+                                              参见PWM 端口映射部分
+
+                                              arr = 0XFFFF; psc= 72-1;
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (49/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 实例 – PWM输入捕获
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (50/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                      • TB6612可以驱动两个电机，峰值电流
+ 2.6 平衡车 – 编码器接口                                                        2A/3.2A，4种电机控制模式。
+                                                                      • PWM控制的频率可达100kHz。
+  • TB6612FNG电机驱动与编码器
+                                                                      • STBY/VCC接3.3V或者5V。
+                                                                      • VM根据电机额定电压来接2.5~13.5V。
+                                                                      • 电机的两个供电引脚接到AO1和AO2。
+                                                                      • AIN1、AIN2接到单片机的IO口上
+                                                                        (有真值表对应电机转动的逻辑）。
+                                                                      • PWMA可以接到定时器IO输出的PWM。
+                                                                      • 电机编码器有AB两相，输出两个脉冲，
+                                                                        编码器的所有信息都融合在这两个脉冲。
+                                                                        AB相接到单片机IO口捕获脉冲。
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (51/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 平衡车 – 编码器接口
+                                                                   • 电机编码器有AB两相，输出脉冲信号，
+  • TB6612FNG电机驱动与编码器                                                编码器所有信息都融合在这两个脉冲。
+                                                                     一般编码器有四根线，VCC/GND、A&B相。
+                                                                     AB相接到单片机IO口捕获脉冲。
+                                                                   • 使用STM32定时器输入捕获的编码器模式
+                                                                     来计数，直接读取计数器数值就可以了。
+
+
+
+
+   AIN1 / BIN1            AIN2 / BIN2                状态
+            0                     0                  停止
+            0                     1                  正转
+            1                     0                  反转
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (52/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 平衡车 – 编码器范例                                                      • TB6612FNG电机驱动与编码器
+ void Encoder_Init_TIM2(void)                                              HAL库 对编码器做了更好的封装
+ {
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
+    TIM_ICInitTypeDef TIM_ICInitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;                                                                       是不是
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);               // 使能定时器的时钟                             想转行
+    RCC_APB2PeriphClockCmd(ENCODER_GPIO_RCC, ENABLE);                  // 使能端口时钟
+    GPIO_InitStructure.GPIO_Pin = ENCODER_PHASE1_GPIO_PIN | ENCODER_PHASE2_GPIO_PIN; // 端口配置
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;              // 浮空输入
+    GPIO_Init(ENCODER_GPIO_PORT, &GPIO_InitStructure);                 // 根据设定参数初始化
+    TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+    TIM_TimeBaseStructure.TIM_Prescaler = 0x0;                         // 预分频器
+    TIM_TimeBaseStructure.TIM_Period = ENCODER_TIM_PERIOD;             // 设定计数器自动重装值
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;            // 选择时钟分频：不分频
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;        // TIM向上计数
+    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+    TIM_EncoderInterfaceConfig(TIM2, TIM_EncoderMode_TI12, TIM_ICPolarity_Rising, TIM_ICPolarity_Rising); // 使用编码器模式3
+    TIM_ICStructInit(&TIM_ICInitStructure);
+    TIM_ICInitStructure.TIM_ICFilter = 10;
+    TIM_ICInit(TIM2, &TIM_ICInitStructure);
+    TIM_ClearFlag(TIM2, TIM_FLAG_Update);           // 清除TIM的更新标志位
+    TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+    TIM_SetCounter(TIM2, 0);                        // Reset counter
+    TIM_Cmd(TIM2, ENABLE);
+ }
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                            (53/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 2.6 平衡车 – 编码器范例 (Video)                                                TB6612FNG电机驱动与编码器
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (54/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+3 PWM
+
+
+
+                                           1 PWM的工作原理
+
+                                           2 PWM标准外设库输出配置过程
+
+                                           3 PWM标准外设库应用实例
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (55/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+3 PWM
+                                                                          占空比（Duty Cycle）：Tp/T
+        PWM（Pulse Width Modulation，
+  脉冲宽度调制）是一种利用脉冲宽                                                                         TP
+  度即占空比实现对模拟信号进行控                                                                                   T
+
+  制的技术。
+                                                                            周期
+                                                                                                     低电平      8ms
+                                                                      4ms
+  广泛应用于电力电子技术中，比如                                                                         4ms       脉冲宽度
+
+                                                                                 6ms                    6ms         2ms
+  PWM控制技术在逆变电路的应用；                                                                       高电平
+                                                                                        脉冲宽度
+       PWM 还应用于直流电机调速，
+  如变频空调的交直流变频调速等，                                                             周期为10ms（频率为100Hz）
+  除实现调速外，还具有节能等特性。                                                                的PWM波形
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                               (56/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                               ①比较寄存器               ③输出控制
+ 3.1 STM32通用(高级)定时器                                                            ②死区发生器               ④输出引脚
+   输出比较有8种模式，重点掌握PWM1/2
+           TIMx_CNT
+            TIMx_ARR
+           TIMx_CCRx
+
+                            t1       t2       t3   t4   t5   t6
+                                                                  t
+                                 1        0
+                高电平
+                低电平
+
+
+
+
+                                                                             互补输出通道CH1/2/3N 只在高级定时器
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                  (26/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.1 STM32定时器PWM的工作原理                                                       TIMx_CNT
+                                                                            TIMx_ARR
+    STM32的定时器除了TIM6和TIM7，其他定时
+    器都可以用来产生PWM输出；                                                          TIMx_CCRx
+
+    高级定时器TIM1和TIM8可以同时产生多达7路                                                                   t1       t2       t3   t4   t5   t6
+                                                                                                                                      t
+    的PWM输出；                                                                      高电平                1        0
+
+
+    通用定时器能同时产生多达4路的PWM输出；                                                        低电平
+
+    STM32中每个定时器有4个输入通道：                                                        在PWM的一个周期内，定时器
+    TIMx_CH1~TIMx_CH4；                                                         从0开始向上计数，在0-t1 时间段，
+                                                                               定时器计数器TIMx_CNT值小于
+    每个通道对应1个捕获/比较寄存器TIMx_CCRx，                                                 TIMx_CCRx值，输出低电平；
+    将寄存器值和计数器值相比较，通过比较结                                                        在t1-t2时间段，定时器计数器TIMx_CNT
+    果输出高低电平，从而得到PWM信号；                                                         值大于TIMx_CCRx值，则输出高电平；
+    由TIMx_ARR寄存器确定频率                                                           当定时器计数器的值TIMx_CNT达到ARR
+                                                                               时，定时器溢出，重新从0开始向上计数，
+    由TIMx_CCRx寄存器确定占空比                                                         如此循环。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                          (57/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.2 PWM标准外设库输出配置过程                                                               理解引脚映射
+
+            STM32规定了具体的引脚作为PWM输出引脚，选择不同的引脚时，
+         还必须使用重定向功能（Remap）。定时器TIM1的引脚复用功能映像：
+                 TIM1_REMAP[1:0] = 00 TIM1_REMAP[1:0] = 01 TIM1_REMAP[1:0] = 11
+      复用功能
+                     (没有重映像)              (部分重映像)             (完全重映像) (1)
+      TIM1_ETR                      PA12                          PE7
+      TIM1_CH1                       PA8                          PE9
+      TIM1_CH2                       PA9                          PE11
+      TIM1_CH3                      PA10                          PE13
+      TIM1_CH4                      PA11                          PE14
+     TIM1_BKIN         PB12(2)               PA6                  PE15
+     TIM1_CH1N         PB13(2)               PA7                  PE8
+     TIM1_CH2N         PB14(2)               PB0                  PE10
+     TIM1_CH3N         PB15(2)               PB1                  PE12
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (58/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.2 PWM标准外设库输出配置过程                                                         注：(1) 重映像只适用于特定引脚的封装；
+                                                                              (2) TIM2 _ETR和TIM2_CH1共用一个引脚，
+               定时器TIM2的引脚复用功能映像：                                                  但不能同时使用。
+                   TIM2_REMAP[1:0]=00 TIM2_REMAP[1:0]=01 TIM2_REMAP[1:0]=10 TIM2_REMAP[1:0]=11
+  复用功能
+                      (没有重映像)            (部分重映像)           (部分重映像) (1)        (完全重映像) (1)
+ TIM2_CH1
+                              PA0                        PA15                        PA0                      PA15
+   _ETR(2)
+ TIM2_CH2                     PA1                        PB3                         PA1                      PB3
+ TIM2_CH3                                     PA2                                                   PB10
+ TIM2_CH4                                     PA3                                                   PB11
+                          TIM3_REMAP[1:0] = 00                 TIM3_REMAP[1:0] = 10                 TIM3_REMAP[1:0] = 11
+    复用功能
+                              (没有重映像)                              (部分重映像)                             (完全重映像) (1)
+    TIM3_CH1                            PA6                              PB4                                PC6
+    TIM3_CH2                            PA7                              PB5                                PC7
+    TIM3_CH3                                             PB0                                                PC8
+    TIM3_CH4                                             PB1                                                PC9
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                               (59/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.2 PWM标准外设库输出配置过程
+                                                                          PWM标准外设库输出配置步骤
+       配置PWM输出通道                             RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+        开启TIM3时钟                             RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB|RCC_APB2Periph_AFIO, ENABLE);
+
+                                                                  GPIO_InitStructure
+                              初始化定时器TIM3                          TIM_TimeBaseStructure
+                                                                  TIM_TimeBaseInit
+                                                                                          TIM_OCInitStructure
+                                                设置TIM3_CH2的PWM模式，                         TIM_OC2Init
+                                                  使能TIM3的CH2输出                            TIM_OC2PreloadConfig
+
+                                                                                                    TIM_Cmd
+                                                                         使能定时器TIM3
+                                                                                                    TIM3_IRQHandler
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                           (60/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例
+                                                                                    软件设计
+
+
+          功能描述：                                            主程序                   TIM3_PWM.c         TIM3_PWM.h
+          基于PWM的呼吸灯。                                      main.c文件                  文件                 头文件
+          使用通用定时器TIM3
+                                                         #ifndef __TIMER_H                    TIM3_PWM.h头文件
+          产生PWM信号，输出
+                                                         #define __TIMER_H
+          占空比可变的PWM波，
+                                                         #include "stm32f10x.h"
+          用于驱动LED灯，实现
+                                                         void TIM3_PWM_Init(u16 arr, u16 psc);
+          LED亮度由暗变亮，又
+                                                         #endif
+          从亮变暗，如此循环。
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                        (61/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例                                                        1．主程序main.c文件
+
+    #include "stm32f10x.h"                                         else PWM_Val--;           //否则占空比逐渐减小
+    #include "TIM3_PWM.h"                                          if(PWM_Val>300) pwd =0;
+    //延迟函数Delay（）                                                         //如果占空比大于300，则pwd设置为0
+    void Delay(__IO u32 nCount)                                     if(PWM_Val==0) pwd =1;
+    { for( ; nCount !=0; nCount --);                                      //如果占空比为0，将标识pwd设置为1
+    }                                                                TIM_SetCompare2 (TIM3, PWM_Val); //修改占空比
+    int main(void)                                                   }
+    {                                                             }
+        u16 PWM_Val=0;                                                   //定时器TIM3的中断服务程序
+                                                                                                             Why ？
+          //定义变量PWM_Val为PWM的占空比                                   void TIM3_IRQHandler(void)
+        u8 pwd=1; //定义一个变量，用于判断                                   {
+       TIM3_PWM_Init(899, 0);                                         if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+          //不分频，PWM频率=72000000/900=80 KHz                            {
+       while(1)                                                            GPIO_WriteBit(GPIOB, GPIO_Pin_5,(BitAction)(
+      {                                                                 (1-GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5))));
+          Delay(10000);                                                    TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+          if(pwd) PWM_Val++;                                          }
+            //如果pwd为真，则占空比逐渐增加                                    }
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                              (62/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例                                                        2．TIM3_PWM.c文件
+ #include "TIM3_PWM.h"                                                  // TIM3初始化
+ #include "stm32f10x.h"                                              TIM_TimeBaseStructure.TIM_Period = arr; //设置自动重载值
+ void TIM3_PWM_Init(u16 arr,u16 psc)                                 TIM_TimeBaseStructure.TIM_Prescaler = psc;
+ {                                                                     // 设置用来作为TIM3时钟频率的预分频值
+   GPIO_InitTypeDef GPIO_InitStructure;                              TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+   TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;                       // 设置时钟分割TDTS = Tck_tim
+   TIM_OCInitTypeDef TIM_OCInitStructure;                            TIM_TimeBaseStructure.TIM_CounterMode =
+   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);              TIM_CounterMode_Up;           //TIM向上计数模式
+     // 使能定时器TIM3的时钟                                                 TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB|                      //初始化TIM3；初始化定时器TIM3通道2 PWM模式
+   RCC_APB2Periph_AFIO, ENABLE);                                     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+     //使能GPIOB和AFIO时钟                                                  // 设置定时器模式：PWM2模式
+   GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);              TIM_OCInitStructure.TIM_OutputState =
+     // TIM3部分重映射TIM3_CH2->PB5                                       TIM_OutputState_Enable;      //比较输出使能
+     // 设置PB5引脚为复用输出引脚                                               TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+     // TIM3 CH2 输出PWM脉冲波形                                              // 设置输出极性
+   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5; //PB5                   TIM_OC2Init(TIM3, &TIM_OCInitStructure); //初始化TIM3 OC2
+   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;                   TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
+      // PB5引脚复用为TIM3_CH2 “复用推挽输出”                                     // 使能TIM3在CCR2上的预装载寄存器
+   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;                 TIM_Cmd(TIM3, ENABLE);      //使能TIM3          为什么有OC
+   GPIO_Init(GPIOB, &GPIO_InitStructure);    //初始化GPIOB            }                                                 & OC2？
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                  (63/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例                                                                           小车代码
+
+                                                     很多函数库进行了二次封装
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (64/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例                                                                           小车代码
+
+                                                     很多函数库进行了二次封装
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (65/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 3.3 PWM标准外设库应用实例                                                           看得懂寄存器版本？
+
+
+
+
+                                                                                            1）开启TIM3时钟，配置PB5复用输出。
+                                                                                            2）设置TIM3_CH2重映射到PB5上。
+                                                                                            3）设置TIM3的ARR和PSC。
+                                                                                            4）设置TIM3_CH2的PWM模式。
+                                                                                            5）使能TIM3的CH2输出，使能TIM3。
+                                                                                            6）修改TIM3_CCR2来控制占空比。
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                       (66/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+4 SysTick 定时器                                                 Refresh
+
+       Cortex-M3内核中的 SysTick 定时器，
+       是一个24位的从重载值向下递减到0 SysTick定时器一共有四个寄存器
+       的计数器，是NVIC的一部分；            SysTick控制及状态寄存器CTRL
+       常用于精确定时，为操作系统提供            SysTick重装载数值寄存器LOAD
+       必要的时钟节拍，为RTOS的任务调          SysTick当前数值寄存器VAL
+       度提供一个有节奏的“心跳”。             SysTick校准数值寄存器CALIB。
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (67/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+4 SysTick 定时器
+    ➢ HSE 高速外部时钟（通常8MHz）
+      ▪ RCC_CR 寄存器位16：HSEON控制
+    ➢ HSI 高速内部时钟（内部固定8M)
+      ▪ RCC_CR 寄存器位0：HSION控制
+    ➢ PLLCLK 锁相环时钟
+    ▪ 通常最大72M; 源为HSI/2时64M
+    ➢ SYSCLK 系统时钟 (CFGR：SW)
+    ▪ 通常配置SYSCLK=PLLCLK=72M
+      SysTick定时器的时钟源可以是内部时钟
+      （FCLK）或者是外部时钟，系统默认的
+      SysTick定时器是由AHB时钟（HCLK）8分
+      频得到的，即SysTick的频率为 9MHz。
+      SysTick定时器从初值计数到0时，会自动重
+      装初值继续计数，同时触发中断；因此，只
+      需确定计数次数就可以精确得到延迟时间。                                                                           STM32F1时钟系统
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                        (68/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+4 SysTick 定时器                                            SysTick定时的时间计算
+
+1-t：计数循环的时间，跟reload和CLK有关
+2-CLK：72M或者9M，由CTRL寄存器配置
+3-RELOAD：24位，用户自己配置
+    t= reload * ( 1/clk )
+    Clk=72M时，t= (72) *(1/ 72 M ) = 1us
+    Clk=72M时，t= (72000) *(1/ 72 M )= 1ms
+    时间单位换算:
+    1s = 1000 ms = 1000 000 us
+       = 1000 000 000 ns
+    SystemCoreClock 宏定义为72000000
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (69/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想                                                                                触发信号
+                                                                                              （条件）
+  嵌入式开发中，系统往往由有限个状态                                                   当前所处的                          新的状态
+                                                                      状态（现态）                         （次态）
+  组成，因此状态机又称为有限状态机
+  （Finite State Machine，FSM）。
+                                                                                                     执行功能
+                                                                                                     （动作）
+                                     把控制逻辑
+          状                          分解成若干                    状态             系统在某个时间点所处的形态或状况。
+          态                           个状态                                    现态：即系统当前所处的状态；
+          机                                                                  次态：表示当某个条件满足时要转移的新状态。
+
+          设
+                               事件触发                           条件/            用于触发状态机进行状态转换、产生相应动作
+          计                                                                  （输出）。当某个条件满足时将会执行一次状
+                                                              事件
+          思                                                                  态的迁移或触发一个动作。
+          想                           按设定的
+                                      逻辑状态                    动作             表示条件满足后具体执行的操作。动作要素不
+                                      顺序处理                                   是必需的，当条件满足后，也可以不执行任何
+                                       事务。                                   动作，直接迁移到新状态。
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                  (70/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想
+     基于状态机设计思想实现按键处理程序，利用定时器每隔20ms产生一次中断，
+    在定时中断服务程序中调用按键状态转换程序。
+                                                            现态                  输入                     次态          输出
+                                                                       按键按下
+                                                                                  KEY_DOWN
+                           按键空状态：没有按                                   （按键端口电平为0）
+                            键按下的状态                       KEY_NULL
+                             KEY_NULL。                                 按键按下
+                                                                                  KEY_NULL
+                                                                       （按键端口电平为1）
+  将按键工作                    按键按下状态：按键
+    过程的                       按下的状态                                    按键输入信号为1                     KEY_NULL
+   三个状态                      KEY_DOWN。
+                                                         KEY_DOWN
+                                                                                                                  产生相应的
+                           按键释放状态：等待                                   按键输入信号为0                     KEY_RELEASE
+                                                                                                                  按键标志
+                            按键释放的状态
+                            KEY_RELEASE。                               按键输入信号为1                     KEY_NULL
+                                                         KEY_RELEASE
+                                                                       按键输入信号为0                     KEY_RELEASE
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                              (71/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想
+                                                                     用按键枚举类型KEY_STATES定义一个
+       首先，定义按键状态的数据类型，                                              变量keyState用于表示按键的状态，定义
+       采用枚举类型，用3个常量表示                                               一个标志keyFlag用于表示按键是否有效。
+                                                                          /* USER CODE BEGIN PV */
+       按键的三种状态。
+                                                                     KEY_STATES keyState=KEY_NULL;
+        /* Private typedef */                                             //按键状态，初值为按键空状态
+      typedef enum                                                   uint8_t keyFlag=0;
+      {
+                                                                         //按键值有效标志，1为有效；0为无效
+         KEY_NULL = 0, //按键未按下
+                                                                        /* USER CODE END PV */
+         KEY_DOWN, //有按键按下
+         KEY_RELEASE //按键释放状态
+      } KEY_STATES;
+      while (1) //后台检测程序
+                                                                    使能定时器中断，根据所使用的定时器，
+       { if(keyFlag == 1) //检测按键有效标志                               进行设置并开启定时器。
+         {
+                                                                       /* USER CODE BEGIN 2 */
+           keyFlag = 0; //清除标志位
+           HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);             HAL_TIM_Base_Start_IT(&htim1);
+           //执行按键任务，指示灯状态翻转                                          //使能定时器1更新中断，启动定时器1
+         }                                                             /* USER CODE END 2 */
+       }
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                (72/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想                                                            定义void Key_FSM(void)函数
+                                                                              else //如果读到高电平，则认为是干扰信号，切换到按键空状态
+     /* USER CODE BEGIN 4 */
+                                                                                 {        keyState=KEY_NULL;
+    void Key_FSM(void)       //按键状态检测函数
+                                                                                 }
+    {
+                                                                                 break;
+      switch(keyState)      //按键状态检测
+                                                                              }
+      { case KEY_NULL: //如果是初始状态，即按键未被按下                                      case KEY_RELEASE: //按键释放状态
+         {    //如果读到低电平，说明按键按下，则进入按键按下状态，                                     { //若读到高电平，则切换到按键空状态，否则保持当前状态
+    否则保持当前状态不变                                                                if(HAL_GPIO_ReadPin(KEY_GPIO_Port,KEY_Pin)==GPIO_PIN_SET)
+         if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) ==                          {        keyState=KEY_NULL;
+    GPIO_PIN_RESET)                                                              }
+         {      keyState=KEY_DOWN;                                               break;
+         }                                                                    }
+         break;                                                               default: break;
+         }                                                                }
+         case KEY_DOWN: //按键按下状态                                      }
+         {    //如果读到低电平，说明按键按下，切换到按键释放状态，                                 //定时器中断回调函数
+    并设置标志位                                                            void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+         if(HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) ==               { if(htim->Instance==TIM1)        //判断中断来源
+    GPIO_PIN_RESET)                                                     {
+            {   keyState=KEY_RELEASE;                                     void Key_FSM(void) ;
+                 keyFlag=1;                                             }
+        //设置有效按键标志，表示按键按下后立即执行按键任务                                    }
+            }                                                         /* USER CODE END 4 */
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                            (73/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想                                                       • 四个按键 Start，Left，Right，Home
+                                                                     • LCD 液晶屏SPI 接口
+             Tetris 俄罗斯方块游戏                                          • 参考程序思路
+                                                                     typedef struct game // 游戏的状态
+                                                                     { int isBegin;        // 是否进入开始游戏的状态
+                                                                          int isGaming;    // 是否正在游戏中
+                                                                          int score;       // 得分
+                                                                          int modelCount; // 产生方块的个数
+                                                                     } GameStatus;
+                                                                     static GameStatus game; // 全局游戏状态
+                                                                     //定义随机数函数（产生随机方块）
+                                                                     //**定时器中断服务函数
+                                                                      * 1. 用于控制刷新屏幕上方块下落的效果
+                                                                      * 2. 游戏结束判断
+            //主函数                                                     * 3. 得分和方块个数刷新控制
+            { // 各个模块初始化                                              * 4. 当前控制的方块和下一个的控制
+              // while循环                                             **//
+            }                                                        //外部中断控制函数 -> 根据按键更改状态
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                               (74/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+                                                                                  定义一个结构体 和 表
+6 编程思想之状态机设计思想
+
+
+
+
+   多级菜单大体有两种设计思路：
+   • 通过双向链表实现          4级菜单要显示的内容，每个条
+                       目前，标记了索引号（0~25），
+   • 通过数组查表实现          即对应数组在定义的索引号
+   总体思路都是把菜单的各个界面联系起来，
+   可以从上级菜单跳到下级菜单，也可从下
+   级菜单返回上级菜单。
+   数组查表的方式比较简单，易于理解。
+   https://www.elecfans.com/d/1845127.html
+   https://mp.weixin.qq.com/s/DNoUMefnMjuln--v-D7xXQ
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (75/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+6 编程思想之状态机设计思想
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (76/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+      小结
+
+                                                           定时器
+
+          STM32             定时器模块的                                                         定时器模块           编程思想
+                             标准外设库                       PWM           SysTick定时器          的HAL库接口         之状态机
+       定时器模块                接口函数及应用                                                        函数及应用           设计思想
+
+            通用
+                                  接口函数                   工作原理                库函数                    接口函数     FSM
+            定时器
+
+            基本
+                                  配置过程                   配置过程               应用实例                    应用实例
+            定时器
+
+            高级
+                                  应用实例                   应用实例
+            定时器
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                         (77/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+STM32 定时器                                                                                    配置要领
+                                         STM32定时器分类比较表                                       能否记住 ？
+                                              基本定时器    通用定时器        高级定时器
+                     定时器
+                                                       TIMx(x=2~5)
+                                             (TIM6、TIM7)           (TIM1、TIM8)
+                                                         16位，         16位，
+                                                         向上、          向上、
+                 计数器类型                      16位，向上
+                                                         向下、          向下、
+                                                        向上/向下        向上/向下
+                                             1～65535    1～65535      1～65535
+                 预分频系数
+                                            之间的任意数    之间的任意数       之间的任意数
+                                                     四个独立通道：输入捕获、输出比较、
+               输入/捕获通道                         无
+                                                        PWM生成、单脉冲模式输出
+               产生中断/DMA                             可以                     可以                       可以
+            刹车（电机控制）                                     无                  无                       可以
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                   (78/96)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+              AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                          (72/90)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+           Q&A
+
+       •    高级和普通定时器的区别？                                             •    PWM 占空比和周期怎么确定？
+       •    TIM1 的时钟总线？                                              •    TIMx_ARR & PSC 周期 (同定时)
+       •    TIM2/3/4的时钟总线？                                           •    TIMx_CCRx 占空比
+       •    计数功能时 GPIO_Mode？                                         •    哪个函数用来改变占空比
+                                                                          TIM_SetComparex(x=1,2,3,4) //x 为 ch
+       •    通用定时器和高级定时器都有哪
+            个重要功能？                                                   •    TIM1->CCR1 = 1000 是什么意思？
+       •    定时、输入捕获、输出比较、产
+            生PWM、单脉冲输出                                               •    带编码器的直流电机如何进行接
+       •    定时时间的计算公式？                                                    口连接和控制？
+       T = (TIM_Period +1)*(TIM_Prescaler +1)/TIMxCLK
+                                                                           – 编码器上4个I/O作用
+                                                                           – TB6612 驱动芯片有哪些I/O
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                      (79/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+       扩展应用
+
+       • 红外线测距：高灵敏度频率可以探测远                                           • Keil 里分析PWM波形
+         距离的物体，低灵敏度频率可以探测距离较
+         近的物体
+       • 示例：发送35700Hz和38460Hz频率能发现
+         物体，发送29370Hz、31230Hz以及33050Hz频
+         率就不能发现物体。如果移动物体到区域2，
+         那么发送33050Hz、35700Hz以及38460Hz可以
+         发现物体，发送29370Hz和31230Hz频率不能
+         发现物体。
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (80/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+  Keil 软件分析PWM波形                                                  参考范例通用TIM-PWM输出范例
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (81/96)
+STM32
+
+
+
+
+        The   End!
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+5 定时器模块的HAL库接口函数及应用
+
+
+                                                              目 录
+
+                               5.1定时器HAL库接口函数
+
+                                              5.2定时器HAL库应用实例
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (83/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                       定时器模块的HAL库常用接口函数
+ 5.1 定时器HAL库接口函数
+                                                                       可分为七大类：
+          类型                                                     函数及功能描述
+          基本  HAL_TIM_Base_Init(TIM_HandleTypeDef *htim);
+              功能描述：基本定时器初始化函数
+         定时器  void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim);
+        功能函数  功能描述：基本定时器硬件初始化配置函数，该函数被HAL库内部调用
+              HAL_TIM_OC_Init(TIM_HandleTypeDef *htim);
+              功能描述：定时器输出比较的初始化函数
+         定时器 HAL_TIM_OC_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+              功能描述：定时器输出比较轮询方式的启动函数
+        输出比较 HAL_TIM_OC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+        功能函数 功能描述：定时器输出比较中断方式的启动函数
+              HAL_TIM_OC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+              功能描述：定时器输出比较DMA方式的启动函数
+              HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim);
+              功能描述：定时器PWM初始化函数
+              HAL_TIM_PWM_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+         定时器 功能描述：启动定时器PWM轮询方式的函数
+        PWM函数 HAL_TIM_PWM_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+              功能描述：启动定时器PWM中断方式的函数
+              HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+              功能描述：启动定时器PWM的DMA方式的函数
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                      (84/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+                                                                       定时器模块的HAL库常用接口函数
+ 5.1 定时器HAL库接口函数
+                                                                       可分为七大类：
+          类型                                                     函数及功能描述
+                       HAL_TIM_IC_Init(TIM_HandleTypeDef *htim); 定时器输入捕获初始化函数
+                       HAL_TIM_IC_Start(TIM_HandleTypeDef *htim, uint32_t Channel); 启动定时器输入捕获轮询方式的函数
+     定时器输入
+                       HAL_TIM_IC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel); 启动定时器输入捕获中断方式的函数
+      捕获函数             HAL_TIM_IC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+                       功能描述：启动定时器输入捕获的DMA方式的函数
+                       void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim); 定时器中断处理函数
+                       void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+     定时器中断             功能描述：定时器定时/更新中断回调函数，用户在该函数内编写实际的中断处理程序
+     及回调函数             void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim); 定时器输入捕获回调函数
+       类型                                                        函数及功能描述*htim); 定时器PWM结束回调函数
+                       void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef
+                       HAL_TIM_OC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef* sConfig, uint32_t Channel);
+                       功能描述：定时器输出比较配置函数
+     定时器功能             HAL_TIM_PWM_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef* sConfig, uint32_t Channel);
+      配置函数             功能描述：定时器PWM配置函数
+                       HAL_TIM_IC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_IC_InitTypeDef* sConfig, uint32_t Channel);
+                       功能描述：定时器输入捕获配置函数
+                       HAL_TIM_OC_GetState(TIM_HandleTypeDef *htim); 获取定时器输出比较的状态函数
+     定时器状态             HAL_TIM_PWM_GetState(TIM_HandleTypeDef *htim); 获取定时器PWM的状态函数
+       函数              HAL_TIM_IC_GetState(TIM_HandleTypeDef *htim); 获取定时器输入捕获的状态函数
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                 (85/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 5.1 定时器HAL库接口函数                                                                                    /* 检测htim句柄是否有效 */
+
+                                                                                                    /* 采用断言方式检测参数
+    1．定时器初始化配置函数                                                                                            是否有效 */
+    HAL_TIM_Base_Init()
+
+                                                                                                        /* 取消上锁*/
+
+  解析：函数源码中主要涉及到两
+  个重要的函数
+  HAL_TIM_Base_MspInit(htim)和                                                                          /*初始化底层硬件：
+  TIM_Base_SetConfig( )，                                                                               GPIO、CLOCK、 NVIC */
+
+  HAL库每个外设模块都设计有单独                                                                                    /*设置TIM状态为 BUSY */
+                                                                                                      /* 配置TIM的基本参数 */
+  的底层初始化回调函数。
+                                                                                                      /* 初始化TIM 状态，就绪 */
+
+
+                                                                                                     //将状态设置为READY
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                              (86/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 5.1 HAL库定时器接口函数                                              Typedef struct
+                                                              {
+     HAL库在TIM_TypeDef的基础上封装                                     TIM_TypeDef *Instance;     /*TIM寄存器的实例化*/
+                                                                TIM_Base_InitTypeDef Init; /*配置定时器的基本参数 */
+     了一个结构体TIM_HandleTypeDef                                    HAL_TIM_ActiveChannel Channel; /*配置定时器通道 */
+                                                                DMA_HandleTypeDef     *hdma[7]; /*配置DMA */
+     （定时器句柄）                                                    HAL_LockTypeDef      Lock;       /*上锁 */
+                                                                __IO HAL_TIM_StateTypeDef State; /*定时器操作状态 */
+                                                              } TIM_HandleTypeDef;
+
+         TIM_HandleTypeDef结构体又包含了定时器初始化结构体TIM_Base_InitTypeDef
+           typedef struct
+           {
+             uint32_t Prescaler;                         /*定时器预分频系数，其值范围在0x0000 ~ 0xFFFF之间 */
+             uint32_t CounterMode;                       /*定时器计数模式，向上计数、向下计数和中心对齐模式 */
+             uint32_t Period;                            /*定时器定时周期，其值范围为0x0000 ~ 0xFFFF */
+             uint32_t ClockDivision;                     /*定时器时钟分频因子*/
+             uint32_t RepetitionCounter;                 /*重复计数器，仅用于高级定时器TIM1和TIM8*/
+             uint32_t AutoReloadPreload;                 /*定时器自动重装载值*/
+           } TIM_Base_InitTypeDef;
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                    (87/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 5.1 HAL库定时器接口函数                                               HAL_StatusTypeDef
+                                                               HAL_TIM_Base_Start(TIM_HandleTypeDef *htim)
+    2．启动定时器函数                                                  {
+                                                                 uint32_t tmpsmcr;
+    HAL_TIM_Base_Start()                                           /* 使用断言，检测参数是否正确 */
+                                                                 assert_param(IS_TIM_INSTANCE(htim->Instance));
+    解析：该数只有一个输入参数，为                                                /*设置定时器的状态 */
+    TIM_HandleTypeDef类型的结构体指针变量，                                 htim->State = HAL_TIM_STATE_BUSY; /* 使能外设*/
+    程序中主要是调用                                                     tmpsmcr = htim->Instance->SMCR & TIM_SMCR_SMS;
+    __HAL_TIM_ENABLE(htim)函数使能相应的                                if (!IS_TIM_SLAVEMODE_TRIGGER_ENABLED(tmpsmcr))
+                                                                 { __HAL_TIM_ENABLE(htim);
+    定时器，该函数实质是一个宏定义：
+                                                                 }
+    #define __HAL_TIM_ENABLE(__HANDLE__)
+                                                                   /* 定时器就绪*/
+    ((__HANDLE__)->Instance->CR1|=(TIM_CR1_CEN))                 htim->State = HAL_TIM_STATE_READY;
+    配置定时器CR1的使能位为“1”，返回                                            /* 返回HAL_OK，初始化成功*/
+    HAL_OK，表示初始化成功。                                              return HAL_OK;
+                                                               }
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                        (88/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 5.1 HAL库定时器接口函数
+                                                               HAL_StatusTypeDef
+                                                               HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *htim)
+    3．启动定时器中断模式定时函数
+                                                               {
+    HAL_TIM_Base_Start_IT()                                      uint32_t tmpsmcr;
+                                                                   /* 使用断言，进行参数状态检测*/
+                                                                 assert_param(IS_TIM_INSTANCE(htim->Instance));
+     解析：该启动函数的核心代码为：                                               /*使能定时器更新中断*/
+     _ _HAL_TIM_ENABLE(htim)，跳转到该函数，                             __HAL_TIM_ENABLE_IT(htim, TIM_IT_UPDATE);
+                                                                   /* 使能外设*/
+     可以发现该函数其实是一个宏定义：
+                                                                 tmpsmcr = htim->Instance->SMCR & TIM_SMCR_SMS;
+     #define __HAL_TIM_ENABLE(__HANDLE__)                        if
+     ((__HANDLE__)->Instance->CR1|=(TIM_CR1_CEN))              (!IS_TIM_SLAVEMODE_TRIGGER_ENABLED(tmpsmcr))
+     该宏定义的作用是将CR1的计数器使能位                                         { __HAL_TIM_ENABLE(htim);
+                                                                 }
+     设置为“1”。
+                                                                 /* 返回HAL_OK*/
+                                                                 return HAL_OK;
+                                                               }
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                     (89/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 5.2 定时器HAL库应用实例                                              硬件设计
+
+      功能                                                                         STM32F103
+
+                       利用基于HAL库采用定                                                                       LED
+                                                                                                                   +3.3V
+                                                                                                               R
+                 时器TIM3产生精确延时1s ；                                                               PE5
+
+                 通过LED灯进行状态显示                                                          定时器
+                                                                                                    延时
+
+
+     软件设计流程
+               新建
+           STM32CubeMX                       STM32CubeMX                     生成                            编写
+            工程，选择                            功能参数配置                         工程代码                          应用程序
+               MCU                                                                                        中断方式
+
+
+                                 RCC和                     定时器               GPIO引脚
+                                时钟配置                     TIM3配置               设置
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                                (90/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——新建STM32CubeMX工程，选择MCU                                                                 MCU / RCC 配置
+
+    新建一个STM32CubeMX工程，选择                                               HSE选择“Crystal/Ceramic
+    MCU，采用STM32F103ZET6芯片。                                             Resonator”，LSE选择“Disable”
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                      (91/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置                                                              时钟配置
+
+
+
+                                                                                            配置STM32的时钟系
+                                                                                            统，系统时钟配置为
+                                                                                            72MHz，
+                                                                                            APB2为72MHz，
+                                                                                            APB1为36MHz。
+
+
+
+
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                    (92/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置                                                       定时器TIM3配置
+
+   ➢ “Clock Source”设置为
+     “Internal Clock”（内部时钟）；
+   ➢ 预分频系数“Prescaler”设置
+     为“36000-1”；
+     “Counter Mode”设置为“Up”；
+   ➢ 计数值“Counter Period”
+     设置为“2000-1”；
+   ➢ “auto-reload preload”
+     设置为“Enable”。
+
+   -> 则定时器TIM3精确定时1s。
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (93/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置                                                       定时器TIM3配置
+
+
+
+
+      ➢ 在定时器TIM3参数配置
+        “Configuration”选项配置页
+        的“NVIC Settings”中
+        使能定时器TIM3的全局中断
+
+
+
+
+                                                                               使能TIM3的全局中断
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (94/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置
+                                                                                      工程相关参数配置
+                                      GPIO引脚设置
+
+
+
+
+ 设置PE5引脚为“GPIO_Output”，用于本                                             配置工程名称、工程保存位置、选择
+ 例的LED指示灯显示，并在“GPIO Mode                                               “MDK-ARM V5”编译器等，生成工程
+ and Configuration”中配置相应的参数                                            代码
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                              (95/96)
+Progress: STM32 定时器 Timers >> 定时器 固件库函数及应用 >> PWM >> SysTick >> 状态机设计思想 >> Summary >> 定时器HAL函数及应用
+
+
+
+
+ 软件设计——编写应用程序                                                          MX_TIM3_Init();
+                                                                       /* USER CODE BEGIN 2 */
+     在main.c文件中的/*USER CODE
+                                                                       HAL_TIM_Base_Start_IT(&htim3);
+     BEGIN2 */和/*USER CODE END2 */
+                                                                       //启动定时器TIM3定时中断
+     之间添加开启定时器TIM3中断的程序                                                /* USER CODE END 2 */
+
+   /* USER CODE BEGIN 4 */
+   void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+                                                                                                    在main.c文件的
+   {
+     if(htim->Instance == htim3.Instance)                                                           /*USER CODE BEGIN4 */
+     { HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_5);                                                       和
+     }                                                                                              /*USER CODE END4 */
+   }
+                                                                                                    之间添加TIM3的
+   /* USER CODE END 4 */
+                                                                                                    中断回调函数
+EE114 Embedded System -> Lecture 17 STM32 Timers & PWM                                                              (96/96)
+

@@ -1,0 +1,1720 @@
+           EE114: Introduction to
+               Embedded Systems
+Dr. Tao Wu     吴涛      研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+              Demo Task
+
+       •    本章建议结合DMA一起学习
+       •    理解ADC/DAC模块的硬件
+       •    完成至少2个范例，并学会举一反三 ！
+       •    ADC 模块范例和练习
+              – 电压输入单通道：DMA & 中断 两种方式读取 和 对比
+              – 内部芯片温度/参考电压 ADC 读取 （可以触摸芯片改变温度）
+              – 电压输入多通道 （进阶）
+       • DAC 模块范例和练习 (F103 HD models only)
+              – 输出正弦波：DMA方式 或者 常规方式
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (2/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+STM32 ADC & DAC
+
+
+            ◆ 理解和掌握ADC的转换过程、主要技术参数；
+            ◆ 理解STM32的ADC内部结构；
+            ◆ 熟悉STM32标准外设库和HAL库中有关ADC的库函数；
+            ◆ 掌握基于标准外设库的ADC开发；
+            ◆ 掌握基于HAL库的ADC开发。
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (3/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+  STM32 F1 ADC                                               STM32F103x family lines
+
+
+
+
+                                                                                                          F103ZET6
+                                                                                                          F103VET6
+
+
+
+                                                                                    F103RCT6
+                                                  F103C8T6
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                            (4/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+STM32
+ 第10章 ADC
+      ADC & DAC
+
+
+                          1
+
+
+                          2
+
+
+                          3
+
+
+                          4
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (5/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 1.1 A/D转换过程
+     ADC（Analog to Digital Converter）
+     即模数转换器，将模拟信号转换为数字信号。
+
+                对模拟信号周期性地                                  转换过程中                             A/D转换器
+                抽取样值，要求满足                                  抽样信号不
+                抽样定理，即fS≥2fImax                            变保持
+
+
+                                           采样                   保持                    量化                  编码
+
+
+                                                                               用有限个                       将量化后
+                                                  采样保持                         电平来表示                      的信号转
+                                                   电路                          样值脉冲的                      换成二进
+                                                                               过程                         制代码
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                              (6/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 1.2 A/D转换的主要技术参数
+
+                                                      转换精度                         用分辨率和转换误差
+                     技术参数
+                                                      转换速度                         转换时间或转换速率
+
+         分辨率                                      在最大输入电压一定时，位数越多，量化单位越小，
+                 A/D转换器                          误差越小，分辨率越高  Vref = 10V
+                对输入模拟量                                位数           级数      分辨率（精度）             说明
+                微小变化的分                                 8       28 = 256      39.1 mV
+                辨能力，通常                                10       210 = 1024    9.77 mV 8 位 、 12 位 ADC 常 用 于 工
+                                                      12       212 = 4096    2.44 mV 控领域、语音处理领域
+                用二进制数的                                14       214 = 16384   0.61 mV
+                有效位表示。                                                               16位或更高的ADC常用于
+                                                      16       216 = 65536   0.15 mV 医学领域中微弱生理信号
+                                                                                     的采集
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                           (7/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 1.2 A/D转换的主要技术参数
+
+                 转换时间/转换速率                                                                     转换误差
+       转换时间是指从转换控制信号到来到                                                         由于A/D转换器的有限分辨率
+     A/D转换器输出端得到稳定的数字量所                                                        而引起的误差，反映A/D转换器
+     需要的时间。                                                                    实际输出数字量和理想输出之间
+       转换时间的倒数即为转换速率。                                                          的差异。
+       转换时间与A/D转换器类型有关：
+                                                                                  通常为1个或
+     ➢ 双积分型A/D转换器的转换时间一般在几
+                                                                                半个最小数字
+       十毫秒数量级，属于低速A/D转换器；
+                                                                                量的模拟变化
+     ➢ 逐次比较型在几十微秒，属于中速A/D转
+                                                                                量，表示为
+       换器；
+                                                                                1LSB、
+     ➢ 并行比较型一般在几十纳秒。
+                                                                                1/2LSB。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (8/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+2 STM32的ADC
+
+              集成有三个12位                                                                        多达18个通道，可实
+              ADC逐次逼近型                                                                        现16个外部模拟输入
+               的A/D转换器                                                                        通道和2个内部信号源
+                                                                                                 的A/D转换
+
+          转换结果是一个12                                                                           各通道的A/D转换可
+          位的二进制数，以                                                                             采用单次、连续、
+          左对齐或右对齐两                                                                            扫描或间断模式执行
+          种方式存储在16位
+           数据寄存器中
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (9/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+                                                                                              7
+2 STM32的ADC
+
+                               电压输入范围
+                                                                                1
+                                   ADC引脚                                                          6
+                                                                               2
+                                                                                          3               5
+                               注入或规则通道
+
+         ADC                       ADC触发                                  4
+
+
+                                   转换时间
+
+                                 数据寄存器
+
+                                      中断
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                           (10/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+2 STM32的ADC
+
+           信号输入                               触发信号                              A/D转换                      数据保存
+      输入信号经ADC                          软件触发或                              在ADC时钟                         A/D转换结束后，
+      的输入通道                             EXTI外部触发或                          ADCCLK 的驱动                     将转换结果的
+      ADCx_IN0 ~                        定时器触发。                             下，对输入通道                        12位数据以
+      ADCx_IN15                         将硬件触发源                             的信号进行A/D                       左对齐或
+      送入模拟至数字                           分为两类：                              转换，即完成                         右对齐的方式
+      转换器功能模块。                          规则通道和                              采样-保持-量化-                      保存到16位的
+                                        注入通道。                              编码等工作。                         寄存器中。
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                               (11/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+2 STM32的ADC模块
+
+
+
+                                   2.2 ADC                                2.5 ADC                         2.8 ADC
+                                    引脚                                    转换时间                            转换模式
+                                                       2.4 ADC
+             2.1 ADC
+                                                       中断和                                    2.7 ADC
+             电压输入
+                                                        DMA                                   数据对齐
+              范围
+                                                        请求                 2.6 ADC
+                                  2.3 ADC                                                                 2.9 ADC
+                                                                            数据
+                                  通道选择                                                                     校准
+                                                                           寄存器
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                 (12/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.1 ADC输入电压
+
+     输入电压：VREF- ≤ VIN ≤ VREF+
+     决定输入电压的引脚：VREF-、
+     VREF+ 、 VDDA 、 VSSA；
+     VSSA 和 VREF-接地，把 VREF+和
+     VDDA 接 3V3，得到ADC 的输入
+     电压范围为： 0~3.3V。
+           转换后的数值为 x ，
+           对应的模拟电压为 y：
+           2^12 / 3.3 = x / y，
+           => y = (3.3 * x ) / 2^12
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (13/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.1 ADC输入电压                                                           Case 1：
+
+     Case1：Monitor high voltage source
+     VPB0 = 12V * 1/11
+
+                                                                       Case 2：
+     Case2：超出0~3.3V的电压怎么测？
+     输入电压：VREF- ≤ VIN ≤ VREF+
+
+    根据基尔霍夫定律（KCL），
+    节点流入的电流等于流出的电流
+    (Vin - Vout)/R2 + (3.3V - Vout)/R1
+    = Vout / R3
+    Vout = (Vin + 10) /6
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (14/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+                                                                            STM32F103ZET6 ADC IO
+ 2.2 ADC的引脚                                                                     ADC1                 ADC2     ADC3
+                                                         通道
+                                                                              （复用引脚）               （复用引脚）   （复用引脚）
+    ADCx_IN0~ADCx_IN15                       通道 0 (ADC_Channel_0)                PA0                  PA0      PA0
+                                             通道 1 (ADC_Channel_1)                PA1                  PA1      PA1
+   为ADC的输入信号通                                通道 2 (ADC_Channel_2)                PA2                  PA2      PA2
+                                             通道 3 (ADC_Channel_3)                PA3                  PA3      PA3
+   道，即为ADC的输入                                通道 4 (ADC_Channel_4)                PA4                  PA4      PF6
+   GPIO引脚，ADC的GPIO                           通道 5 (ADC_Channel_5)                PA5                  PA5      PF7
+                                             通道 6 (ADC_Channel_6)                PA6                  PA6      PF8
+   引脚均为复用功能，使                                通道 7 (ADC_Channel_7)                PA7                  PA7      PF9
+   用时需配置为模拟输入                                通道 8 (ADC_Channel_8)                PB0                  PB0     PF10
+                                             通道 9 (ADC_Channel_9)                PB1                  PB1
+   模式。                                       通道10(ADC_Channel_10)                PC0                  PC0     PC0
+                                             通道11(ADC_Channel_11)                PC1                  PC1     PC1
+    ADC1还有两个内部
+                                             通道12(ADC_Channel_12)                PC2                  PC2     PC2
+   通道：温度传感器通道                                通道13(ADC_Channel_13)                PC3                  PC3     PC3
+                                             通道14(ADC_Channel_14)                PC4                  PC4
+   和VREFINT 。
+                                             通道15(ADC_Channel_15)                PC5                  PC5
+    Check the datasheet                      通道16(ADC_Channel_16)              温度传感器
+   for each MCU !                            通道17(ADC_Channel_17)             内部参考电压
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                 (15/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+                                                          STM32F103VET6(100pin) /RCT6(64pin) ADC IO
+ 2.2 ADC的引脚                                                                     ADC1                 ADC2     ADC3
+                                                         通道
+                                                                              （复用引脚）               （复用引脚）   （复用引脚）
+    ADCx_IN0~ADCx_IN15                       通道 0 (ADC_Channel_0)                PA0                  PA0      PA0
+                                             通道 1 (ADC_Channel_1)                PA1                  PA1      PA1
+   为ADC的输入信号通                                通道 2 (ADC_Channel_2)                PA2                  PA2      PA2
+                                             通道 3 (ADC_Channel_3)                PA3                  PA3      PA3
+   道，即为ADC的输入                                通道 4 (ADC_Channel_4)                PA4                  PA4       -
+   GPIO引脚，ADC的GPIO                           通道 5 (ADC_Channel_5)                PA5                  PA5       -
+                                             通道 6 (ADC_Channel_6)                PA6                  PA6       -
+   引脚均为复用功能，使                                通道 7 (ADC_Channel_7)                PA7                  PA7       -
+   用时需配置为模拟输入                                通道 8 (ADC_Channel_8)                PB0                  PB0       -
+                                             通道 9 (ADC_Channel_9)                PB1                  PB1
+   模式。                                       通道10(ADC_Channel_10)                PC0                  PC0     PC0
+                                             通道11(ADC_Channel_11)                PC1                  PC1     PC1
+    ADC1还有两个内部
+                                             通道12(ADC_Channel_12)                PC2                  PC2     PC2
+   通道：温度传感器通道                                通道13(ADC_Channel_13)                PC3                  PC3     PC3
+                                             通道14(ADC_Channel_14)                PC4                  PC4
+   和VREFINT 。                                通道15(ADC_Channel_15)                PC5                  PC5
+    Check the datasheet                      通道16(ADC_Channel_16)              温度传感器
+   for each MCU !                            通道17(ADC_Channel_17)             内部参考电压
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                 (16/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.3 ADC通道选择
+       按组进行转换的模式，可以由程序设置实现对
+   多个模拟通道自动地进行逐个采样转换，STM32
+   分为两种组转换模式：规则组和注入组。
+   或者称为：规则通道和注入通道
+
+           规则通道组最多允许                                                                 可通过编程来设定规则通道
+                                                              规则组
+         16个规则通道进行转换                                                                的数量n，n最多可设定为16。
+
+
+                   转换结果保存在同一个16位的规则通道数据寄存器ADC_DR
+                  中，同时，EOC标志被置位，产生相应的中断或DMA请求。
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (17/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.3 ADC通道选择
+
+                   例如：设定n=3，规则通道组由                                                                             规则组
+                1、2、3、5、6、7、9和11通道组成：
+
+
+                                                                         第三次触发，
+          第一次触发                           第二次触发，                                                          第四次触发，
+                                                                         转换的序列
+          时，转换的序                          转换的序列为                                                          转换的序列为
+                                                                         为9和11通道，
+          列为1、2和3                         5、6和7通                                                          1、2和3通道，
+                                                                         然后产生EOC
+          通道；                             道；                                                              以此类推。
+                                                                         事件；
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                  (18/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.3 ADC通道选择
+
+
+        最多允许4个通道进行转                                                                    转换结果保存数据寄存器
+       换，并且对应有4个注入通                                                                   ADC_JDRx中，同时产生ADC
+       道寄存器用来存放注入通                                                                    注入转换结束事件，即JEOC
+       道的转换结果，因此注入                                                                    标志被置位，产生相应的中
+       通道组没有DMA请求。                                                                    断。
+                                                             注入组
+       注入通道组的触发转换                                                                         规则通道组转换好比是程
+       序列和规则通道一样                                                                      序的正常执行，注入通道组
+                                                                                      的转换则好比是一个中断处
+                                                                                      理程序
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (19/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.4 ADC中断和DMA请求                                                   ADC_CR2 : ADON/SWST 和ART/JSWSTART
+                                      软件触发                          由软件编程控制，使能触发启动位
+       ADC转换
+      触发信号的                                                    规则通道组的外部触发源可以是定时器
+       产生方式                                                    的TIM1_CH1~TIM1_CH3，或者由外部中
+                                      外部触发                     断线EXTI_11触发；
+                                                               注入组的外部触发源可以是外部中断线
+                                                               EXTI_15或TIM1_CH4定时器
+                                                                   选择：ADC_CR2 :EXTSEL[2:0]和 JEXTSEL[2:0]
+                                                                   激活：ADC_CR2 :EXTEN 和 JEXTEN
+                                                             • 对于规则通道，如果ADC_CR1寄存器的
+                                                               EOCIE位被置“1”，则会产生EOC中断；
+                                                             • 对于注入通道，如果ADC_CR1寄存器的
+                                                               JEOCIE位被置“1”，则会产生JEOC中断；
+                                                             • ADC1和ADC3的规则通道转换完成后还可
+                                                               产生DMA请求。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                        (20/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.4 ADC中断和DMA请求
+
+                  ADC中断事件主要有三个，
+             ADC_IT_EOC中断针对规则通道，
+                                                                                 1- ADC_SR，ADC_CR1
+             ADC_IT_JEOC中断针对注入通道。                                                2- ADC_HTR，ADC_LTR
+                          中断事件                                         事件标志                               使能控制位
+                 规则组转换结束中断                                       EOC中断
+                                                                                                          EOCIE
+                  ADC_IT_EOC                                 （End of Coversion）
+                 注入组转换结束中断                                     JEOC中断
+                                                                                                          JEOCIE
+                  ADC_IT_JEOC                          （End of injected Coversion）
+                    模拟看门狗中断                                      AWD中断
+                                                                                                          AWDIE
+                    ADC_IT_AWD                              （Analog WatchDOG）
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                (21/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.4 ADC中断和DMA请求
+      DMA请求                                                         使用原因
+
+       适用情况                                                              规则通道的转换只有一个数据寄存器
+                                                                         ADC_DR，每个通道转换完成后，将
+           只有ADC1和ADC3能产生DMA请求，
+                                                                         覆盖以前的数据，所以，可以使用
+           ADC2转换数据可以在双ADC模式中
+                                                                         DMA方式处理数据及时地将已完成
+           使用ADC1的DMA请求。
+                                                                         转换的数据读出。
+
+                           应用
+                            在每次产生转换结束事件EOC标志后，DMA控制器
+                            会把保存在ADC_DR寄存器中的规则组通道的转换数
+                            据传送到SRAM中（用户指定的目标地址）。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (22/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.5 ADC转换时间
+             STM32的ADC                     可选择为采样周期的1.5、7.5、13.5、28.5、
+             的采样时间                         41.5、55.5、71.5或239.5倍。
+                   ADC总的转换时间可以表示为：
+                              ADC总的转换时间 (Tconv) = 采样时间+12.5个周期
+       举
+       例                                                                                    注
+           若采样时间为1.5个周期，PCLK2=72MHz，且
+                                                                                            意    ADC的时钟ADCCLK
+        ADCCLK为APB2的6分频，即12MHz，则
+                                                                                               最大不能超过14MHz，
+          总的转换时间=（1.5+12.5）/12MHz=1.17us
+                                                                                               因此STM32F103系列微
+        如果ADCCLK=14MHz，采样时间为1.5个周期，则
+                                                                                               控制器的ADC最短转换
+               总的转换时间=（1.5+12.5）/14MHz=1us
+                                                                                               时间为1us。
+       *ADC_SMPRx 中的 SMPx[2:0] 位 设置采样周期，最短1.5个周期
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                          (23/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.6 ADC数据寄存器
+
+    一切准备就绪后， ADC 转换后，
+   规则组的数据放在ADC_DR寄存器，
+   注入组的数据放在 JDRx。
+
+                                                                                            1 - 16位有效
+                                                                                            2 - ADC_CR2 ：ALIGN
+                                                                                            3 - 只有一个，多通道采集
+                                                                                               的是最好使用DMA
+
+                                                                                 1 - 16位有效
+                                                                                 2 - ADC_CR2 ：ALIGN
+                                                                                 3 - 有4个这样的寄存器
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                          (24/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.7 ADC数据对齐
+
+
+                    转换结果                                                                      右对齐方式
+                     12位
+                                                          数据对齐
+                    数据寄存                                   问题
+                                                                                              左对齐方式
+                    器16位
+
+                     一般建议采用右对齐，因为数据传输一般是从最低位
+                    开始（也即右边开始）；如果数据位是从高位开始传输的，
+                    可以采用左对齐方式。
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (25/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.8 ADC的转换模式
+
+  • Single mode (单次), which
+  converts only one channel,
+  in single-shot or
+  continuous mode.
+  • Scan mode (扫描), which
+  converts a complete set of
+  pre-defined programmed
+  input channels, in single-shot                                                      单次
+  or continuous mode.                                                                 模式         ADC只执行一次转换
+  • Discontinuous mode (间断),
+                                                   当前ADC转换                连续
+  converts only a single channel
+                                                  一结束就会立即                 模式                       扫描一组模拟通道：
+  at each trigger signal from                                                                      ➢ 单次模式：扫描完本组所有
+                                                  启动下一个转换                             扫描
+  the list of pre-defined                                                                            通道后，ADC自动停止；
+                                                                                      模式
+  programmed input channels.                                                                       ➢ 连续模式：扫描完本组所有
+                                                  用于多个通道的                 间断                         通道后，再从第一个通道继
+                                                  规则组和注入组                 模式                         续扫描。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                            (26/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.8 ADC的转换模式
+
+          间断              以规则组为例，若被转换的                                                   在间断模式下，转换也有其
+          模式            通道为0、1、2、3、6、7、9、                                              特殊的规则：
+                        10，n=3，则                                                       ➢ 当以间断模式转换一个规则
+       第一次触发：进行转换的通道                                                                     组时，转换序列结束后不自
+       序列为0、1、2；                                                                         动从头开始；
+            第二次触发：进行转换的通道                                                              ➢ 当所有子组被转换完成，下
+            序列为3、6、7；                                                                    一次触发启动第一个子组的
+                  第三次触发：进行转换的通道                                                          转换；
+                  序列为9、10，并产生EOC事件；                                                    ➢ 规则组和注入组不能同时设
+                       第四次触发：进行转换的通道                                                     置为间断模式。
+                       序列0、1、2。
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (27/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 2.9 ADC校准
+                                                      校准
+                                                      实现
+                                                                 STM32的ADC具有内置
+          校准                                                的自校准模式，ADC在上
+          目的                                                电后至少2个ADC时钟周
+                      A/D转换过程
+                需要一定的转换                                     期才能开始校准
+                时间，对ADC进行                                                              校准
+                校准可以减少因                                                                要求
+                                                                             建议每次上电后都执行
+                内部电容的 变化
+                                                                        一次ADC校准，以保证采
+                而导致的误差
+                                                                        集数据的准确性
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (28/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+             小结
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (29/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+             小结
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (30/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+3 ADC模块的标准外设库接口函数及应用
+
+
+
+                                           3.1 ADC标准外设库接口函数
+
+
+                                           3.2 ADC标准外设库配置过程
+
+
+                                           3.3 ADC标准外设库应用实例
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (31/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+                                                                                模式选择，ADC_CR1:DUALMOD
+ 3.1 ADC标准外设库接口函数                                                            
+                                                                             
+                                                                                 扫描模式，ADC_CR1:SCAN
+                                                                                 连续转换模式，ADC_CR2:CON
+                                                                                外部触发转换选择，ADC_CR2:EXTTRIG和EXTSEL[2:0]
+
+                         typedefstruct
+                                                       ADC初始化结构体
+     分布在stm32f10x_adc.c文 {
+   件和stm32f10x_adc.h文件中， uint32_t ADC_Mode;          //ADC工作模式
+   stm32f10x_adc.h头文件定义    FunctionalState ADC_ScanConvMode;
+   了ADC初始化结构体，并声                   //是否采用扫描模式
+   明了相应的库函数。               FunctionalState ADC_ContinuousConvMode;
+     ADC初始化结构体                     //是否采用连续转换模式
+   ADC_InitTypeDef用于配置     uint32_t ADC_ExternalTrigConv; //外部触发启动
+   ADC的相关参数。               uint32_t ADC_DataAlign;      //ADC的数据对齐方式
+                           uint8_t ADC_NbrOfChannel; //ADC的通道数目
+                         } ADC_InitTypeDef;
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                             (32/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数                                                             ADC初始化结构体成员及其取值
+              结构体成员                                                                取值范围
+                                             ADC_Mode_Independent         （独立模式）
+                                             ADC_Mode_RegInjecSimult      （同步规则和同步注入模式）
+                                             ADC_Mode_RegSimult_AlterTrig（同步规则和交替触发模式）
+                                             ADC_Mode_InjecSimult_FastInterl （同步注入和快速交替模式）
+             ADC_Mode                        ADC_Mode_InjecSimult_SlowInterl（同步注入和慢速交替模式）
+           （ADC工作模式）                         ADC_Mode_InjecSimult         （同步注入模式）
+                                             ADC_Mode_RegSimult           （同步规则模式）
+                                             ADC_Mode_FastInterl          （快速交替模式）
+                                             ADC_Mode_SlowInterl          （慢速交替模式）
+                                             ADC_Mode_AlterTrig           （交替触发模式）
+        ADC_ScanConvMode                     ENABLE （开启扫描模式）
+       （是否采用扫描模式）                            DISABLE （不开启扫描模式）
+   ADC_ContinuousConvMode ENABLE                           （开启连续转换模式）
+   （是否采用连续转换模式） DISABLE                                    （单次转换模式）
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (33/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数                                                             ADC初始化结构体成员及其取值
+           结构体成员                                                                 取值范围
+
+                                        ADC_ExternalTrigConv_T1_CC1 （定时器1的捕获比较1）
+                                        ADC_ExternalTrigConv_T1_CC2 （定时器1的捕获比较2）
+                                        ADC_ExternalTrigConv_T1_CC3 （定时器1的捕获比较3）
+     ADC_ExternalTrigConv               ADC_ExternalTrigConv_T2_CC2 （定时器2的捕获比较2）
+      （外部触发启动）                          ADC_ExternalTrigConv_T3_TRGO（定时器3的RGO）
+                                        ADC_ExternalTrigConv_T4_CC4 （定时器4的捕获比较4）
+                                        ADC_ExternalTrigConv_Ext_IT11_TIM8_TRGO（外部中断线11触发）
+                                        ADC_ExternalTrigConv_Non（转换由软件触发而不是外部触发启动）
+
+     ADC_DataAlign   ADC_DataAlign_Right（ADC数据右对齐）
+  （ADC的数据对齐方式） ADC_DataAlign_Left （ADC数据左对齐）
+    ADC_NbrOfChannel
+                     ADC_Channel_0 ~ ADC_Channel_17
+   （ADC的通道数目）
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (34/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+               void ADC_DeInit(ADC_TypeDef* ADCx);
+               功能：将外设ADCx的全部寄存器复位为初始值。
+               实例：ADC_DeInit(ADC1); //复位ADC1
+
+                     void ADC_Init(ADC_TypeDef* ADCx, ADC_InitTypeDef* ADC_InitStruct);
+                     功能：初始化ADCx。
+                     实例：ADC_Init(ADC1, &ADC_InitStructure);       //初始化ADC1
+
+                          void ADC_Cmd(ADC_TypeDef* ADCx, FunctionalStateNewState);
+                          功能：使能或失能指定的ADCx。
+                          实例：ADC_Cmd(ADC1, ENABLE);          //使能ADC1
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (35/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+                 void ADC_DMACmd(ADC_TypeDef* ADCx, FunctionalStateNewState);
+                 功能：使能或失能指定的ADCx的DMA请求。
+                 实例：ADC_DMACmd(ADC1, ENABLE);                                      //使能ADC1的DMA请求
+
+         void ADC_ITConfig(ADC_TypeDef* ADCx, uint16_t ADC_IT, FunctionalStateNewState);
+         功能：使能或失能指定的ADCx的中断。
+         例：ADC_ITConfig(ADC1, ADC_IT_EOC|ADC_IT_AWD, ENABLE); //使能ADC1的EOC和AWD中断
+
+                                                      ADC_IT_EOC                 EOC中断屏蔽
+
+               参数ADC_IT取值                         ADC_IT_AWD                 AWDOG中断屏蔽
+
+                                                  ADC_IT_JEOC                   JEOC中断屏蔽
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (36/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+                  void ADC_ResetCalibration(ADC_TypeDef* ADCx);
+                  功能：重置指定ADCx的校准寄存器。
+                  实例：ADC_ResetCalibration(ADC1);                                //重置ADC1的校准寄存器
+
+
+                        FlagStatus ADC_GetResetCalibrationStatus(ADC_TypeDef* ADCx);
+                        功能：获取ADCx的重置校准寄存器状态。
+                        实例：FlagStatus ADC_Status;         //定义状态变量ADC_Status
+                                   ADC_Status=ADC_GetResetCalibrationStatus(ADC1)；
+                                       //获取ADC1的重置校准寄存器的状态
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (37/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+            void ADC_StartCalibration(ADC_TypeDef* ADCx);
+            功能：开始指定ADCx的校准。
+            实例：ADC_StartCalibration(ADC2); //开始ADC2的校准
+
+              FlagStatus ADC_GetCalibrationStatus(ADC_TypeDef* ADCx);
+              功能：获取ADCx的校准状态。
+              实例：ADC_GetCalibrationStatus (ADC2); //获取ADC2的校准状态
+
+                 void ADC_SoftwareStartConvCmd(ADC_TypeDef* ADCx, FunctionalStateNewState);
+                 功能：使能或者失能指定的ADCx的软件转换启动功能。
+                 实例：ADC_SoftwareStartConvCmd(ADC1, ENABLE); //开启ADC1软件转换启动功能
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (38/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+           FlagStatus ADC_GetSoftwareStartConvStatus(ADC_TypeDef* ADCx);
+           功能：获取ADCx软件转换启动状态。
+           实例：FlagStatus ADC_Status; //定义状态变量ADC_Status
+              ADC_Status = ADC_GetSoftwareStartConvStatus(ADC1);
+                              //获取ADC1的软件转换启动状态
+
+            void ADC_RegularChannelConfig(ADC_TypeDef* ADCx, uint8_t ADC_Channel,
+            uint8_t Rank, uint8_t ADC_SampleTime);
+            功能：设置指定ADCx的规则组通道，设置它们的转化顺序和采样时间。
+            实例：
+            ADC_RegularChannelConfig(ADC1, ADC_Channel_2, 1, ADC_SampleTime_7Cycles5);
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (39/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+
+                        uint16_t ADC_GetConversionValue(ADC_TypeDef* ADCx);
+                        功能：返回最近一次ADCx规则组的转换结果。
+                        实例：
+                               uint16_t ADC_ConvertedValue;
+                                 //定义变量ADC_ConvertedValue用于存放ADC转换结果
+                               ADC_ConvertedValue = ADC_GetConversionValue(ADC1);
+                                  //获取ADC1转换结果
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (40/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+                FlagStatus ADC_GetFlagStatus(ADC_TypeDef* ADCx, uint8_t ADC_FLAG);
+                功能：检查ADCx的相应标志位是否置“1”。
+                实例：
+                  FlagStatus ADC_Status;   //定义状态变量ADC_Status
+                  ADC_Status = ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC);
+
+                                        ADC_AnalogWatchdog                                            说明
+                                      ADC_FLAG_AWD                                模拟看门狗标志位
+    ADC_FLAG的值                        ADC_FLAG_EOC                                转换结束标志位
+                                      ADC_FLAG_JEOC                               注入组转换结束标志位
+                                      ADC_FLAG_JSTRT                              注入组转换开始标志位
+                                      ADC_FLAG_STRT                               规则组转换开始标志位
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                        (41/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.1 ADC标准外设库接口函数
+
+                  void ADC_ClearFlag(ADC_TypeDef* ADCx, uint8_t ADC_FLAG);
+                  功能：清除ADCx的相应标志位。
+                  实例： ADC_ClearFlag(ADC1,ADC_FLAG_STRT);
+                             //清除ADC1的规则组转换开始标志位
+
+                        ITStatus ADC_GetITStatus(ADC_TypeDef* ADCx, uint16_t ADC_IT);
+                        功能：获取ADCx的ADC_IT中断的状态。
+                        实例：
+                                 ITStatus ADC_Status;//定义状态变量ADC_Status
+                                 ADC_Status = ADC_GetITStatus(ADC1, ADC_IT_EOC);
+                                  //获取ADC1的EOC中断屏蔽状态
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (42/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.2 ADC标准外设库配置过程
+                                                                                    配置ADCx的通道、采样周期及序列
+                                                                               ADC_RegularChannelConfig(ADC1, ADC_Channel_11, 1,
+                                 开启时钟
+                                                                                         ADC_SampleTime_55Cycles5);
+                           (GPIO时钟和ADCx时钟)
+     A                    RCC_APB2PeriphClockCmd()
+
+     D                                                                                          使能ADC
+                              设置GPIO为模拟输入                                                 ADC_Cmd(ADC1, ENABLE);
+     C                         GPIO_Mode_AIN
+     的                                                                                         复位校准ADCx
+     配                        初始化ADCx参数
+                    (配置ADCx工作模式、数据对齐方式等)
+                                                                                         ADC_ResetCalibration(ADC1)；
+
+     置               ADC_Init(ADC1, &ADC_InitStructure);
+
+     流                                                                                         启动ADCx校准
+                                                                                          ADC_StartCalibration(ADC1);
+     程                         配置ADC的时钟
+                             RCC_ADCCLKConfig
+     图                       (RCC_PCLK2_Div8);
+                                                                                               读取ADC的值
+                                                                                          ADC_StartCalibration(ADC1);
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                            (43/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.2 ADC标准外设库配置过程
+
+       步骤1：开启PC端口和ADC1的                                                     步骤2：复位ADC1，同时设置
+       时钟，设置PC1为模拟输入                                                        ADC1的分频因子
+                                                                             复位：将ADC1的全部寄存器重新设置
+         使能PC端口和ADC1的时钟
+                                                                             为默认值；
+         使用RCC_APB2PeriphClockCmd()                                          设置分频因子：确保ADC1的时钟不超
+         函数                                                                  过14MHz，此处将分频因子设为6，
+         设置PC1的输入方式为模拟输入。                                                    ADC1的时钟为72/6=12MHz；
+                                                                             库函数的实现方式为：
+                                                                             RCC_ADCCLKConfig(RCC_PCLK2_Div6);
+                                                                             ADC时钟复位的库函数为：
+                                                                              ADC_DeInit(ADC1);
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                        (44/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.2 ADC标准外设库配置过程
+                                                                                 ADC1 初始化配置实例
+       步骤3：初始化ADC1参数，设置
+       ADC1的工作模式及其它参数                       ADC_InitStructure.ADC_Mode =
+                                            ADC_Mode_Independent;
+         初始化参数涉及设置单次转换模式、 ADC_InitStructure.ADC_ScanConvMode =
+         触发方式和数据对齐方式等参数，使 ENABLE;
+                                            ADC_InitStructure.ADC_ContinuousConvMode
+         用库函数ADC_Init()来实现。
+                                            = ENABLE;
+         Void ADC_Init(ADC_TypeDef * ADCx， ADC_InitStructure.ADC_ExternalTrigConv =
+         ADC_InitTypeDef * ADC_InitStruct); ADC_ExternalTrigConv_None;
+                                            ADC_InitStructure.ADC_DataAlign =
+         第一个参数用于指定具体的                       ADC_DataAlign_Right;
+         ADCx (x=1,2,3)，                    ADC_InitStructure.ADC_NbrOfChannel = 1;
+         第二个参数是个结构体。                        ADC_Init(ADC1, &ADC_InitStructure);
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (45/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.2 ADC标准外设库配置过程
+
+       步骤4：使能ADC并校准                                                         步骤5：读取ADC的值
+         进行复位校准和ADC校准；
+                                                                             读取ADC转换结果的标准外设库函数
+         复位校准的标准外设库函数为
+                                                                             为：ADC_GetConversionValue(ADC1);
+         ADC_ResetCalibration(ADC1)
+         ADC校准的标准外设库函数为
+         ADC_StartCalibration(ADC1)。
+         ADC已准备就绪后软件开启ADC1转换的
+         标准外设库函数为：
+         ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (46/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                                                           ADC的引脚
+
+                                                       硬件设计
+        功能
+                                                                                                                  +3.3V
+         通过PC1 (ADC1通道11)                                                       STM32F103
+
+
+         采集外部电压值，经                                                                                    ADC1_IN11
+
+         A/D转换后，采用DMA                                                                               PC1
+         方式将该数字量和由
+         该数字量对应计算获
+             得的电压值通过串口                                       STM32的PC1引脚连接到一个滑动变阻器上
+                                                            采集滑动变阻器的模拟输入电压，经A/D转换
+             显示出来。
+                                                            后采用DMA方式传输到内存，并通过串口显示。
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                       (47/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                                单通道-DMA读取
+      功能
+               通过PC1 (ADC1通道11) 采集                                         1) 初始化ADC用到的GPIO
+            外部电压值，经A/D转换后，用                                                2) 初始化ADC初始化结构体
+            DMA方式将该数字量和由该数字
+                                                                           3) 配置ADC时钟，配置通道的转换
+            量对应计算获得的电压值通过串
+                                                                              顺序和采样时间
+            口显示出来。
+                                                                           4) 使能ADC转换完成中断，配置中断
+      硬件                   STM32F103                     +3.3V                优先级
+      设计                                     ADC1_IN11
+                                                                           5) DMA设置
+                                                                           6) 使能DMA
+                                           PC1
+                                                                           7) 使能ADC，准备开始转换
+                                                                           8) 校准ADC
+   STM32的PC1引脚连接到一个滑动变阻器                                                   9) 软件触发ADC，真正开始转换
+   上模拟输入电压，经A/D转换后采用DMA                                                    10)数据处理
+   方式传输到内存，并通过串口显示。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (48/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                           adc.c文件
+   #include "adc.h"                                                        static void ADC1_Mode_Config(void)
+   #define ADC1_DR_Address ((u32)0x40012400+0x4c)                      {
+           //ADC1的数据寄存器ADC1_DR的地址                                          DMA_InitTypeDef DMA_InitStructure;
+   _ _IO uint16_t ADC_Converted_Value;                                     ADC_InitTypeDef ADC_InitStructure;
+          //定义一个变量用于存放ADC转换结果                                                 /* DMA channel1 configuration */
+   static void ADC1_GPIO_Config(void)                                      DMA_DeInit(DMA1_Channel1);
+   { GPIO_InitTypeDef GPIO_InitStructure;                                  DMA_InitStructure.DMA_PeripheralBaseAddr =
+      RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);                      ADC1_DR_Address;        //ADC1地址
+         //开启DMA1的时钟                                                       DMA_InitStructure.DMA_MemoryBaseAddr =
+         /*开启 ADC1 and GPIOC时钟*/                                           (u32)&ADC_Converted_Value; //内存地址
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1 |                         DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+     RCC_APB2Periph_GPIOC, ENABLE);                                               //外设作为数据传输的来源
+         /*配置 PC1 为模拟输入*/                                                   DMA_InitStructure.DMA_BufferSize = 1; //DMA传输1个数据
+      GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;                             DMA_InitStructure.DMA_PeripheralInc =
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;                            DMA_PeripheralInc_Disable; //外设地址固定
+      GPIO_Init(GPIOC, &GPIO_InitStructure);                                DMA_InitStructure.DMA_MemoryInc =
+    }                                                                          DMA_MemoryInc_Disable;       //内存地址固定
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                     (49/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                            adc.c文件
+     DMA_InitStructure.DMA_PeripheralDataSize =                            ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+        DMA_PeripheralDataSize_HalfWord; //传输单位为半字                         //数据对齐方式为右对齐
+     DMA_InitStructure.DMA_MemoryDataSize =                                ADC_InitStructure.ADC_NbrOfChannel = 1;
+        DMA_MemoryDataSize_HalfWord;                                       //要转换的通道个数
+     DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;                       ADC_Init(ADC1, &ADC_InitStructure);
+                         //循环传输DMA模式                                       RCC_ADCCLKConfig(RCC_PCLK2_Div8);
+     DMA_InitStructure.DMA_Priority = DMA_Priority_High;                   //配置ADC时钟，为PCLK2的8分频，即9MHz
+     DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;                              /*配置ADC1的通道11为55.5个采样周期，序列为1 */
+     DMA_Init(DMA1_Channel1, &DMA_InitStructure);                          ADC_RegularChannelConfig(ADC1, ADC_Channel_11, 1,
+             //配置DMA通道1 (注意 L 和 1 的区分)                                     ADC_SampleTime_55Cycles5);
+     DMA_Cmd(DMA1_Channel1, ENABLE); //使能DMA1通道1                           ADC_DMACmd(ADC1, ENABLE); //使能ADC1 的DMA
+     /* ADC1参数配置 */                                                        ADC_Cmd(ADC1, ENABLE);        //使能ADC1
+     ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
+                                                                           ADC_ResetCalibration(ADC1); //复位校准ADC1寄存器
+                            //独立ADC模式
+                                                                           while(ADC_GetResetCalibrationStatus(ADC1));
+     ADC_InitStructure.ADC_ScanConvMode = DISABLE ;
+                                                                             //等待校准寄存器复位完成
+                            //禁止扫描模式
+     ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;                    ADC_StartCalibration(ADC1); //启动ADC1校准
+                            //开启连续转换模式                                     while(ADC_GetCalibrationStatus(ADC1));   //等待校准完成
+     ADC_InitStructure.ADC_ExternalTrigConv =                              ADC_SoftwareStartConvCmd(ADC1, ENABLE); //触发ADC转换
+        ADC_ExternalTrigConv_None;      //不用外部触发                       }
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                         (50/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+                                                                                                               软件
+ 3.3 ADC标准外设库应用实例                                                           应用程序实现                             设计
+                                                                            （main.c文件）
+                                                                                                    main.c       adc.c      adc.h
+   1. 主程序main.c中ADC1初始化，通过                              #include "stm32f10x.h"
+                                                        #include "usart.h"                           文件          文件        头文件
+   调用 adc.c里的 ADC1_GPIO_Config()
+                                                        #include "adc.h"
+   和ADC1_Mode_Config() 函数来实现                            #include "systick.h"
+                                                        //ADC1转换的电压值通过DMA方式传送到SRAM
+   void ADC1_Init(void)                                 extern _ _IO uint16_t ADC_Converted_Value;
+   {                                                    //定义一个局部变量，用于保存转换计算后的电压值
+                                                        float ADC_ConvertedValueLocal;
+        ADC1_GPIO_Config();
+                                                        int main(void)
+        ADC1_Mode_Config();                             {
+   }                                                       ADC1_Init();
+                                                           printf(“\n\r ADC 模数转换测试实例 \r");
+   2．新建与adc.c对应的头文件adc.h                                   while (1)
+                                                           {
+   #ifndef__ADC_H                                            ADC_ConvertedValueLocal = (float) ADC_Converted_Value /4096*3.3;
+   #define__ADC_H                                              //计算数字量对应的电压值
+                                                             printf("\r\n 当前电压采集值的16进制 = 0x%04X \r\n",
+   #include "stm32f10x.h"                                    ADC_Converted_Value);
+   void ADC1_Init(void);                                     printf("\r\n 当前电压的模拟值 = %f V \r\n", ADC_ConvertedValueLocal);
+                                                             Delay_ms(500);    //调用SysTick定时器实现精确延时
+   #endif                                                  }
+                                                        }
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                         (51/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                            单通道-中断读取
+
+                                                                      // 中断处理函数
+ 1) 初始化ADC用到的GPIO
+                                                                      // ADC 单通道采集，不使用DMA，一般只有
+ 2) 初始化ADC初始化结构体
+                                                                      ADC2才这样使用，因为ADC2不能使用DMA
+ 3) 配置ADC时钟，配置通道的转换顺序和
+    采样时间                                                              void ADC_IRQHandler(void)
+ 4) 使能ADC转换完成中断，配置中断                                                  {
+    优先级                                                                   if (ADC_GetITStatus(ADCx,ADC_IT_EOC)==SET)
+ 5) 使能ADC，准备开始转换                                                              { // 读取ADC的转换值
+ 6) 校准ADC                                                                       ADC_ConvertedValue =
+ 7) 软件触发ADC，真正开始转换                                                              ADC_GetConversionValue(ADCx);
+ 8) 编写中断服务函数，读取转换数据                                                           }
+ 9) 编写main函数，把转换数据打印出来                                                        ADC_ClearITPendingBit(ADCx, ADC_IT_EOC);
+                                                                      }
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                              (52/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 3.3 ADC标准外设库应用实例                                                          其他ADC 方式？
+
+ // 双ADC的规则同步                                                           // 双ADC的规则同步
+ ADC_InitStructure.ADC_Mode = ADC_Mode_RegSimult;                       ADC_InitStructure.ADC_Mode = ADC_Mode_RegSimult;
+ ADC_InitStructure.ADC_ScanConvMode = ENABLE ;                          ADC_InitStructure.ADC_ScanConvMode = ENABLE ;
+ ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;                     ADC_InitStructure.ADC_ContinuousConvMode = ENABLE;
+ ADC_InitStructure.ADC_ExternalTrigConv =                               ADC_InitStructure.ADC_ExternalTrigConv =
+ ADC_ExternalTrigConv_None;       //软件开启即可                              ADC_ExternalTrigConv_None; //软件开启即可
+ ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;                 ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
+ ADC_InitStructure.ADC_NbrOfChannel = NOFCHANEL;                        ADC_InitStructure.ADC_NbrOfChannel = NOFCHANEL;
+ ADC_Init(ADCx_1, &ADC_InitStructure);        // 初始化ADC                 ADC_Init(ADCx_2, &ADC_InitStructure);      // 初始化ADC
+ RCC_ADCCLKConfig(RCC_PCLK2_Div8);                                      RCC_ADCCLKConfig(RCC_PCLK2_Div8);
+ ADC_RegularChannelConfig(ADCx_1, ADCx_1_CHANNEL, 1,                    ADC_RegularChannelConfig(ADCx_2, ADCx_2_CHANNEL, 1,
+                          ADC_SampleTime_239Cycles5);                                            ADC_SampleTime_239Cycles5);
+ ADC_DMACmd(ADCx_1, ENABLE);                                            // ADCx_2 采用同样配置，但是使能外部触发
+                                                                         ADC_ExternalTrigConvCmd(ADC2, ENABLE);
+ // 由于没有采用外部触发， ADCx_1使用软件触发ADC转换                                       // 由于没有采用外部触发，所以使用软件触发ADC转换
+                                                                        ADC_SoftwareStartConvCmd(ADCx_1, ENABLE);
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                            (53/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+              练习：举一反三                                                                     Proteus 仿真
+
+
+                  硬件设计
+
+     经常用电阻分压电路来监测充电
+     电池的电压状态，不同输入端口
+     该如何配置？
+
+
+
+                                                                            PA1 为输入
+                                                                            端口，代码
+                                                                            该如何修改？
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (54/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 练习：读取内部温度传感器数据
+                                             通过连接在ADC1的通道16上的STM32F103内
+                  硬件设计                       部温度传感器获取芯片内部的温度；
+                                             利用DMA或者中断方式传输方式
+                                             通过串口将采集到的温度数据显示出来。
+
+                                                            STM32F103           ✓ 思考具体程序如何编写：
+          PC机                                                                     LED_Init();
+        串口调试助手                       DMA传输             USART1_Tx                  ADC1_GPIO_Config();
+                                                                                  ADC1_Mode_Config();
+                                                       USART1_Rx
+
+                                                           温度传感器                  // (NVIC or DMA setup)
+                                                         ADC_Channel_16
+                                                                                  USART_Init_Config();
+                                                                                  SysTick_Init();
+      PC机需安装USB转串口
+        模块CH341驱动
+                                                                                  printf(); // …
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                        (55/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC                                                                                        DAC Resource
+
+
+
+
+                                                                                                                   F103ZET6
+                                                                                                                   F103VET6
+
+
+                                                                                    F103RCT6
+                                                  F103C8T6
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                    (56/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC
+   主要功能：
+   ① 2个DAC：每个对应1个输出通道
+   ② 8位或者12位单调输出
+   ③ 12位模式下数据左对齐或者右对齐
+   ④ 同步更新功能
+   ⑤ 噪声波形生成
+   ⑥ 三角波形生成
+   ⑦ 双DAC通道同时或者分别转换
+   ⑧ 每个通道都有DMA功能
+     • VDDA和VSSA为DAC模拟部分的供电。
+     • Vref+则是DAC模块的参考电压。
+     • DAC_OUTx就是DAC的输出通道了
+       （对应PA4或者PA5引脚）。
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (57/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (58/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC                                                                                                       还记得
+                                                                                                                   这里？
+                                             定时器时钟控制器
+
+
+
+
+                                                                                            Reference Voltage = (VREF+) – (VREF-)
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                            (59/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC
+      DAC配置步骤：
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (60/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+   STM32 DAC
+  Digital Data Update Rate
+  The transfer speed from memory to
+  the DAC is limited by several
+  factors, among them:
+  • The clock cycle of the APB or of
+    the AHB (DAC clock)
+  • The DMA transfer cycle from
+    memory to the DAC (includes the
+    AHB to APB bridge)
+  • The trigger mechanism itself
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (61/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+                                                         Step1: Open CubeMX & Create New Project
+   STM32 DAC 实例                                          Step2: Choose The Target MCU
+                                                         Step3: Set correct System Clock Configuration
+                                                         Step4: Enable The DAC1 Output In Normal Mode
+                                                         & Buffer Enable
+                                                         Step5: Generate Code & Program In Your IDE
+
+
+
+ For 1 V output,
+ the DOR is calculated from
+ Vout = DOR x (VREF / 4096)
+  1 V = DOR x (3.3 / 4096)
+     => DOR = 1241
+ And so on for the other
+ voltages.
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (62/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+本章小结                                                  ADC模块的标准外设
+                                                      库接口函数及应用                                            STM32的DAC模块
+       ADC基础理论知识                                      • 接口函数                                              • 数据/电压范围、
+       • 转换过程                                         • 配置过程                                                引脚、控制
+       • 主要技术参数                                       • 应用实例                                              • 配置过程
+
+
+                  1                         2                        3                          4              5
+
+
+                      STM32的ADC模块                                               ADC模块的HAL库接口
+                      • 电压范围、引脚、通道选择、                                           函数及应用
+                        中断、DMA请求、转换时间、                                          • 接口函数
+                        数据对齐、转换模式、校准                                            • 应用实例
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                (63/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+              AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (64/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+                  Q&A
+       • 传感器的基本参数有哪些？什么情况下传感器需要使用ADC接口？
+       • STM32的ADC通道有哪些？有哪几种工作模式？
+       • ADC挂着哪条 RCC Bus？
+       • ADC端口配置时 GPIO_Mode 选择什么？
+       • ADC模块采样时间与哪些设置相关？
+       • 简要分析STM32的ADC的精度和速度。
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (65/82)
+STM32
+
+
+
+
+        The   End!
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (67/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+4 ADC模块的HAL库接口函数及应用
+
+
+
+
+                                     4.1          ADC的HAL库接口函数
+
+
+
+                                     4.2          ADC的HAL库应用实例
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (68/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 4.1 ADC的HAL库接口函数
+                                                                                                    定义在stm32f1xx_hal_adc.c
+                                                                                                    源文件
+                                                                                                    stm32f1xx_hal_adc.h头文件
+                                                                                                    中可以查看HAL库中DMA库
+                                                                                                    函数的声明以及相关的结
+                                                                                                    构体定义和串口一样
+                                                                                                    可以通过轮询、中断和
+                                                                                                    DMA三种方式进行操作。
+
+                                                      HAL_ADC_Init(ADC_HandleTypeDef* hadc);
+                                                      功能描述：ADC初始化函数
+           ADCHAL库常用                                  HAL_ADC_DeInit(ADC_HandleTypeDef *hadc);
+        初始化及复位函数                                      功能描述：ADC复位函数
+                                                      void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc);
+                                                      功能描述：ADC初始化配置函数，该函数被HAL库内部调用
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                   (69/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 4.1 ADC的HAL库接口函数                                                     ADC的HAL库常用接口函数
+
+             类型                                                         函数及功能描述
+                     HAL_ADC_Start(ADC_HandleTypeDef* hadc);
+                     功能描述：启动ADC转换
+                     HAL_ADC_Stop(ADC_HandleTypeDef* hadc);
+               轮询方式 功能描述：停止ADC转换
+                     HAL_ADC_PollForConversion(ADC_HandleTypeDef* hadc, uint32_t Timeout);
+                     功能描述：等待转换结束，采用超时管理机制
+     引脚              HAL_ADC_Start_IT(ADC_HandleTypeDef* hadc);
+     功能              功能描述：中断方式下启动ADC 转换
+               中断方式 HAL_ADC_Stop_IT(ADC_HandleTypeDef* hadc);
+     操作
+                     功能描述：中断方式下停止ADC 转换
+     函数              HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length);
+                     功能描述：DMA方式下启动ADC转换
+               DMA方式
+                     HAL_ADC_Stop_DMA(ADC_HandleTypeDef* hadc);
+                     功能描述：DMA方式下停止ADC转换
+                     uint32_t HAL_ADC_GetValue(ADC_HandleTypeDef* hadc);
+                     功能描述：轮询或中断方式下获取ADC转换值
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (70/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 4.1 ADC的HAL库接口函数                                                     ADC的HAL库常用接口函数
+
+        类型                       函数及功能描述
+       void HAL_ADC_IRQHandler(ADC_HandleTypeDef* hadc);
+       功能描述：ADC中断处理函数
+  中断处理 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
+   函数  功能描述：ADC中断回调函数，用户在该函数内编写实际的中断处理程序
+ （回调函数）void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc);
+       功能描述：ADC转换一半时调用的中断回调函数
+          HAL_ADC_ConfigChannel(ADC_HandleTypeDef* hadc,
+      外设
+          ADC_ChannelConfTypeDef* sConfig);
+     配置函数
+          功能描述：ADC配置函数
+          uint32_t HAL_ADC_GetState(ADC_HandleTypeDef* hadc);
+      外设  功能描述：获取ADC转换状态函数
+     状态函数 uint32_t HAL_ADC_GetError(ADC_HandleTypeDef *hadc);
+          功能描述：获取ADC错误函数
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (71/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 4.1 ADC的HAL库接口函数                                                   2．启动ADC中断转换函数HAL_ADC_Start_IT()
+  1．启动ADC转换函数HAL_ADC_Start()                                            if(HAL_ADC_StartIT(&hadc1) != HAL_OK)
+                                                                       {
+ 使 if(HAL_ADC_Start(&hadc1) != HAL_OK)                                     Error_Handler();
+                                                                       }
+ 用 { Error_Handler();                                                  void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+    }
+ 范                                                                     { /* 获取ADC转换结果 */
+    /*等待转换结束*/                                                            ADCx_ConvertedValue = HAL_ADC_GetValue(&hadc1);
+ 例 HAL_ADC_PollForConversion(&hadc1, 10);                              }
+      if(HAL_ADC_GetState(&hadc1) == HAL_ADC_STATE_EOC_REG)
+      { /*获取转换结果*/                                                              3．启动ADC的DMA转换函数
+      ADCx_ConvertedValue = HAL_ADC_GetValue(&hadc1);                           HAL_ADC_Start_DMA()
+      }
+                                     if(HAL_ADC_Start_DMA(&hadc1, &ADCx_ConvertedValue, 1) != HAL_OK)
+                                     { Error_Handler();
+                                     }
+                                     void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+                                     {    /* DMA传输结束，指示灯LED亮 */
+                                     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET);
+                                     }
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                      (72/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+                                                                                             STM32内部温度传感器说明
+ 4.2 ADC的HAL库应用实例
+
+                  功能描述
+
+          内部有一个温度传感器，
+         测量范围为：-40℃~125℃，
+         测量精度范围为±1.5℃，用                                                                                   V25为温度传感器在
+                                                                                                             ͦ 时的输出电压，
+                                                                                                          25 C
+         来测量芯片内部的温度，连                                                                                     典型值为1.43 V；
+         接在ADC1_IN16的输入通道
+         上。
+             本实例将采集到的温度数
+         据通过串口发送到PC机。
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                               (73/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+                                                                                                               STM32F103
+ 4.2 HAL库ADC应用实例                                                                      PC机
+                                                                                    串口调试助手            DMA传输   USART1_Tx
+                                                                                                              USART1_Rx
+                                                                                                                温度传感器
+              硬件设计                                                               PC机需安装USB转
+                                                                                                              ADC_Channal_16
+
+                                                                                 串口模块CH341驱动
+
+          通过连接在ADC1的通道16上的STM32F103
+          内部温度传感器获取芯片内部的温度；
+          利用DMA传输方式通过串口将采集到的温度数据显示出来。
+
+              软件设计
+            新建                               STM32CubeMX                          生成                           编写
+        STM32CubeMX
+                                             功能参数配置                              工程代码                         应用程序
+        工程，选择MCU
+
+
+                                                                   设置STM32时钟                          串口USART1
+                          配置RCC                 配置ADC
+                                                                   系统和ADC的时钟                            配置
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                            (74/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——新建STM32CubeMX工程                                                               RCC配置
+      新建STM32CubeMX工程，选择
+     MCU，这里选择STM32F103ZETx                                  HSE: Crystal/Ceramic Resonator
+                                                            LSE: Disable”
+     芯片，读者可根据自己的目标板
+                                                                                      外部晶振为8MHz
+     选择相应的芯片
+                                                                                      配置系统时钟为72MHz
+                                                                                      APB2为72MHz
+                                                                                      APB1为36MHz
+                                                                                      ADC为12MHz
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (75/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置                                                   ADC配置—设置ADC1的通道和参数
+       本实例采用ADC1的“Temperature                                                              在ADC1参数选项配置页的
+     Sensor Channel”通道（即连接在                                                              “Parameter Settings”中对
+     ADC1_IN16）                                                                          ADC1的相关参数进行设置：
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                          (76/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置
+       ADC配置——开启ADC1的中断                                                    ADC配置——添加ADC1的DMA传输
+      在ADC1参数配置“Configuration”
+   选项配置页的“NVIC Settings”中开启
+   ADC1的全局中断
+
+
+
+
+     在ADC1参数配置“DMA Settings”中，
+     添加ADC1的DMA传输方式，
+     设置优先级“Priority”为“High”，
+     “Mode”选择为“Circular”，“Data
+     Width”设置为“Half Word”
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (77/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——STM32CubeMX功能参数配置                                                       串口USART1配置
+
+
+
+         设置USART1为
+         “Asychronous”模式
+         波特率设置为115200，
+         数据位数为8
+         校验位选择无校验
+         停止位为1位
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (78/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——生成工程代码                                                       在“Code Generator”选项栏中勾选
+                                                                  “Generate peripheral initialization as a pair
+     配置keil工程名称和存放位置                                              of ’.c/.h’ files per IP”，将外设初始化的代码
+ “Project Name”为“MyProject_ADC”，                                  设置生成为独立的.c源文件和.h头文件。
+ “Toolchain/IDE”选择“MDK-ARM V5”
+
+
+
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                          (79/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——编写应用程序                                                 注意勾选“Use MicroLIB”
+
+    ◆ 在main.c文件中的添加代码。先定义两个变量                                      ◆ 在usart.c的
+      DC_Converted_Value和MCU_Temperature ，                         /* USER CODE BEGIN 1 */
+      用于存放数据，将此代码放在main.c文件中的                                      和 /* USER CODE END 1 */ 之间
+      /* USER CODE BEGIN PV */和 /* USER CODE END PV */             添加代码：
+      之间。                                                          #include <stdio.h>
+
+
+    /* USER CODE BEGIN PV */                                       /* USER CODE BEGIN 1 */
+                                                                   //重定向fputc函数
+    //定义V25和Avg_Slope两个宏                                           int fputc(int ch, FILE *f)
+    #define V25 1.43                                               { HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xffff);
+                                                                     return ch;
+    #define Avg_Slope 0.0043
+                                                                   }
+                                                                   //重定向fgetc函数
+    uint16_t ADC_Converted_Value;                                  int fgetc(FILE * f)
+    //用于存放AD转换的结果                                                  { uint8_t ch = 0;
+    uint16_t MCU_Temperature;                                         HAL_UART_Receive(&huart1,&ch, 1, 0xffff);
+     //用于存放芯片内部的温度值                                                   return ch;
+                                                                   }
+    /* USER CODE END PV */                                         /* USER CODE END 1 */
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                                       (80/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——编写应用程序                                                main.c               DMA方式
+   /* USER CODE BEGIN 2 */
+   /* ADC1校准*/
+   HAL_ADCEx_Calibration_Start(&hadc1);
+   /*启动ADC1的DMA转换 */
+   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&ADC_Converted_Value, sizeof(&ADC_Converted_Value));
+   /* USER CODE END 2 */
+   while (1)
+   {
+     /* USER CODE END WHILE */
+     /* USER CODE BEGIN 3 */
+     HAL_Delay(1000);
+     printf("----ADC+DMA+USART实验 -----\n");
+     MCU_Temperature = (V25 - ADC_Converted_Value*3.3/4095)/Avg_Slope+25;
+     printf("\r\n The MCU temperature = %3d \r\n ", MCU_Temperature);
+   }
+   /* USER CODE END 3 */
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (81/82)
+Progress: ADC基础 >> STM32 ADC模块 >> ADC 标准外设库与应用 >> STM32 DAC >> Summary >> Supplementary >> ADC模块HAL库与应用
+
+
+
+
+ 软件设计——编写应用程序                                                main.c               轮询方式 (不采用DMA）
+    /* USER CODE BEGIN 3 */                                        while(1)中代码
+    HAL_ADC_Start(&hadc1);           //启动ADC转换
+    HAL_ADC_PollForConversion(&hadc1, 50);
+         //等待转换结束，第二个参数为超时时间，单位为ms
+         //判断转换完成标志位是否设置，HAL_ADC_STATE_REG_EOC为转换完成标志位
+    if(HAL_IS_BIT_SET(HAL_ADC_GetState(&hadc1), HAL_ADC_STATE_REG_EOC))
+    {
+       ADC_Converted_Value = HAL_ADC_GetValue(&hadc1); //读取ADC转换数据，12位
+       MCU_Temperature = (V25-ADC_Converted_Value*3.3/4095)/Avg_Slope+25;
+       printf(“MCU Temperature : %2d 度\r\n", MCU_Temperature);
+    }
+    HAL_Delay(1000);
+    /* USER CODE END 3 */
+
+EE114 Embedded System -> Lecture 18 STM32 ADC & DAC                                                       (82/82)
+

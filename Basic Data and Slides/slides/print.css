@@ -1,0 +1,173 @@
+@page {
+  size: A4;
+  margin: 7mm 7mm 7mm 7mm;
+}
+
+html,
+body,
+.markdown-body,
+.markdown-preview,
+.vscode-body {
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", Arial, sans-serif;
+  font-size: 8.2pt;
+  line-height: 1.14;
+  color: #111;
+}
+
+body,
+.markdown-body,
+.markdown-preview,
+.vscode-body {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 15pt;
+  line-height: 1.08;
+  margin: 0 0 4px;
+  padding: 0;
+}
+
+h2 {
+  font-size: 11pt;
+  line-height: 1.08;
+  margin: 6px 0 3px;
+  padding: 0 0 1px;
+  border-bottom: 0.4px solid #999;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 9.4pt;
+  line-height: 1.08;
+  margin: 4px 0 2px;
+  padding: 0;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 8.6pt;
+  line-height: 1.08;
+  margin: 3px 0 1px;
+}
+
+p,
+blockquote,
+ul,
+ol,
+dl,
+pre,
+table {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+p {
+  orphans: 2;
+  widows: 2;
+}
+
+ul,
+ol {
+  padding-left: 1.15em;
+}
+
+li {
+  margin: 0;
+  padding: 0;
+}
+
+li > p {
+  margin: 0;
+}
+
+blockquote {
+  padding: 1px 0 1px 6px;
+  border-left: 2px solid #999;
+}
+
+hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: 0.4px solid #aaa;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 7.1pt;
+  line-height: 1.08;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+th,
+td {
+  padding: 1px 2px;
+  border: 0.35px solid #999;
+  vertical-align: top;
+}
+
+th {
+  font-weight: 700;
+  background: #f1f1f1;
+}
+
+code,
+kbd,
+samp {
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: 7.1pt;
+}
+
+pre {
+  padding: 3px 4px;
+  line-height: 1.08;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f6f6f6;
+  border: 0.35px solid #bbb;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+pre code {
+  font-size: 7pt;
+}
+
+a {
+  color: #111;
+  text-decoration: none;
+}
+
+strong {
+  font-weight: 700;
+}
+
+/* Compact the multiple-choice exercise section without changing the markdown source. */
+h2:nth-of-type(n) ~ p:has(strong:first-child) {
+  margin-top: 3px;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

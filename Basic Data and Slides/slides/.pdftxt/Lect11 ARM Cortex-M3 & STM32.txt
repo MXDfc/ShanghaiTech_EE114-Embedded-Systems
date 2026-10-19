@@ -1,0 +1,1543 @@
+             EE114: Introduction to
+               Embedded Systems
+Dr. Tao Wu   吴涛     研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ARM Cortex-M3 & STM32
+
+                      ◆ 理解冯诺依曼结构与哈佛结构的区别；
+                      ◆ 了解CISC和RISC的区别和联系；
+                      ◆ 了解ARM体系结构；
+                      ◆ 理解和掌握Cortex-M3的内核结构、
+                        寄存器组、存储结构及NVIC；
+                      ◆ 理解和掌握STM32微控制器内部结构，
+                        包括系统总线、存储结构及时钟系统。
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (2/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ARM Cortex-M3 & STM32
+
+
+                                     1. 嵌入式系统基础知识
+
+                                     2. ARM 简介
+
+                                     3. Cortex-M3 内核
+
+                                     4. STM32 微控制器结构
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (3/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1 嵌入式系统基础知识
+
+                          1.1           冯诺依曼结构与哈佛结构
+
+                                         1.2           ARM存储模式
+
+                                                            1.3    CISC和RISC
+
+                                                                     1.4            流水线技术
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                   (4/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.1 冯诺依曼结构
+
+von Neumann                      存储器
+                                                                   指令地址和数据地址指向同一个
+architecture
+                                                                  存储器的不同物理位置，统一编址，
+           输入设备                  运算器                输出设备
+                                                                  宽度相同。
+                                                                   由于指令和数据放在同一个存储
+                                 控制器                              器中，因此冯诺依曼结构的计算机
+                                  CPU                             不能同时既取指令又取数据
+                      数据线                   控制线与反馈线
+                                                                                 von Neumann Architecture
+                                                                                                 存储器
+                                                                                        地址
+         典型的冯诺依曼计算机结构框图                                                 程序计数器
+                                                                           PC                     指令
+                                                                                                            同一个存储器
+                                                                                                  ……
+         计算机由运算器、控制器、                                                      CPU
+                                                                                      指令/数据
+                                                                                                  数据
+                                                                                                  ……
+        存储器、输入设备和输出设备
+        五大部件组成
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                      (5/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.1 哈佛结构
+       ➢指令存储器和数据存储器
+        独立编址、独立访问                                                                        程序存储器
+
+       ➢数据和指令分别存储在                                                                  地址    指令0
+                                                                                          指令1
+                                                            程序计数器
+                                                                                          指令2
+        两个独立的存储器中                                            （ PC ）
+                                                                                    指令    ……
+                                                                                                 两个不同存储器
+       ➢使用两条独立的总线分别                                                                      数据存储器
+                                                               CPU                  地址
+          与CPU进行信息交换                                                                      数据0
+                                                                                          数据1
+                                                                                    数据    数据2
+       ➢数据和指令的存储可以                                                                        ……
+
+        同时进行
+                                                                          哈佛体系结构框图
+       ➢容易实现指令流水
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                            (6/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.2 ARM存储模式
+
+          计算机的存储器是以字节为单位进行划分的，每个地址单元都对应着
+         一个字节，一个字节占8位（bit）
+      存储方式有两种：                                                 举例：一个32位的数据0x12345678，
+                                                               存放在内存地址为 0x8000~0x8003
+        小端模式：数据的低字节存放
+        在内存低地址处，数据的高字                                                内存地址           0x8000   0x8001   0x8002   0x8003
+                                                                  数据
+        节存放在内存高地址处                                             （十六进制表示）
+                                                                                     0x78     0x56     0x34     0x12
+
+
+        大端模式：数据的高字节存放
+                                                                     内存地址           0x8000   0x8001   0x8002   0x8003
+        在内存低地址处，数据的低字                                             数据
+                                                                                     0x12     0x34     0x56     0x78
+        节存放在内存高地址处                                             （十六进制表示）
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                          (7/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.3 CISC和RISC                           把特定的由0和1组成的序列当作指令，通过指令来操作计算机
+
+         RISC（Reduced Instruction Set                                       CISC（Complex Instruction Set
+                          Computer）                                                 Computer）
+                      精简指令集计算机                                                      复杂指令集计算机
+        • 选用使用频度较高的一些简单指令                                                  • 指令系统比较丰富
+        • 指令的指令长度固定                                                        • 指令字长不固定
+        • 指令格式和寻址方式的种类较少                                                   • 指令格式较多
+        • 便于指令的流水线操作                                                       • 寻址方式多
+        • 绝大部分指令的操作均在运行速度                                                  • 绝大多数指令需要多个时钟周期才
+          最快的寄存器内完成                                                          能执行完毕
+        • 采用优化的编译程序来生成高效的                                                  • 更多地应用于桌面、高性能计算机
+          目标代码                                                               领域
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                              (8/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.3 CISC和RISC                                          RISC技术与CISC技术比较
+              指标                                    CISC                             RISC
+              价格              硬件结构复杂，芯片成本高                                     硬件结构较简单，芯片成本低
+                              减少代码尺寸，增加指令的
+                                           使用流水线降低指令的执行周期数，
+            流水线               执行周期数，注重硬件执行
+                                           增加代码密度
+                              指令的功能性
+                              指令长度不固定，格式和寻址 指 令 长 度 固 定 ， 简 单 的 单 周 期
+            指令集               方式多，大量的混杂型指令集，指 令 ， 不 常 用 的 功 能 由 多 个
+                              有专用指令完成特殊功能   简单指令组合完成
+           功耗与                含 有 丰 富 的 电 路 单 元 ，
+                                                  处理器结构简单，体积小，功耗小
+            体积                功能强，体积大，功耗大
+          设计周期                长                                                短
+          应用范围                通用桌面机、高性能计算机                                     嵌入式领域、移动设备
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                      (9/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.4 流水线技术                                    每条指令分解为多步，并让各步操作重叠，从而
+                                          实现几条指令并行处理的技术，称为流水线技术。
+
+     ARM Cortex-M3微控制器                                       时间                                             t
+
+    采用的三级流水线：                                               时间单元
+                                                                         1          2   3    4    5    6        7
+
+    取指—译码—执行                                                指令1
+                                                                        FI      DI      EI
+
+    ➢ 取指（FI）：将指令从存                                          指令2
+                                                                                FI      DI   EI
+
+      储器中取出                                                 指令3
+                                                                                        FI   DI   EI
+
+    ➢ 译码（DI）：对所取到的                                          指令4
+                                                                                             FI   DI   EI
+
+                                                                                                  FI   DI       EI
+      指令进行翻译                                                指令5
+
+    ➢ 执行（EI）：执行指令                                                               三级流水时序图
+
+                问题：流水线技术与传统顺序(串行)执行方式的优缺点比较？
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                            (10/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.4 流水线技术
+              流水线的技术指标通常用吞吐率、加速比和效率三项指标来衡量
+      吞吐率                                                     流水线执行n条指令所需时间：
+                单位时间内流水线
+               所完成的指令数或输                                      所需时间 Tk = 完成一条指令所需时间 +
+               出结果的数量                                           （指令条数n-1）× 时间最长的指令段
+
+      吞吐率表示为：                                                           k = number of pipeline stages,
+      吞吐率 = 指令条数 / 指令流水线所需时间                                            n = number of instructions,
+             Throughput = n/Tk                                          Tp = pipeline cycle time,
+
+       加速比                                                             ETpipeline = k + n – 1 cycles = (k + n – 1)*Tp
+                  完成一批任务不使用流
+                                                                       ETnon-pipeline = n * k * Tp
+                水线时间和使用流水线所
+                用时间之比。                                                 Speedup S = ETnon-pipeline / ETpipeline
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                           (11/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 1.4 流水线技术
+【举例】现有一个三级指令流水线分为取
+   指、分析和执行三个部分，其中，
+   取指周期为1ns，分析指令周期为
+   3ns，执行指令周期为2ns，则完成
+   100条指令其吞吐率为多少？
+
+  解： 由吞吐率的计算公式可知，需先计算出执行100条指令流水所花费的时间。
+           完成第一条指令需要1+3+2=6ns，即若不采用指令流水操作，完成一条指令
+           需6ns。由于分析指令所用时间最长为3ns，那么从第二条指令开始，每隔
+           3ns就能完成一条指令，完成100条指令所需要的流水时间为：
+                                                  6ns + (100-1) x 3ns=303ns，
+            则吞吐率为：
+                                                            100/303ns。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (12/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ARM Cortex-M3 & STM32
+
+
+                                     1. 嵌入式系统基础知识
+
+                                     2. ARM 简介
+
+                                     3. Cortex-M3 内核
+
+                                     4. STM32 微控制器结构
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (13/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 2 ARM
+                                                             ARM是一家公司，在全球半导体行业技术领先，
+                                                       01
+                                                             其主要业务是设计16位和32位嵌入式处理器
+
+
+                  ARM                                       02      ARM是一种技术名称，是一个Advanced
+                                                                    RISC Machines 32位RISC处理器体系结构
+
+
+                                                             ARM是一类微处理器芯片或产品的统称，
+                                                       03
+                                                             是采用ARM技术开发的RISC处理器的通称
+
+                ARM专门从事基于RISC技术芯片的设计开发，不直接生产芯片，
+           而是转让技术设计许可，由合作公司生产各具特色的芯片。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                      (14/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ ARM体系结构                                                        ➢ 所谓计算机的体系结构（Computer
+                                                                  Architecture），是指计算机的逻辑结构
+                                                                  与功能特性。
+    ➢体系结构主要包括微处理
+       器所支持的指令集和基于                                                                                    ARMv
+                                                                                                          7
+
+       该体系结构下微处理器的
+                                                                                             6
+                                                                                        ARMv
+                                                                               5/v5E                   ARMv7-A
+                                                                           ARMv
+                                                                4/v4T
+       编程模型。                                                ARMv                        ARMv6-M
+                                                                                                       ARMv7-R
+                                                                                                       ARMv7-M
+
+    ➢对于程序开发人员来说，                                            ARM7TDMI      ARM926EJ-S    ARM1136     Cortex-A9
+
+       体系结构最重要的部分                                            ARM920T       ARM946E      ARM1176     Cortex-R4
+
+
+       是指此微处理器提供的                                            ARM922T       ARM966E     ARM1156T-2   Cortex-M3、Cortex-M4
+
+
+       指令系统和寄存器组。                                                                   ARM处理器架构
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                        (15/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ ARM体系结构                                               ARM处理器架构及典型内核产品
+                 ARM体系结构                      处理器位数                             内核产品
+                    ARMv4T                      32                      ARM7TDMI，ARM9TDMI
+                    ARMv5                       32                          ARM7EJ、ARM9E
+                    ARMv6                       32                               ARM11
+                   ARMv6-M                      32                   ARM Cortex-M0，ARM Cortex-M0+
+                   ARMv7-M                      32                           ARM Cortex-M3
+                  ARMv7E-M                      32                           ARM Cortex-M4
+                   ARMv7-R                      32                    ARM Cortex-R0，ARM Cortex-R5
+                                                                             ARM Cortex-A5
+                     ARMv7-A                         32                      ARM Cortex-A9
+                                                                             ARM Cortex-A15
+                                                                             ARM Cortex-A53
+                     ARMv8-A                       64/32                     ARM Cortex-A57
+                                                                       ARM Cortex-A72, 75, 76, 79 …
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                             (16/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ ARM体系结构
+
+                                                                   应用程序型，虚拟内存系统架构，
+                                                Cortex-A
+                                                                     适用于高端消费电子领域
+
+                  Cortex系列
+                                                Cortex-R         实时型，针对高性能高实时性的应用
+                    处理器
+
+                                                                  微控制器型，适合低功耗、高性能
+                                               Cortex-M          且成本敏感的产品，主要面向嵌入式
+                                                                      及工业控制领域
+
+
+                           Cortex-M3               Cortex-M4            Cortex-M7
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                            (17/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ ARM体系结构                                                    Cortex-M系列微控制器比较
+                                   ARM       ARM                            ARM         ARM         ARM
+                                Cortex-M0+ Cortex-M0                     Cortex-M3    Cortex-M4   Cortex-M7
+          应用范围                  8/16位应用 8/16位应用                           32位应用      32位DSC应用     32位应用
+                                                                         ARMv7-M
+          架构版本                    ARMv6-M              ARMv6-M                        ARMv7-M     ARMv7-M
+                                                                         +哈佛结构
+                                                                                                  6级流水线+
+            流水线                  2级流水线                 3级流水线             3级流水线        3级流水线
+                                                                                                   分支预测
+        FPU
+                                       NO                   NO                NO        YES         YES
+     (浮点运算单元)
+                                                                        出色的计算性
+                                                                                     较高的信号处
+                                       低功耗，低成                           能以及对事件
+                                在M0的基础                                               理能力，适用       保持良好的响
+                                       本，使用低功                           的优异系统响
+                                上进一步降低                                               于需要控制和       应性和易用性
+              特点                功耗，提高性
+                                       耗微控制器和                           应能力，适用
+                                                                                     信号处理功能       的同时，实现
+                                       深度嵌入式应                            于具有较高
+                                   能                                                 混合的数字信        最高性能
+                                         用                              确定性的实时
+                                                                                      号控制领域
+                                                                           应用
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                 (18/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ ARM体系结构                                             嵌入式领域常见的半导体公司
+                                                           及其ARM架构的代表性产品
+                 半导体公司                                   代表性产品（内核架构）
+                                                LM3Sxxxx 系列（Cortex-M3）
+               TI（德州仪器）
+                                                LM4Fxxxx 系列（Cortex-M4）
+                                                LPC1800（Cortex-M3）
+               NXP（恩智浦）
+                                                LPC4300（Cortex-M4）
+
+                                                Atmel AT89、AVR系列 ATmega
+            Atmel（爱特梅尔）
+                                                SAM3S系列（Cortex-M3）、SAM4S系列（Cortex-M4）
+
+         Freescale（飞思卡尔） Kinetis X系列（Cortex-M4）、MPC5xx系列
+
+             ST（意法半导体）                          STM32、STM8
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (19/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ARM Cortex-M3 & STM32
+
+
+                                     1. 嵌入式系统基础知识
+
+                                     2. ARM 简介
+
+                                     3. Cortex-M3 内核
+
+                                     4. STM32 微控制器结构
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (20/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构
+
+  ➢Cortex-M3是基于ARMv7-M体系
+   结构设计的32位处理器内核
+  ➢数据宽度、寄存器位数和存储器
+   位数都是32位的
+  ➢采用基于哈佛结构的三级流水线
+     内核
+  ➢拥有独立的数据总线和指令总线
+  ➢数据总线和指令总线共享一个存
+   储器空间，总的寻址空间为4GB
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (21/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+                                                                           ➢ Cortex-M3 Core：包括指令提取单元、
+ 3.1 内核结构
+                                                                              译码单元、寄存器组和ALU等；
+                                                                           ➢ 嵌套向量中断控制器（NVIC）：
+                                                                              用于实现快速、低延迟的异常中断处理；
+                                                                           ➢ 系统时钟（SYSTICK）：24位倒计时
+                                                                              计数器，可作为系统定时器，用于产生定
+                                                                              时中断；
+                                                                           ➢ 存储器保护单元（MPU）：用于对存
+                                                                              储区域的访问保护，防止用户程序破坏存
+                                                                              储区域的关键数据；
+                                                                           ➢ 总线矩阵（AHB互连网络）：用来将
+                                                                              处理器内核和调试接口连接到不同功能的
+                                                                              外部总线上，提供并行数据传输功能，还
+              Cortex-M3内核架构框图                                                 提供附加数据传送功能。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                         (22/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                                                             ARM公司
+                                                                                    Cortex-M3内核
+                                                                                        +
+                                                                              各大半导体公司
+                                                                            针对不同的应用场合和领
+                                                                            域，通过添加不同的外设
+                                                                            以增加不同的功能
+
+
+
+
+                                                                                        =
+                                                                                    芯片级的计算机
+
+   将CPU（Cortex-M3内核）、存储器、定时器/计数器、I/O等集成在一个芯片上
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                         (23/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                                   NXP公司的LPC1700系列芯片
+       Key Features：
+         - ARM Cortex-M3 core
+         - Up to 120 MHz operation
+         - Nested Vectored Interrupt Controller
+         for fast deterministic interrupts
+         - Wakeup Interrupt Controller allows
+         automatic wake from any priority
+         interrupt
+         - Memory Protection Unit
+         - Four reduced power modes: Sleep,
+         Deep-Sleep, Power-down and Deep
+         power-down
+                                                                       NXP公司LPC1700系列MCU功能结构图
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                   (24/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                              ATMEL公司的SAM3X系列32位微控制器
+
+         Features：
+           ARM Cortex-M3 revision 2.0 running
+           at up to 84 MHz
+           Memory Protection Unit (MPU)
+           24-bit SysTick Counter
+           Thumb®-2 instruction set
+           Nested Vector Interrupt Controller
+           2 x 256Kbytes embedded Flash, 128-
+           bit wide access, memory accelerator,
+           dual bank
+
+                                                                     ATMEL公司的SAM3X系列MCU功能结构图
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                 (25/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                   TI公司的Stellaris LM3S系列
+                                               微控制器LM3S8971
+  Features
+    32-bit ARM® Cortex™-M3 50-MHz processor core
+    with System Timer (SysTick), integrated Nested
+    Vectored Interrupt Controller (NVIC), Memory
+    Protection Unit (MPU), and Thumb-2 instruction set
+    Full-featured debug solution with debug access via
+    JTAG and Serial Wire interfaces, and IEEE 1149.1-
+    1990 compliant Test Access Port (TAP) controller
+    256 KB single-cycle flash and 64 KB single-cycle SRAM
+    Lower-power battery-backed Hibernation module
+    with Real-Time Clock (RTC)
+    4-38 GPIOs (depending on configuration) with
+    programmable control for GPIO interrupts and pad
+    configuration                                TI公司32位微控制器LM3S8971功能结构框图
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (26/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                       上述不同半导体公司的不同系列的芯片
+
+                                                                     不同之处
+                 基于ARM Cortex-M3
+                 内核的32位微控制器
+                                                                         SRAM和FLASH的大小
+                 具有Cortex-M3内核的
+                 基本架构，如NVIC、                                             外设的不同
+                 JTAG/SWD调试接口
+                                                                          I/O、时钟的不同
+                                                 相同之处
+
+           针对不同应用场合和各自优势领域，生产出各具特色的微控制器
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                (27/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构                                   ARM Cortex-M Instruction Variations
+
+
+
+
+   Cortex-M3
+    指令集
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (28/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.1 内核结构
+
+
+
+
+            Cortex-M3
+             指令集
+
+
+
+       能记住吗？
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (29/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.2 寄存器                                                                                     存储二进制数据
+                                   晶体管 （二极
+                                                                   基本
+                                   管、三极管、                                             触发器       寄存器
+                                                                   门电路
+                                   场效应MOS管
+                                                                                    存储1位二进制数据
+  寄存器有两大类：
+  ➢ CPU内部的寄存器，比如Cortex-M3中的                                                                  保存指令执行过程
+                                                                                    通用寄存器    中临时存放的操作
+    通用寄存器R0、R15(PC)等，
+                                                                                              数和中间结果
+  ➢ 外设I/O接口中的寄存器，I/O接口与存
+                         寄存器
+    储器统一编址，通过软件编程对寄存器                                                                特殊功能
+                                                                                             用于外设控制
+    进行读或者写操作，即可实现对外设的                                                                寄存器
+                                                                                              相关的操作
+      控制                                                                             （SFR）
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                             (30/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.2 寄存器                                                R0
+                                                                           Cortex-M3内核寄存器
+                                                        R1           R0-R12，为13个通用寄存器
+                                                        R2
+                                                        R3
+                                                                     低寄存器，R0-R7可以被指定通用寄存器的所有指令访问
+       ARM Cortex-M3                                    R4
+                                                        R5
+       微处理器:                                            R6
+                                                        R7
+
+       ➢13个32位的通用                                       R8
+                                                        R9
+                                                                     高寄存器，R8-R12可以被指定通用寄存器的所有32位指令访问，
+          寄存器R0~R12                                     R10
+                                                        R11
+                                                                     不能被16位指令访问
+
+                                                        R12
+       ➢R13、R14和R15                                   R13(SP)        堆栈指针(SP)，包括主堆栈指针(MSP)、进程堆栈指针(PSP)
+
+          三个寄存器被指                                                    链接寄存器(LR)，在执行分支(branch)和链接(BL)指令或带有交
+                                                      R14(LR)        换的分支和链接指令(BLX)时，LR用于保存PC的返回地址。
+          定了专门的用途                                                    主要用于保存子程序的返回地址，也用于异常返回。
+
+                                                      R15(PC)        程序计数器(PC)，总是指向下一条指令所在单元的地址
+
+                                                       xPSR          程序状态寄存器(xPSR)，用于指示程序的运行状态
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                             (31/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.2 寄存器                                                    Cortex-M3内核的 特殊功能寄存器 SFR
+                                                                                                定义特权状态，
+              ARM: Cortex™-M Devices
+                                                                       特殊功能                     还用于决定当
+              Generic User Guide
+                                                                       寄存器                      前使用哪一个
+ 存放程序运                                                                                          堆栈指针
+ 行中的各种
+ 状态信息以                        程序状态
+ 及中断                                                               控制异常和            中断屏蔽          控制
+                              寄存器等
+                                                                   中断的屏蔽            寄存器          寄存器
+                               状态
+
+
+       应用状态                   中断状态                  执行状态
+                                                                      PRIMASK       FAULTMASK    BASEPRI
+        寄存器                   寄存器                    寄存器
+                                                                       寄存器            寄存器        寄存器
+       （APSR）                 （IPSR）                （EPSR）
+                                                                   在Cortex-M0中，缺少FAULTMASK和BASEPRI，
+                                                                   对应NMI关中断和中断按优先级禁用的功能。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                              (32/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.2 寄存器                                                    Cortex-M3内核的 特殊功能寄存器 SFR
+
+  Program Status Registers                                             Priority Mask Register
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                       (33/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.3 存储结构
+                                                                                      ◆ARM Cortex-M3系列微处理器采
+  0xFFFF FFFF                                          ROM Table        0xE00F FFFF
+
+  0xE010 0000
+                       Vendor-specific                External PPB
+                                                          ETM
+                                                                        0xE00F F000
+                                                                        0xE004 2000
+                                                                        0xE004 1000
+                                                                                       用存储器与I/O外设统一编址的
+  0xE00F FFFF
+                Private peripheral bus-External           TPIU
+                                                                        0xE004 0000
+  0xE004 0000
+  0xE003 FFFF
+  0xE000 0000
+                Private peripheral bus-Internal
+                                                         Reserved       0xE003 FFFF    方式，设置部分存储器地址范围
+  0xDFFF FFFF                                                           0xE000 F000
+                                                          NVIC
+
+                       External device   1.0GB
+                                                         Reserved
+                                                           FPB
+                                                                        0xE000 E000
+                                                                        0xE000 3000    用于外设的访问，将这种通过存
+                                                                        0xE000 2000
+                                                          DWT
+                                                                                       储器地址访问外设的方式，称为
+                                                                        0xE000 1000
+  0xA000 0000                                              ITM
+  0x9FFF FFFF                                                           0xE000 0000
+
+
+                        External RAM     1.0GB
+                                                  32MB Bit Band Alias
+                                                                        0x43FF FFFF
+                                                                        0x4200 0000
+                                                                                       存储器地址映射。
+  0x6000 0000                                                           0x41FF FFFF
+  0x5FFF FFFF
+                          Peripheral     0.5GB
+                                                  31MB
+                                                  1MB Bit Band region
+                                                                        0x4010 0000   ◆存储器映射，就是将芯片中或
+  0x4000 0000                                                           0x4000 0000
+  0x3FFF FFFF
+                            SRAM         0.5GB
+                                                  32MB Bit Band Alias
+                                                                        0x23FF FFFF
+                                                                                       芯片外的FLASH、RAM和外设接
+  0x2000 0000                                                           0x2200 0000
+  0x1FFF FFFF                                                           0x21FF FFFF
+
+  0x0000 0000
+                            Code         0.5GB
+                                                  31MB
+                                                  1MB Bit Band region
+                                                                        0x2010 0000    口等进行统一编址，用于程序存
+                                                                        0x2000 0000
+
+
+                            Cortex-M3存储器映射
+                                                                                       储、数据存储、寄存器和外设。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                (34/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.3 存储映射                             让GPIOB端口的16个引脚输出高电平，要怎么实现？
+
+    通过绝对地址访问内存单元
+      *(unsigned int*)(0x40010C0C) = 0xFFFF;
+              1、0X40010C0C 是GPIOB输出数据寄存器ODR的地址，如何找到？
+              2、(unsigned int*)的作用是什么？
+              3、掌握使用C语言的 * 号
+    通过寄存器别名方式访问内存单元
+      #define GPIOB_ODR (unsignedint*)(0x40010C0C)
+      * GPIOB_ODR = 0xFF;
+
+    为了方便操作，我们干脆把指针操作“*”也定义到寄存器别名里面
+      #define GPIOB_ODR *(unsignedint*)(0x40010C0C)
+      GPIOB_ODR = 0xFF;
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (35/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.4 中断与异常（NVIC）                                                    Cortex-M3内核集成了一个外设——
+                                                                    NVIC用于专门负责中断：
+                                                                    ◆统一管理和配置中断
+   ◆打断程序正常执行顺序的事件，都被
+    称为异常（exception）。                                                ◆通过优先级来控制中断的嵌套和调度。
+
+   ◆中断一般指来自外部的片上外设或外                                                          可嵌套中断支持，即高优先级的
+                                                                   01         中断可以打断低优先级的中断。
+    扩的外设的中断请求事件。
+   Cortex-M3内核可支持256种异常和中断:                                        02         向量中断支持，缩短中断延迟时间。
+   ◆中断编号1~15为系统异常
+                                                                              动态优先级调整支持。软件可以在
+   ◆大于等于16的则全是外部中断，共                                               03         运行期间更改中断的优先级。
+    240个外部中断
+                                                                              引入新特长新技术，中断延迟
+    通常外部中断写作IRQs， Cortex-M3                                        04         大大缩短
+   具有256级的可编程中断优先级设置，
+   功能十分强大。                                                         05         中断可屏蔽
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                     (36/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+                                                                  Cortex-M3嵌套向量中断控制器
+ 3.4 中断与异常（NVIC）                                               Nested vectored interrupt controller (NVIC)
+      编号           类别                    优先级        优先级类型           地址                      说明
+       0           N/A                    N/A                    0x00000000    没有编号为0的异常，此为正常状态
+       1         复位（Reset）              -3(最高)          固定       0x00000004    复位
+       2           NMI                     -2           固定       0x00000008    不可屏蔽中断（来自外部NMI输入脚）
+                                                                               只要FAULTMASK没有置位，硬Fault服务例程
+        3       硬（Hard）Fault               -1           固定       0x0000000C
+                                                                               会被强制执行
+        4         存储器 Fault                 0          可编程       0x00000010    MPU访问违例以及访问非法位置均可引发
+        5          总线Fault                  1          可编程       0x00000014    总线收到了错误响应，
+        6          用法Fault                  2          可编程       0x00000018    由于程序错误导致的异常。
+                                                                 0x0000001C-
+      7-10     保留（Reserved）               保留            保留                     保留
+                                                                 0x0000002B-
+       11           SVCall                  3          可编程       0x0000002C    执行系统服务调用指令（SVC）引发的异常
+                调试监视器                                                          调试监视器（断点、数据观察点、或是外部
+       12                                   4          可编程       0x00000030
+              （Debug Monitor）                                                  调试请求）
+       13         Reserved                N.A.          N.A.     0x00000034    保留
+       14          PendSV                  5           可编程       0x00000038    为系统设备而设的“可挂起请求”
+       15          SysTick                 6           可编程       0x0000003C    系统滴答定时器
+       16       Interrupt #0               7           可编程       0x00000040    外部中断#0   在NVIC中，优先级的数
+        …            ……                   ……           可编程                     ……
+       256     Interrupt #239             247          可编程                     外部中断#239
+                                                                                        值越小，则优先级越高。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                    (37/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 3.4 中断与异常（NVIC）                                                   响应中断的过程
+
+          保存现场                                          取向量                         更新寄存器
+
+              • 处理器将相关                                      • 从中断向量                 • 将堆栈指针进行
+                的寄存器xPSR、                                     表中找到相                   更新，在向量取
+                PC、LR、R12                                     应的中断服                   出后，程序寄存
+                及R0~R3压入                                      务程序的入                   器指针（PC）指
+                堆栈中。如果                                        口地址                     向中断服务程序
+                当前使用的是                                                                的入口地址，更
+                PSP，则压入                                                               新程序寄存器指
+                进程堆栈，否                                                                针（PC）以及更
+                则压入主堆栈。                                                               新链接寄存器
+                                                                                      （LR）。
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (38/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+ 4 STM32微控制器结构
+
+
+                                              4.1 STM32 系统结构
+
+                                              4.2 STM32 总线结构
+
+                                              4.3 STM32 存储结构
+
+                                              4.4 STM32 中断
+
+                                              4.5 STM32 时钟系统
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (39/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (40/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍
+
+      STM8主打低功耗，主要针对
+    8位微控制器市场：
+        STM8A（汽车用MCU）
+        STM8S（主流MCU标准系列）
+        STM8L（超低功耗MCU）
+        三个系列
+     基于STM8内核，采用3级流
+    水线的哈佛结构。
+
+                                                                        ST公司微处理器系列产品
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                              (41/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍
+                                                                                      STM32F2、STM32F4、
+                                                                                    STM32F7为高性能MCU
+
+                                                                                     STM32F4系列基于ARM
+                                                                                    Cortex-M4内核，主频高
+                                                                                    达180MHz，具有DSP和
+                                                                                    FPU等功能。
+
+                                                                                     STM32F1系列是ST公司
+                                                                                    主推的STM32系列MCU，
+                                                                                    基于ARM Cortex-M3内核，
+                                                                                    主频高达72MHz
+                                STM32系列MCU
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                            (42/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+                                               https://www.st.com/en/microcontrollers-microprocessors/
+4.0 STM32介绍                                    stm32-32-bit-arm-cortex-mcus.html
+
+
+
+
+                                                                                    ➢ STM32 Community
+                                                                                    ➢ STM32 Education
+                                                                                    ➢ STM32 MCU Wiki
+                                                                                    ➢ STM32 GitHub
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                (43/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+                                               https://www.st.com/en/microcontrollers-microprocessors/
+4.0 STM32介绍                                    stm32-32-bit-arm-cortex-mcus.html
+
+
+
+
+                                             • Power consumption                      • Analog-to-digital
+ • Display resolution                        • Memory size                              converter (ADC)
+ • Color depth                               • Clocks frequency                       • Comparators (COMP)
+ • Expected                                  • Various Low-power modes                • Digital-to-analog
+   performance                               • Wake-up time & sources                   converter (DAC)
+                                             • Switched-Mode Power Supply             • HRTIM
+                                             • DMA                                    • OPAMP
+                                                                                      • Motor speed
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                (44/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍                                                 STM32F1产品系列
+
+
+
+
+                 STM32F1系列MCU是ST针对工业、医疗和消费类市场的应用需求
+                而设计的低功耗、高性价比的产品，该系列从功能上又可分为5个子
+                系列，其引脚、外设和软件均相互兼容。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (45/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍                                     STM32F1系列产品中，各个子系列按闪存容量
+                                                的大小又分为小容量、中容量、大容量产品。
+
+
+                                                                                       超密度（XL）
+                                                                                    闪存：768KB ~ 1MB
+
+                                                                                       高密度（HD）
+                                                                                    闪存：256KB ~ 512KB
+
+                                                                                      中密度（MD）
+                                                                                    闪存：64KB ~ 128KB
+
+                                                                                     低密度（LD）闪存：
+                                                                                       16KB ~ 32KB
+                    STM32F103系列产品
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                             (46/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍                                             以STM32F103ZET6为例说明芯片命名规范，
+                                                        该芯片型号由七部分组成
+
+                                                                                序
+                                                                                        符号          说明
+                                                                                号
+                                                                                              ARM Cortex-M3内核的
+                                                                                    1   STM32
+                                                                                              32位微控制器
+                                                                                    2     F   芯片的系列
+                                                                                    3    103 增强型系列
+                                                                                    4     Z   芯片有144管脚
+                                                                                    5     E   512K字节的Flash
+                                                                                    6     T   采用LQFP封装
+                                                                                              工 作 温 度 范 围 为
+                                                                                    7     6
+                                                                                              -40 ~ +85℃
+                          STM32芯片命名规范
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                 (47/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍                                                 STM32F103x family lines
+
+
+
+
+                                                                                               F103ZET6
+                                                                                               F103VET6
+
+
+
+                                                                                    F103RCT6
+                                                  F103C8T6
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                          (48/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍
+
+                                         选型手册
+
+
+                                                                     内容包括：产品的基本配置（如内置
+      用户选型                              数据手册                         Flash和RAM的容量、外设模块的种类
+      参考资料                             （Datasheet）                   和数量等）、引脚数量和分配、电气
+                                                                     特性、封装信息和定购代码等
+
+                                                                               对芯片每一个外设的功能进行
+                                           参考手册
+                                                                               了详细说明，并对寄存器进行
+                                      （Reference manual）
+                                                                               了详细描述
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                      (49/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍
+
+
+        STM32芯片数据手册
+       中对具体的引脚名称、
+       引脚类型、引脚复用功
+       能及I/O结构等进行了
+       详细说明
+         STM32数据手册中有
+       关引脚的定义在Pinouts
+       and pin description部分
+
+                                                                                    STM32F103xx引脚定义
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                       (50/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.0 STM32介绍                                          STM32F103xx引脚功能说明
+                   编号             功能                                                说明
+                                                有 6 种封装型号：BGA144、BGA100、WLCSP64、LQFP64、
+                     1         引脚序号             LQFP100、LQFP144。其中用阿拉伯数字的表示是 LQFP 封装，
+                                                英文字母开头的表示 BGA 封装
+                     2         引脚名称             指复位状态下的引脚名称
+                                                S 表示电源引脚
+                     3         引脚类型             I 表示输入引脚
+                                                I/O 为输入/输出引脚
+                                                FT：表示兼容 5V
+                                                TTa：只支持 3.3V
+                     4         I/O 结构
+                                                B：表示 BOOT 引脚
+                                                RST：表示复位引脚，内部带有弱上拉
+                     5       主功能                每个引脚复位后的功能
+                     6      默认复用功能              指 I/O 的默认复用功能
+                                                I/O 引脚除了具有默认的复用功能之外，还可以通过重映射的方式
+                     7        重映射功能
+                                                将 I/O 引脚映射到其他的 I/O，增加 I/O 口功能的多样性和灵活性
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                 (51/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.1 STM32系统结构
+
+
+
+         STM32F10x系列是ST公司
+         基于ARM Cortex-M3内核
+         设计的32位精简指令集
+         微控制器，最高工作频
+         率为72MHz。
+
+
+
+                                                                          STM32F10x微控制器功能结构图
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                      (52/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.2 STM32总线结构
+                                                                            总线宽度：总线能同时传送
+                                                                            的数据位数（bit），如32位
+           总线是各种信号线的集                                       与总
+                                                            线相              总线频率：总线的工作速度，
+       合，是嵌入式系统中各部                                          关的              频率越高，速度越快
+       件之间传送数据、地址和                                          参数
+                                                                            总线带宽＝总线宽度×总线频率/8
+       控制信息的公共通路。
+                                                                            单位为MBps
+
+
+                                               嵌入式系统中常用的总线
+                      CAN总线                 SPI总线             PCI总线                 ISA总线   I2C总线
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                           (53/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.2 STM32总线结构
+
+      ➢ AHB：Advanced High-speed Bus，
+        先进高速总线。
+      ➢ APB：Advanced Peripheral Bus，
+        先进外设总线。
+      ➢ FLASH：闪存。
+      ➢ FSMC：Flexible Static Memory
+        Controller，静态存储控制器，
+        用于连接外部存储器。
+      ➢ RCC：Reset and Clock Control，
+         复位与时钟控制器。
+                                                                               STM32F10x芯片系统结构
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (54/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.2 STM32总线结构
+      ➢ ICode总线：32位的AHB总线，
+         将Cortex-M3内核的指令总线与
+         闪存FLASH接口相连接，指令预
+         取在此总线上完成。
+      ➢ DCode总线：32位的AHB总线，
+        将Cortex-M3内核的DCode总线与
+        闪存存储器的数据接口相连接，
+        用于常量加载和调试访问。
+      ➢ System总线：32位的AHB总线，
+        连接Cortex-M3内核的系统总线
+         到总线矩阵。                                                                STM32F10x芯片系统结构
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (55/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.2 STM32总线结构
+      ➢ 总线矩阵：用于主控总线之间
+        的访问仲裁管理，由总线控制
+        器统一管理。
+      ➢ DMA总线：执行内存与外设之
+        间的数据传输。DMA通过此总
+        线访问AHB外设或执行存储器
+        间的数据传输。
+      ➢ AHB/APB桥：STM32用两个
+         AHB-APB桥实现AHB与2个APB
+         总线之间（APB1和APB2）的
+         同步连接。                                                                 STM32F10x芯片系统结构
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (56/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.2 STM32总线结构
+
+      ➢ GPIOA、GPIOB、GPIOC、
+         GPIOD、GPIOE、GPIOF、
+         GPIOG、USART1、SPI1、
+         ADC1~ADC3、TIM1、EXTI等挂
+         接在APB2总线上，其频率最
+         高可达72MHz；
+      ➢ USART2、USART3、SPI2、USB、
+         CAN、DAC等挂接在APB1总线
+         上，其频率最高为36MHz。
+      ➢ 不同系列产品的主要差异！                                                           STM32F10x芯片系统结构
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (57/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.3 STM32存储结构
+                                                                  STM32存储空间地址分配
+  ➢ 总的地址空间大小为4GB，
+     用 0x0000 0000H
+     ~ 0x1FFF FFFF 来表示
+
+  ➢ 通过存储器地址访问外设
+  ➢ STM32的外设可以通过
+    指针来实现访问和操作。
+
+  ➢ 每个外设寄存器都占用特
+                                                                             ➢ 将4GB大小的空间划分为：
+    定的存储器地址，对外设
+                                                                                 Flash程序存储器区
+     的操作和对存储器的操作                                                                 SRAM静态数据存储器区
+     是一样的。                                                                       片上外设区
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                       (58/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.3 STM32存储结构
+
+
+
+        RAM（随机存储                          堆栈，位于RAM                     Flash，闪存，      EEPROM（电可
+        器）：用于存储                           存储器中，主要                      即Flash ROM，其   擦可编程只读存
+        程序运行过程中                           功能是暂时存放                      本质是一个ROM，      储器），是保障
+        所需要的数据和                           数据和地址，通                      用于存放用户编        单片机中的数据
+        程序运行中产生                           常用来保护断点                      写的程序代码，        长时间保存而不
+        的数据，掉电后                           和现场，适用于                      掉电后数据不会        丢失的单元，主
+        数据会丢失。                            中断机制。                        丢失，            要用来存放需要
+                                                                       可重复擦写且         经常修改的非易
+                                                                       容量较大。          失性数据。
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                     (59/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+                                          位     优先          优先级
+4.4 STM32中断                               置     级           类型
+                                                                          名称              说明               地址
+                                                   -         -    -                 保留                 0x0000_0000
+                                                  -3        固定    Reset             复位                 0x0000_0004
+                                                                                    不可屏蔽中断
+                                                  -2        固定    NMI               RCC时钟安全系统(CSS)联接   0x0000_0008
+     STM32不同系列                                                                      到NMI向量
+                                                  -1        固定    硬件失效(HardFault)   所有类型的失效            0x0000_000C
+    和型号的MCU具有                                                     存储管理
+                                                  0         可设置                     存储器管理              0x0000_0010
+                                                                  (MemManage)
+    不同数量的中断，
+                                                                                    预取指失败，存储器访问
+                                                  1         可设置   总线错误(BusFault)                       0x0000_0014
+    比如 STM32F103                                                                    失败
+                                                                  错误应用
+                                                  2         可设置                     未定义的指令或非法状态        0x0000_0018
+    系列MCU具有60个                                                    (UsageFault)
+                                                                                                       0x0000_001C
+    中断。                                            -         -    -                 保留
+                                                                                                       -0x0000_002B
+                                          …       …          …    …                 …                  …
+                                          5       12        可设置   RCC               复位和时钟控制(RCC)中断     0x0000_0054
+                                          6       13        可设置   EXTI0             EXTI线0中断           0x0000_0058
+                                          7       14        可设置   EXTI1             EXTI线1中断           0x0000_005C
+                                         …        …          …    …                 …                  …
+                                                                                    DMA2通道4和DAM2通道5    0x0000_012C
+                                          59      66        可设置   DMA2通道4_5
+                                                                                    全局中断
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                      (60/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.5 STM32时钟系统
+
+     ➢ 由于STM32的外设时钟复杂，
+       因此需要有一套完整的时钟系统
+       来进行时钟管理，这就是
+        STM32的时钟系统。
+     ➢ STM32的时钟系统由RCC
+        （Reset and Clock Control，
+        复位与时钟控制器）产生，用来为系
+        统和各种外设提供所需的时钟
+        频率，以确定各外设的工作速度。
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (61/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.5 STM32时钟系统                                                                                       PLL
+                                                                                    LSE             • Phase Locked
+     STM32有5个时钟源                                                                                      Loop，锁相环，
+                                                            LSI                     • Low Speed       保证外部输入
+                                                                                      External，低      时钟信号与内
+                                   HSE                      • Low Speed               速外部时钟，          部振荡信号同
+                                                              Internal，低              通过OSC32_IN      步（频率和相
+       HSI                         • High Speed               速内部时钟，                  和OSC32_OUT
+                                     External，高速                                                      位相同），以
+                                                              由内部RC振荡                 引脚外接频率          保证输出频率
+       • High Speed                  外部时钟，可                   器产生，频率
+         Internal，高                                                                   为32.768kHz      的稳定。另一
+                                     外接一个外部                   约40kHz，主                的晶振，主要
+         速内部时钟，                      时钟源，或者                                                           方面，也可用
+                                                              要为独立看门                  为RTC（Real-      于倍频HSI或
+         由内部8MHz                     通过OSC_IN和                狗（IWDG）
+         的RC振荡器生                                                                      Time Clock，     HSE。
+                                     OSC_OUT引脚                和自动唤醒单                  实时时钟部件）
+         成，可作为系                      外接晶振(频率                  元提供时钟。
+         统时钟或2分                                                                       提供低速高精
+                                     范围为 4～16                                         度的时钟源。
+         频后作为PLL                     MHz)，通常使
+         输入；特点：                      用8MHz。特点：
+         时钟频率精度                      精度高，稳定。
+         差，不稳定。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                                    (62/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+4.6 STM32 怎么选型
+
+                                   原则：花最少的钱，做最多的事 ！
+
+        1、选择哪种内核的芯片，内核越高意味着功耗也越高
+
+        2、选择多少引脚的芯片，引脚多少决定了资源的多少，也影响价格
+
+        3、选择多少RAM和FLASH的芯片，FLASH越大，价格越贵
+
+        4、还要考虑所选型号采购是否容易，供货是否稳定
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (63/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+          STM32 能做什么
+                                                                            STM32F071VBT6做的扫地机
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (64/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+      小结
+
+         嵌入式系统                                                              Cortex-M3    STM32
+                                                  ARM
+          基础知识                                                                内核        微控制器结构
+
+   • 冯诺依曼结                               • ARM介绍                       • 内核结构          • 系统结构
+     构与哈佛结构                                                             • 寄存器           • 总线结构
+   • ARM存储模式                              • ARM体系                       • 存储结构          • 存储结构
+   • CISC和RISC                              结构                          • 中断与异常         • 中断
+   • 流水线技术                                                                              • 时钟系统
+
+                  •     ARM_Cotrex-M3权威指南 (英文/中文)，STM32参考手册 (英文/中文)
+                  •     国产替代：兆易创新GD，上海灵动MM32，中科芯CKS32，雅特力AT32，
+                        沁恒微CH，国民N32，华大 HC32等
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                        (65/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+      小结
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (66/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+        STM32 小结
+
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (67/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+    Q&A
+
+       • 什么是小端模式和大端模式？                                                 • 中断和异常 是什么意思？
+       • ARM Cortex-M 核采用基于                                            • STM32可设置的最高优先级中
+         哈佛结构的三级流水线内核；                                                   断是存储管理(MemManage)
+         所有寄存器都是32位的 ？                                                 • STM32 有这么多指令和寄存器，
+       • STM32F1系列有哪些总线？                                                 如何记忆？
+         总线带宽是什么意思？                                                    • STM32总的地址空间大小为
+       • STM32F1C8T6 是 中密度（中容                                            4GB，从0x0000 0000H 到 ?
+         量）还是低密度（低容量）芯                                                 • STM32 的寄存器和外设资源是
+         片？                                                              如何组织和访问的？
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                  (68/72)
+STM32
+
+
+
+
+        The   End!
+                                            Supplementary
+
+
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+   嵌入式存储器件
+                    特性                                       性能              容量        每bit成本 主要用途
+                    其他存储备份，不占地址
+       Cache                    极高                                           <64 KB     极高   片上缓存
+                    空间，易失性
+                    静态随机访问存储，易失                                                              热点程序
+       SRAM                     高                                            <1MB        高
+                    性                                                                        和数据
+                    动态随机访问存储，易失 响应中
+       DRAM                                                                  MB ~ GB     低   主存储
+                    性，需要定时刷新    吞吐大
+                    只读存储器，非易失性，                                                              启动代码
+       ROM                      高                                            ~MB         高
+                    不可更改                                                                     引导程序
+             可擦写非易失性存储器， 响应慢
+       FLASH                                                                 MB ~ GB     低   文件系统
+             擦写次数有限      吞吐低
+
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                                           (71/72)
+Progress: 嵌入式系统基础知识 >> ARM简介 >> Cortex-M3内核 >> STM32微控制器结构 >> 小结 >> Supplementary
+
+
+
+
+   嵌入式通信技术
+       •    嵌入式系统的网络功能一般由CPU
+            运行软件协议栈并配合专用的通信
+            技术硬件实现，这些专用硬件包括
+            硬件链路控制器、硬件协议栈、基
+            带模块、射频模块、天线等等。
+       •    基带：完成传输信号的信道编码和
+            调制，编码后的信号具有抗干扰和
+            抗衰减的能力。
+       •    射频：将调制后信号转换成模拟电
+            磁波信号，并进行放大和滤波等处
+            理，使其能在物理空间上传递。
+       •    传输介质：不同系统之间物理连接
+            方式，一般有无线天线、双绞线等。
+EE114 Embedded System -> Lecture 11 ARM Cortex-M3 & STM32                           (72/72)
+

@@ -1,0 +1,2072 @@
+                                    EE114: Introduction to
+                                     Embedded Systems
+                   Dr. Tao Wu           吴涛 研究员，博导
+                   wutao@shanghaitech.edu.cn
+                   Office: SIST Bldg 3-326
+                   CourseWeb: http://10.15.25.5/
+                   Website: http://small.shanghaitech.edu.cn
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+
+
+                                                                目标 Objective
+
+        • Why still 8051 ? - 嵌入式系统的组成与特点
+        • 理解 Harvard 和 Von Neumann Architecture 的差异
+        • 讲解 8051 的 系统框图和架构
+        • 理解 8051 存储器组织结构 和 SFRs
+        • 理解 8051 所有管脚 ，CPU时序 和 I/O特点
+        • 了解 8051 存储扩展的原因和方法， 以及不同芯片版本的差异
+        • 运行云桌面或者虚拟机，测试仿真软件和编译软件
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (2/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Lecture #2: MCU Architecture
+   What you will learn:
+         – The working principle of digital
+           computers
+
+         – Overview of 8051 architecture
+
+         – Memory and GPIO
+
+         – How to use assembly language to
+           run the computer (CPU timing)
+                                                                              The first 8051 chip by Intel in 1980
+           (mostly in next lecture)
+
+         – 8051 and its derivatives
+
+
+
+
+                         (Figures are from internet)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (3/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   硬件基础
+   • 嵌入式硬件是嵌入式系统的载体                                                                       • 芯片 (chip)：半导体制成的电路器件；
+   • 了解和掌握嵌入式硬件的工作原理和设计方法，                                                                • 引脚 (lead)：半导体器件和外部连接的部分，
+     是优秀嵌入式系统软、硬件开发人员的必备素质。                                                                  排布在芯片两侧或四周；
+      – 必须把软件安装到硬件上；
+                                                                                          • 封装 (packaging)：将半导体器件以特定方
+      – 能够区分某一问题是由软件还是硬件引起的；                                                                 式、特定材料包装起来，提高可靠性、便于使用；
+      – 能够阅读硬件原理图；
+
+   • 三极管 (Bipolar Transistor)
+      – 有三个极，为N型与P型组成；
+
+      – 作为一种可变电流开关，能够基于输入电压控制输
+        出电流；晶体管是电流控制元件。
+
+   • 场效应管晶体管 (Field Effect Transistor)
+      – 利用栅极电场效应来控制输出电流的半导体器件；
+
+      – 场效应管是电压控制器件；
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (4/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   硬件基础
+   • 数据表 (datasheet) ：芯片制造商提                                                              • 三态门 (三态驱动器、三态缓冲器)
+     供的关于产品信息的文档，说 明了芯片                                                                   • 可以将信号驱动为高电压、低电压、浮
+     的功能、结构、特性及使用方式等；                                                                       动（浮空）状态；
+   • 印制电路板 (printed circuit board，                                                        • 浮动状态即第三种输出状态，也称三态、
+     PCB)：薄的纤维玻璃板，印 有铜线来连                                                                   高阻抗态 ； 此时既不像输出0状态;
+     接元器件；                                                                                • 那样允许电流灌入，也不象输出1状态那
+   • 原理图 (schematic diagram)：表示电                                                            样向负载提供电流，处于悬浮状态；
+     路的主要部分及元件之间 的连接。
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (5/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   组合/时序逻辑 Combinational vs. Sequential logic circuits
+   • Logic without memory                                                                 • Logic with memory
+      – Output depends on present input values                                               – Output depends on present inputs and the
+                                                                                               history of past inputs
+      – for realizing arithmetic, bitwise logical,
+        bit shift operations                                                                 – for realizing register, memory,
+                                                                                               synchronous sequential logic, etc.
+                                                                                                                                 Input     Combinational    Output
+                                                                                                                                            Logic Circuit
+                                                                                                                                                              Current
+                                                                                                                                  Last                        state
+                                                                                                                                  state
+                                                                                                                                                                        Clock
+                                                                                                                                              Memory                    Signal
+
+
+
+
+                                                                                          • Example:
+   • Example: 74S181 4-bit ALU
+                                                                                            74S395
+                                                                                            4-bit
+                                                                                            shift
+                                                                                            register
+                                                                       (Figures are from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                          (6/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Ingredients of an embedded processor                                                                                     Inside CPU/Memory
+                                                                                                                            are all “0/1”s
+                                                                                                                            How does “0/1” work ?
+                                        Memory (RAM + ROM)                                                                  Basic circuitry (最小系统)
+ Clock                                                                                                                      for running the 8051
+
+
+                                                                                                                                                       Power
+
+                                                                                                                          Reset
+
+
+
+
+                                                       Processor
+
+                                                                                                                                    Oscillator
+                   I/O peripherals                                                                        Power
+                                                                                                              (Figures are from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (7/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Computer architecture
+   • Computer architecture is a set of
+     rules and methods that describe the
+     functionality, organization, and
+     implementation of computer systems
+     (wiki)
+   • The architecture is the
+     programmer’s view of a computer
+   • It is defined by the instruction set
+     (language) and operand locations
+     (registers and memory)
+   • Usually called instruction set
+     architecture (ISA)
+                                                                                            (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (8/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Two key architectures
+  Comparison                                    Harvard Architecture                                          Von Neumann Architecture
+
+
+
+
+                                                                                        e.g., x86                                                   e.g., ARM
+                                     Use two separate memory spaces
+  Arrangement                                                                                              Use single memory space
+                                     for program and data
+  Hardware & Space requires more hardware and space                                                        requires less hardware and space
+  Speed of                           faster execution as data and instr. are Speed of execution is slower with
+  execution                          to be fetched simultaneously            limited bandwidth
+                                     a waste of space since if the space is                                Space is not wasted because the
+                                     left in the data memory then the                                      space of the data memory can be
+  Usage
+                                     instructions cannot use the space of                                  utilized by the instructions memory
+                                     the data memory and vice-versa.                                       and vice-versa.
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                            (9/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   The 8051 microcontroller
+   • Intel MCS-51 (commonly as 8051) is                                                  • Difference between 8051
+      – internally Harvard architecture                                                    architecture and 8051 processor
+      – complex instruction set computing (CISC)                                           realization with a chip
+        instruction set
+      – single chip microcontroller (µC)
+      – developed by Intel in 1980
+      – for use in embedded systems
+   • Intel's original versions were popular
+                                                                                                    I/O                Memory                       CPU
+     in the 1980s and early 1990s
+
+   • Enhanced binary compatible
+     derivatives remain popular today
+     (why?)
+                                                                                                                               (Figures are from internet)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                  (10/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   MCS-51 hardware
+
+                                                                                                                                                    ALU
+
+                                                                                                                                                    R0～R7
+
+                                                                                                                                                    Acc
+
+                                                                                                                                                    B
+
+                                                                                                                                                    PSW
+
+                                                                                                                                                    DPTR
+
+                                                                                                                                                    SP
+
+                                                                                                                                                    PC
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (11/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 内部结构
+   1) 程序计数器PC                                                                            5) 堆栈指针SP
+   程序计数器PC用于存放下—条要执行的指令地址，是一                                                             堆栈指针SP是一个8位专用寄存器。它指示出堆栈顶部
+   个16位专用寄存器，可寻址范围为0~65535(64K)，在                                                        在内部RAM块中的位置。系统复位后，SP初始化为
+   物理上是独立的，不属于SFR，但它与SFR有密切联系。                                                           07H，使得堆栈事实上由08H单元开始，考虑到0BH—
+   2) 累加器A                                                                               1FH单元分别属于工作寄存器区1～3，若在程序设计中
+                                                                                         要用到这些区，则最好把SP值改置为1FH或更大的值。
+   累加器A是一个最常用的专用寄存器，它属于SFR，大
+                                                                                         51单片机的堆栈是向上生成的。
+   部分单操作数指令的操作数取自累加器，很多双操作数
+   指令的一个操作数取自累加器，加、减、乘、除算术运                                                              6) 数据指针DPTR
+   算指令的运算结果都存放在累加器A或A、B寄存器中。                                                             数据指针DPTR是一个16位的SFR，其高位字节寄存器
+   3) B寄存器                                                                               用DPH表示，低位字节寄存器用DPL表示。
+                                                                                         DPTR即可以作为一个16位寄存器DPTR来用，也可以
+   在乘、除指令中，用到了B寄存器。乘法指令的两个操
+                                                                                         作为两个独立的8位寄存器DPH和DPL来用。
+   作数分别取自A和B，其结果存放在A、B寄存器对中。
+   除法指令中，被除数取自A，除数取自B，运算后商数存                                                             7) 端口P0-P3
+   放于A，余数存放于B。                                                                           特殊功能寄存器P0-P3分别为I/O端口P0-P3的锁存器，
+   4) 程序状态字寄存器PSW                                                                        即每一个8位I/O口都对应SFR的一个地址（8位）。
+                                                                                         在MCS-51中，I/O和RAM统一编址，使用起来较为
+   PSW是一个8位寄存器，它包含了程序状态信息。
+                                                                                         方便，访问I/O端口可用访问RAM的指令。
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (12/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Block Diagram - OSC
+                                                                                          • Clock configuration
+
+
+
+
+                                                                                          • The internal circuit (an inverter)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (13/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Clock generation
+   • Crystal oscillator (quartz)                                                          • A piezoelectric device
+
+
+
+
+                                                                                                                         (Figures are from internet)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                            (14/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Block Diagram - CPU
+                                                                                                                     How CPU runs
+
+
+
+
+                                                                                                         SFR: special function register
+                                                                                                         (for recording the state, controlling I/O, etc.)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (15/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Processor Datapath (example)
+
+                                                                                      Memory              Register
+                              Fetch             Decode             Execute                                 write
+                                                                                       Acess                back
+
+
+
+
+         Program status word (PSW)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (16/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Special Function Register                                                             Where are they ?
+
+
+   SFR                     Function                  Addr.                                 SFR                   Function                           Addr.
+   • ACC 累加器         E0H                                                                  • IE    允许中断控制A8H
+   ACC         累加器      E0H                                                                IP       中断优先级控制    B8H
+   • B       B寄存器    F0H                                                                  • TMOD 定时方式控制89H
+   B           B寄存器     F0H                                                                IE       允许中断控制     A8H
+   • PSW 程序状态字 D0H                                                                        • TCON 定时/计数控制88H
+   PSW                                                                                     TMOD     定时方式控制     89H
+   • SP        程序状态字
+             堆栈指针    81HD0H                                                               • TH0 T0 高字节 8CH
+   SP                   81H                                                                TCON     定时/计数控制    88H
+   • DPTR 数据指针 堆栈指针   82H                                                                 • TL0 T0 低字节 8AH
+   DPTR                 82H                                                                TH0      T0 高字节     8CH
+       (DPH/DPL)数据指针                                                                      • TH1 T1 高字节     8DH
+   (DPL/DPH)            (83H/82H)                                                          TL0      T0 低字节     8AH
+   •P0P0    P0口      80H80H                                                               • TL1 T1 低字节     8BH
+                                                                                           TH1      T1 高字节     8DH
+    • P1    P1口      90H                                                                  • SCON 串行控制 98H
+    P1                  90H                                                                TL1      T1 低字节     8BH
+    • P2    P2口      A0H                                                                  • SBUF 串行数据缓冲器99H
+    P2                  A0H                                                                SCON     串行控制       98H
+    • P3    P3口      B0H                                                                  • PCON 电源控制 87H
+    P3                  B0H                                                                SBUF                  串行数据缓冲器                            99H
+    • IP 中断优先级控制B8H
+                                                                                           PCON                  电源控制                               87H
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                 (17/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   System clock and instruction cycle (8051)
+                                                   Timing: Opcode, Encoding, Data, Byte, Cycle
+
+
+
+
+                                                                                                 (Atmel 8051 Microcontrollers Hardware Manual)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (18/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Block Diagram - Memory
+                                                                                                          FFFFh                                      FFFFh
+
+                                                                                                         OE                                         WR
+                                                                                                                                                    RD
+
+
+                                                                                                          1000h
+                                                                                                          0FFFh
+
+                                                                                                                  4096 (4k)                          0100h
+                                                                                                                     *                               00FFh
+                                                                                                                   8 bits
+
+                                                                                                          0000h                                      0000h
+                                                                                                                 External                                       External
+                                                                                                              program ROM                                      data RAM
+
+
+
+
+                                                                                                                                       EA    PSEN
+                                                                                                 8051                         0FF Fh
+
+                                                                                                                                       4096 (4k)
+                                                                                                                                           *             FFh SFR 128 GPR 128
+                                                                                                                                         8 bits          80h * 8 bits * 8 bits
+                                                                                                                              PC
+                                                                                                                                                         7Fh        GPR 128
+                                                                                                      1*16 bits               0000h                      00h         * 8 bits
+                                                                                                   Program counter                Program ROM                       Data RAM
+                                                                                                         (PC)
+                                                                                                                                                                WR RD
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                                     (19/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Memory Organization (ROM)                                                                           Program Memory (ROM)
+    2^8              2^12              2^16                      2^32
+                                                                                                       DPTR, PC both are 16-bit pointer
+    256              4096              65536                     4 294 967 296
+
+    MOVC A，@A+DPTR
+    MOVC A，@A+PC                                                                                       EA ／VPP (31)
+                                                                                                       允许访问片外存储器／编程电源线，可以
+                                                                                                       控制MCS-51 使用片内ROM 还是使用外
+                                                                                                       ROM。若EA =1，则允许使用片内ROM；
+                                                                                                       若EA =0，则只能使用片外ROM。
+
+                                                                                                       PSEN (29)
+                                                                                                       片外ROM 选通线，在执行访问片外ROM
+                                                                                                       的指令MOVC 时，MCS-51 自动在PSEN
+                                                                                                       线上产生一个负脉冲，用于为片外ROM
+                                                                                                       芯片的选通。其他情况下， PSEN 线均
+                                                                                                       为高电平封锁状态。
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (20/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Memory Organization (RAM)                                                                 Data Memory (Internal RAM)
+                                                                                             2^8                 2^12                2^16
+                                                                                             256                 4096                65536
+  00                                                                       80
+                                                                                        0-FFh:         first 256 memory locations are
+                                                                                                       the heart of memory common
+
+                                                                                        0-7Fh:   first 128 registers
+                                                                                        0-1Fh:   4 banks each including 8 registers
+                                                                                                 denoted by R0-R7 工作寄存器组
+                                                                                        20h-2Fh: bit-addressable 既可字节寻址，亦可位寻址
+   1F                                                                                   2Fh-7Fh: no SFRs (general-purpose registers)
+                                                                                                                     为用户区
+                                                                                        80h-FFh: additional memory block shared
+                                                                                                 with originally allocated SFRs
+                                                                                              Two different addressing methods:
+                                                                                         采用
+                                                                                            • SFRs memory locations are accessed
+                                                                                         不同
+                                                                                         的    by direct addressing
+                                                                                            • Additional RAM memory locations
+                                                                                         寻址
+                                                                                         方式   are accessed by indirect addressing
+  7F                                                                       FF               • Will learn at Assembly !
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (21/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Internal data RAM                                                                    Black: byte addressable; Red: bit addressable
+   F8h-FFh    (F8h-FFh)
+   F0h-F7H   B (F0h-F7H)
+   E8h-EFh    (E8h-EFh)
+   E0h-E7h ACC (E0h-E7h)
+   D8h-DFh   (D8h-DFh)
+   D0h-D7h PSW (D0h-D7h)
+   C8h-CFh    (C8h-CFh)
+   C0h-C7h    (C0h-C7h)                                                                              128
+   B8h-BFh IP (B8h-BFh)                                                                              SFR
+   B0h-B7h P3 (B0h-B7h)
+   A8h-AFh IE (A8h-AFh)
+   A0h-A7h P2 (A0h-A7h)
+   98h-9Fh SCON (98h-9Fh)    SBUF
+   90h-97h  P1 (90h-97h)
+   88h-8Fh TCON (88h-8Fh)   TMOD       TL0       TL1       TH0       TH1
+   80h-87h  P0 (80h-87h)     SP        DPL       DPH                                    PCON
+
+
+
+
+                                                                                                      80
+                                                                                                    General
+   30h-7Fh
+                                                                                                   purpose
+                                                                                                   registers
+
+
+
+
+               40h-47h      48h-4Fh   50h-57h   58h-5Fh   60h-67h   68h-6Fh   70h-77h   78h-7Fh     16 bit-
+   20h-2Fh
+               00h-07h       08-0Fh   10h-17h   18h-1Fh   20h-27h    28-2Fh   30h-37h   38h-3Fh   addressable
+   18h-1Fh       R0            R1       R2        R3        R4         R5       R6        R7        Bank 3
+   10h-17h       R0            R1       R2        R3        R4         R5       R6        R7        Bank 2
+   08h-0Fh       R0            R1       R2        R3        R4         R5       R6        R7        Bank 1
+   00h-07h       R0            R1       R2        R3        R4         R5       R6        R7        Bank 0
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (22/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Internal data RAM                                                                        Black: byte addressable; Red: bit addressable
+                             F8h-FFh    (F8h-FFh)
+                             F0h-F7H   B (F0h-F7H)
+                             E8h-EFh    (E8h-EFh)
+                             E0h-E7h ACC (E0h-E7h)
+                             D8h-DFh   (D8h-DFh)
+                             D0h-D7h PSW (D0h-D7h)
+                             C8h-CFh    (C8h-CFh)
+                             C0h-C7h    (C0h-C7h)                                                                                           128
+                             B8h-BFh IP (B8h-BFh)                                                                                           SFR
+                             B0h-B7h P3 (B0h-B7h)
+                             A8h-AFh IE (A8h-AFh)
+                             A0h-A7h P2 (A0h-A7h)
+                             98h-9Fh SCON (98h-9Fh)    SBUF
+                             90h-97h  P1 (90h-97h)
+                             88h-8Fh TCON (88h-8Fh)   TMOD        TL0          TL1         TH0          TH1
+                             80h-87h  P0 (80h-87h)     SP         DPL          DPH                                             PCON
+
+
+
+
+                                                                                                                                             80
+                                                                                                                                           General
+                              30h-7Fh
+                                                                                                                                          purpose
+                                                                                                                                          registers
+
+
+
+
+                                         40h-47h      48h-4Fh    50h-57h     58h-5Fh      60h-67h     68h-6Fh     70h-77h      78h-7Fh     16 bit-
+                              20h-2Fh
+                                         00h-07h       08-0Fh    10h-17h     18h-1Fh      20h-27h      28-2Fh     30h-37h      38h-3Fh   addressable
+                              18h-1Fh      R0            R1        R2          R3           R4           R5         R6           R7        Bank 3
+                              10h-17h      R0            R1        R2          R3           R4           R5         R6           R7        Bank 2
+                              08h-0Fh      R0            R1        R2          R3           R4           R5         R6           R7        Bank 1
+                              00h-07h      R0            R1        R2          R3           R4           R5         R6           R7        Bank 0
+
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                            (23/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   General-purpose and SFRs                                                                 Black: byte addressable; Red: bit addressable
+                             F8h-FFh    (F8h-FFh)
+                             F0h-F7H   B (F0h-F7H)
+                             E8h-EFh    (E8h-EFh)
+                             E0h-E7h ACC (E0h-E7h)
+                             D8h-DFh   (D8h-DFh)
+                             D0h-D7h PSW (D0h-D7h)
+                             C8h-CFh    (C8h-CFh)
+                             C0h-C7h    (C0h-C7h)                                                                                           128
+                             B8h-BFh IP (B8h-BFh)                                                                                           SFR
+                             B0h-B7h P3 (B0h-B7h)
+                             A8h-AFh IE (A8h-AFh)
+                             A0h-A7h P2 (A0h-A7h)
+                             98h-9Fh SCON (98h-9Fh)    SBUF
+                             90h-97h  P1 (90h-97h)
+                             88h-8Fh TCON (88h-8Fh)   TMOD        TL0          TL1         TH0          TH1
+                             80h-87h  P0 (80h-87h)     SP         DPL          DPH                                             PCON
+
+
+
+
+                                                                                                                                             80
+                              30h-7Fh                              General-purpose                                                         General
+                                                                                                                                          purpose
+                                                                                                                                          registers
+
+
+                                                                    registers (GPR)
+                                         40h-47h      48h-4Fh    50h-57h     58h-5Fh      60h-67h     68h-6Fh     70h-77h      78h-7Fh     16 bit-
+                              20h-2Fh
+                                         00h-07h       08-0Fh    10h-17h     18h-1Fh      20h-27h      28-2Fh     30h-37h      38h-3Fh   addressable
+                              18h-1Fh      R0            R1        R2          R3           R4           R5         R6           R7        Bank 3
+                              10h-17h      R0            R1        R2          R3           R4           R5         R6           R7        Bank 2
+                              08h-0Fh      R0            R1        R2          R3           R4           R5         R6           R7        Bank 1
+                              00h-07h      R0            R1        R2          R3           R4           R5         R6           R7        Bank 0
+
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                            (24/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Memory expansion                                                                                   MOVX A，@Ri
+                                                                                                     外部RAM MOVX A，@DPTR
+                                                                                                           MOVX @Ri， A
+                                                                                                           MOVX @DPTR，A
+
+                                                                                                     外部ROM MOVC A，@A+DPTR
+
+                                                                                               ALE／ PROG (30) 地址锁存允许／编程线
+                                                                                                   在访问片外存储器时，MCS-51 在P0.7～
+                                                                                               P0.0 引脚线上输出片外存储器低8 位地址的同
+                                                                                               时还在ALE／ PROG 线上输出一个高电位脉冲，
+                                                                                               用于把这个片外存储器低8 位地址锁存到外部专
+                                                                                               用地址锁存器，以便空出P0.7～P0.0 引脚线去
+                                                                                               传送随后而来的片外存储器读写数据。
+                                                                                                   在不访问片外存储器时，MCS-51 自动在
+                                                                                               ALE／ PROG 线上输出频率为fosc／6 的脉冲序
+                                                                                               列。该脉冲序列可用作外部时钟源 或作为定时
+                                                                                               脉冲源使用。
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (25/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Memory expansion                                                                  执行MOVC 指令码时的总线周期 (外部ROM)
+
+
+
+
+                                                                                                     外部ROM
+
+
+
+
+                                                                                          执行MOVX 指令码时的总线周期 (外部RAM)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (26/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Block Diagram – I/O Ports
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (27/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 I/O (hardware)                                                                        P0                                   P1/P2/P3
+
+
+
+
+                                                                                            • Ports 0 has open-drain (OD 开漏 or
+                                                                                              OC 开集) outputs (“true” bidirectional).
+              PORT 0 BIT                                 PORT 1 BIT                            • External memory access 三态门
+                                                                                               • Drive devices 驱动器
+                                                                                               • OD/OC output can connect to a single line
+                                                                                                 for wired logic connection 线与逻辑
+                                                                                            • Ports 1, 2, and 3 have internal
+                                                                                              pull-ups (quasi-bidirectional ports).
+                                                                                               • To "measure" an external signal applied to
+                                                                                                 a GPIO line, set this line to HIGH first,
+              PORT 2 BIT                                 PORT 3 BIT                              then read the state of the pin
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (28/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 P0 port and open-drain I/O (address/data mode)
+   • Address/data mode (output “0”)                                                       • Address/data mode (output “1”)
+
+
+
+
+          小结：
+          1) 8051所有 IO 口都是双向的，可以作为输入也可以作为输出使用。
+          2) 由于 P0 口是漏极开路的，所以P0 口外接驱动必须外接上拉电阻；
+             用作地址/数据线时，不必外加上拉电阻；
+             其他 P1、P2、P3 口都内部自带上拉电阻，可以不加;
+             如果要增强 IO 口驱动能力，可以外接上拉电阻。
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (29/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 P1 (P2 & P3) port (read and write)
+   • Writing the output                                                                   • Reading the input
+
+
+                                                                                                           “1”
+
+
+
+
+                         (Figures are from ATMEL datasheet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (30/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Reading the port pin or latch ?
+   • Read pin                                                                             • When will “read pin” and “read latch”
+                                                                                            happen?
+                                                                                             – Read pin when doing direct read operation,
+                                                                                               e.g.,
+                                                                                                       MOV A, P1
+                                                                                             – Read latch when doing the
+                                                                                               read-modify-write operation,
+                                                                                               e.g.,
+   • Read latch
+                                                                                                       ORL P1, #01H
+                                                                                                       INC P1
+                                                                                             reads the value of the P1 latch (not the input
+                                                                                             pins), modifies the value read (performs a
+                                                                                             bitwise OR with 0x01), and then writes the
+                                                                                             new value back into the P1 latch.
+                                                                                       (C51: read-modify-write registers http://www.keil.com/support/docs/2442.htm)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                (31/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   I/O 小结 (不仅限于8051) - 先进MCU可以自行配置
+
+
+
+
+                              准双向IO                                    开漏输出                                          强推挽输出
+
+          注意事项：                                                                                 上下拉电阻的作用：
+          ①当I/O 口被用作输入用途时，读取输入前                                                                 ①上拉电阻就是将不确定的信号通过一个
+          要保证锁存器状态为1。                                                                           电阻拉到高电平，同时此电阻起到一个限
+          ②当I/O 口由低拉高时，指令执行后需要                                                                  流的作用，下拉就是下拉到低电平。
+          1~2 个机器周期才能使实际的输出变成高电平。                                                               ②OC 门要输出高电平，外部必须加上拉
+                                                                                                电阻；上拉电阻一般较大，减少功耗。
+          在外围电路上：
+                                                                                                ③加大普通IO 口的驱动能力。
+          ①P0 口做普通I/O 使用时，要加上拉电路，
+                                                                                                ④起到限流的作用。
+          因为其没有内部上拉。
+          ②为防止电流过大，必要时外加限流电阻。                                                                   ⑤抵抗电磁干扰。
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (32/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Power supply                                                                                 发散：RS232、网线等通信采用其他
+   • Logic family                                                                               电平逻辑；任何可控的两种状态/物理
+                                                                                                量的三端器件单元都可以作为逻辑和
+                                                                                                计算，如RRAM，FeRAM，机械梁，
+                                                                                                流体，自旋，光电等等。
+
+
+
+                                                                                                                 Logic “1”               Logic “1”
+
+
+
+
+                                                                                                                  Logic “0”              Logic “0”
+
+
+
+                                                                                                                  74LS和54: TTL，
+                                                                                                                  74HC: CMOS logic
+                                                                                                                          (Figures are from internet)
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                             (33/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Power supply                                                                           • 复位后PC值为0000H，故复位后的程序入口地址为0000H；
+   • DC power supply                                                                      • 复位后PSW=00H，使片内存储器中选择0区工作寄存器，
+                                                                                            用户标志位F0为0状态；
+                                                                                          • 复位后SP=07H，设定推栈栈底为07H；
+                                                                                          • TH1、TL1、TH0 、TL0都为00H，表明定时/计数器复位后
+                                                                                            皆清零；
+                                                                                          • TMOD=00H都处于方式0，并设定T1/T0为内部定时器方式；
+                                                                                          • TCON=00H，禁止计数器计数，无溢出中断请求，并禁止
+                                                                                            外部中断源的中断请求，外部中断源的中断请求为电平触发
+                                                                                            方式；
+                                                                                          • SCON=00H使串行口工作在移位寄存器（方式0），允许接
+   • Reset circuit                                                                          收或发送；
+                                                                                          • 复位后IE的各位均为零，CPU被禁止响应中断，每个中断源
+                                                                                            也被禁止；
+                                                                                          • 复位后IP的各位均为零，表明5个中断源都设置为低优先级
+                                                                                            中断状态；
+                                                                                          • 复位后的P1，P2，P3口锁存器全为1状态，准双向口皆处于
+                                                                                            输入状态。
+                                                                                          • 在复位有效期间（即高电平），MCS-51的ALE引脚和引脚
+                                                                                            均为高电平，且内部RAM不受复位的影响。
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (34/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 Block Diagram
+                                                                                                                   Can you recall the
+   Other Peripherals will be introduced separately                                                                  functionalities
+                                                                                                                      of all Pins ?
+
+
+
+
+   中断系统：5个中断源（内部3个，外部2个），2级中断优先权。
+   定时器/计数器：2个16位的定时器／计数器，具有四种工作方式。
+   串行口：1个全双工串口，四种工作方式。
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (35/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   8051 derivatives                                                                                                      8052
+   • Today a large number of 8051                                                         • 8 – bit CPU with two Registers A (Accumulator) and B.
+                                                                                          • Internal ROM of 8K Bytes – flash memory in–system
+     derivatives is available that grows                                                    programming.
+     almost monthly!                                                                      • Internal RAM of 256 Bytes :
+                                                                                             –   00H to 7FH is divided in to 4 banks with 8 registers (R0 –
+   • They all use the same instruction set                                                       R7) in each bank, bit addressable and general registers.
+     of the MCS-51 processor core                                                            –   80H to FFH consists of SFRs.
+                                                                                          • 32 I/O Pins – Arranged as 4 Ports: P0, P1, P2 and P3.
+   • But are different in peripheral                                                      • 8-bit Stack Pointer (SP) and Processor Status Word
+     components, to cover a wide range of                                                   (PSW).
+                                                                                          • 16–bit Program Counter (PC) and Data Pointer (DPTR).
+     applications                                                                         • Two or Three 16–bit Timers / Counters – T0 and T1,
+                                                                                            (T2).
+                                                                                          • Control Registers – SCON, PCON, TCON, TMOD, IP and
+                                                                                            IE.
+                                                                                          • Serial Data Transmitter/Receiver for Full – Duplex
+                                                                                            Operation – SBUF.
+                                                                                          • Interrupts: Two External and Three Internal.
+                                                                                          • Oscillator and Clock Circuit.
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                           (36/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Video - How Microcontroller work ? (video – 7’)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (37/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Summary
+   • A computer works as a big cluster of comb. and seq. logic (digital) circuits
+      – Combinational logic works for encoding/decoding, etc.
+      – Sequential logic works according to a certain pace (system clock)
+   • The MCS-51 (8051) is an 8-bit classic microcontroller
+      – internally Harvard architecture, externally Von-Neumann
+   • The “processor datapath” is important for understanding the working flow of
+     micro-processors
+      – Fetch, decode, excute, memory access, register
+      – Opcode, Encoding, Data, Byte, Cycle
+   • Remember all 40-Pin Mapping of MCS-8051
+   • Memory & mapped I/O & Special function register (SFR)
+      – The differences of P0 ~ P3
+      – All peripherals & Corresponding SFR
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (38/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   嵌入式系统的特点
+   • 嵌入式系统功耗低，体积小，专用性强。                                                                   • 嵌入式系统类型
+   • 基本电路—电源、重启电路、时钟电路、存                                                                  • 微控制器(Microcontroller Unit，MCU）、
+     储电路                                                                                    微处理器(MPU，Microprocessor Unit)、
+   • 随机存储器RAM                                                                               数字信号处理器（DSP，Digital Signal
+      – 静态RAM (SRAM)和动态RAM(DRAM)                                                            Processing）和
+   • 只读存储器ROM                                                                               片上系统(System On Chip，SOC)。
+      – 掩模ROM、 PROM、 EPROM、 EEPROM、
+      – Flash存储器（NAND 、NOR）                                                                                   SRAM           FLASH           GPIO
+
+
+   • 常用接口电路
+                                                                                                       SPI接口                                    USART接口
+      – GPIO、按键、显示
+      – 串口：UART、RS232接口、SPI（全双工）                                                                        定时器                   CPU                   I2C接口
+
+      – 总线接口：I2C（集成电路总线，半双工），                                                                         实时时钟                                          报警狗
+        CAN总线（控制器局域网总线），                                                                               RTC                                           WDG
+
+        RS-485总线（EIA-485，半双工）
+                                                                                                              USB接口         CAN接口         ADC接口
+
+
+
+
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                 (39/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Questions
+   • 1．AT89C51 has 128B RAM and 4KB ROM, and 2 Timers
+   • 2. 8052 has all functions as 8051, plus an additional timer;
+        also memory space is 256B RAM and 8KB ROM
+
+   • 3. MCS-51单片机内部有哪些主要的逻辑部件?
+   • 4. MCS-51的内部程序存储器和数据存储器各有什么用处?
+   • 5. MCS-51内部RAM区功能如何分配？如何选用4组工作寄存器中的一组作为当前的
+      工作寄存器组？位寻址区域的字节地址范围是多少?
+   • 6. MCS-51设有4个8位并行端口，若实际应用8位I/O口，应使用P0～P3中哪个端口
+      传送？16位地址如何形成?
+   • 7. MCS-51的P3口具有哪些第二功能?
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (40/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Questions
+   • 未来单片机发展趋势表现在以下几个方面 (多选)                                                              • MCS-51单片机指令系统中，同外部程序存储器打交道的指
+                                                                                            令下列正确的是
+   • A. CPU流水线结构、增加数据总线宽度提高运算速度和精度
+                                                                                          • A. MOV A，@A+DPTR
+   • B. 加大存储器容量FlASH化、程序的保密化
+                                                                                          • B. MOVC A，@A+DPTR
+   • C. 增加I/O并行、串行驱动能力，通信和网络功能增强
+                                                                                          • C. MOVX A，@A+DPTR
+   • D. 外围电路内部化、引脚多功能、低功耗、专用型单片机                                                          • D. MOVC A，@A+DPTR和MOVX A，@A+DPTR都可以
+
+   • 程序状态字CY、OV、P分别为：                                                                     • 可以加上限流电阻连接发光二极管、蜂鸣器的I/O端口有(多
+   • A. 进位、溢出、奇偶标志位                                                                         选)
+   • B. 进位、溢出、A累加器1的奇偶标志位                                                                 • A. P3.0
+                                                                                          • B. P2.1
+   • C. 溢出、进位、奇偶标志位
+                                                                                          • C. 32个I/O引脚都可以连接
+   • D. 奇偶标志位、进位、溢出位
+                                                                                          • D. P1.0
+
+   • 定时器0(T0)、定时器1（T1）中断源入口地址分别为
+                                                                                          •   堆栈是(多选)
+   • A. 000BH, 001BH                                                                      •   A. 后进先出的存储区
+   • B. 0003H, 0013H                                                                      •   B. 先进后出的存储区
+   • C. 0003H, 000BH                                                                      •   C. 用SP作为栈顶指针的存储区
+   • D. 0000H, 0003H                                                                      •   D. 主要是用来保存信息和数据的存储区
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (41/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Comparison
+                       8051              PIC              AVR            ARM                                   8051               PIC               AVR         ARM
+                                                                     32-bit mostly                                                           Tiny, Atmega,
+                    8-bit for                                                                                           PIC16,PIC17,
+  Bus width                     8/16/32-bit            8/32-bit      also available                                                             Xmega,     ARMv4,5,6,7
+                  standard core                                                             Families      8051 variants PIC18, PIC24,
+                                                                       in 64-bit                                                                special     and series
+                                                   UART,                                                                   PIC32
+                                                               UART,                                                                         purpose AVR
+                                               USART, SPI,
+                                    PIC, UART,              USART, LIN,
+                                                    I2C,                                  Community             Vast          Very Good        Very Good        Vast
+                      UART,        USART, LIN,                I2C, SPI,
+Communication                                     (special
+                     USART,            CAN,                  CAN, USB,
+  Protocols                                    purpose AVR                                            NXP, Atmel,                                           Apple, Nvidia,
+                     SPI, I2C        Ethernet,               Ethernet,
+                                               support CAN,                                          Silicon Labs,                                           Qualcomm,
+                                     SPI, I2S                   I2S,                                                          Microchip
+                                                   USB,                                 Manufacturer    Dallas,                                     Atmel   Samsung, ST,
+                                                             DSP, IrDA                                                        Average
+                                                 Ethernet)                                              Cyprus,                                              NXP and TI
+                    12 clock /        4 clock /         1 clock /        1 clock /                   Infineon, etc.                                             etc.
+    Speed
+                   instr. cycle      instr. cycle     instr. cycle     instr. cycle
+                                                                                           Cost (as
+                                                                         Flash,          compared to         Very Low          Average          Average          Low
+                  ROM, SRAM,           SRAM,        Flash, SRAM,
+   Memory                                                               SDRAM,            features)
+                    FLASH              FLASH          EEPROM
+                                                                        EEPROM
+                                                                                             Other        Known for its                         Cheap,       High speed
+                                   Some feature                                                                                 Cheap
+      ISA              CISC                              RISC             RISC              Feature         Standard                           effective     operation
+                                     of RISC
+                                                                        Modified                                                                     LPC2148, ARM
+  Memory       Harvard    Von Neumann                                                       Popular                          PIC18fXX8, Atmega8, 16,
+                                                       Modified         Harvard                             AT89C51,                                 Cortex-M0 to
+Architecture architecture architecture                                                      Micro-                           PIC16f88X, 32, Arduino
+                                                                      architecture                         P89v51, etc.                               ARM Cortex-
+    Power                                                                                 controllers                        PIC32MXX    Community
+                     Average             Low              Low              Low                                                                          M7, etc.
+ Consumption
+                                                                            https://www.elprocus.com/difference-between-avr-arm-8051-and-pic-microcontroller/
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                       (42/64)
+                                              Supplementary
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 - 计数显示器
+   • 1、熟悉Proteus ISIS模块界面，重点了解菜单栏、
+     工具栏、对话框等基本单元功能；
+   • 2、学会选择元件、画导线、画总线、修改属性等基
+     本操作，完成图A.1电路绘制；
+   • 3、学会可执行文件加载及程序仿真运行方法；
+   • 4、验证计数显示器的如下功能：
+
+
+
+
+                                                                                                元件类别                     电路符号                       元件名称
+                                                                                                Microprocessor ICs       “U1”                       80C51
+                                                                                                Miscellaneous            “X1”/12MHz                 CRYSTAL
+                                                                                                Capacitors               “C1”～“C2”/1nF              CAP
+                                                                                                Capacitors               “C3”/22μF                  CAP-ELEC
+                                                                                                Resistors Packs          “RP1”/7-100Ω               RESPACK-7
+                                                                                                Resistors                “R1”/100Ω                  RES
+                                                                                                Optoelectronics          “LED1”～“LED2”              7SEG-COM-CAT-GRN
+                                                                                                Switches & Relays        “BUT”                      BUTTON
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                                     (44/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 - 计数显示器
+   • 摆放元件
+   • 画导线 和 总线
+   • 自动生成总线标签
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (45/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 - 计数显示器
+   • 双击单片机，添加.hex仿真文件                                                                     • 运行仿真
+
+
+
+
+                                                                                              仿真工具栏
+                                                                                               运行仿真
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (46/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 - 指示灯/数码管的中断控制
+   功能: 开机后D1灭灯，LED1黑屏，随后                                                                  • 直接load .hex 文件 运行查看实验效果
+    单击K1 → D1 状态反转，
+    单击K2 → LED1 从0开始循环显示0～9字符。
+   硬件电路要求：
+   1、K1、K2分别接INT0（P3.2）和INT1（P3.3）引脚，
+      单击后应能产生下降沿脉冲；
+   2、D1接P0.4引脚，高电平驱动，经上拉电阻接电源；
+   3、共阴极数码管LED1接P2口，COM端接地。
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (47/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 - 打地鼠游戏
+                                                                                          • 硬件 8个LED 接 P1 口；对应矩阵键盘0~7；
+                                                                                          • LED灯随机点亮 1秒，矩阵键盘对应健按下，LCD显示数加1
+                                                                                          • 参考程序模版
+                                                                                          //定义随机数函数（产生随机数并点亮1个LED）
+                                                                                          //定义T0定时中断函数
+                                                                                          { //设置定时器初始值，
+                                                                                            //产生随机数作为LED显示;
+                                                                                            //打地鼠次递减，到0时游戏结束；否则继续；
+                                                                                          }
+                                                                                          //定义显示更新函数
+                                                                                          //定义主函数
+                                                                                          {
+                                                                                            // IO端口，LCD显示 和 定时器中断初始化
+                                                                                            // while循环
+                                                                                                   //调用矩阵键盘识别 判键值；
+                                                                                                   //1s定时中断到，与LED显示比较（正确则+1）
+                                                                                                   //更新显示数据到 LCD
+                                                                                          }
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (48/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   Proteus 仿真 – Tetris 俄罗斯方块
+                                                                                          • 四个按键 Start，Left，Right，Home
+                                                                                          • LCD 液晶屏SPI 接口
+
+                                                                                          • 参考程序思路
+                                                                                          typedef struct game // 游戏的状态
+                                                                                          {         int isBegin;       // 是否进入开始游戏的状态
+                                                                                                    int isGaming;      // 是否正在游戏中
+                                                                                                    int score;         // 得分
+                                                                                                    int modelCount;    // 产生方块的个数
+                                                                                          }GameStatus;
+                                                                                          static GameStatus game; // 全局游戏状态
+                                                                                          //定义随机数函数（产生随机方块）
+                                                                                          //**定时器中断服务函数
+                                                                                           * 1. 用于控制刷新屏幕上方块下落的效果
+                                                                                           * 2. 游戏结束判断                                               是否听过
+                                                                                           * 3. 得分和方块个数刷新控制                                         有限状态机
+            //主函数
+                                                                                           * 4. 当前控制的方块和下一个的控制                                       FSM？
+            { // 各个模块初始化
+                                                                                          **//
+              // while循环
+                                                                                          //外部中断控制函数 -> 根据按键更改状态
+            }
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                            (49/64)
+                                                   硬件基础知识
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   电阻
+   • 欧姆定律 I=U/R
+   • 器件选型 封装与功耗                                       精度与成本
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (51/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   零欧姆电阻
+   • 又称跨接电阻器，是一种特殊用途的电
+     阻，阻值并非为零
+   • 某公司的精度等级：
+     F档 ≤10mΩ，
+     G档 ≤20mΩ，
+     J档 ≤50mΩ
+   • 常规用途
+      – 备用，方便调试与维修
+      – 数字地与模拟地的跨接
+      – 配置短路，类似拨码开关
+      – 预留调整
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (52/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   热敏电阻
+   • 正温度系数 PTC                                                                            根据下图NTC温度特性曲线，分析当温度
+   • 负温度系数 NTC                                                                            为多少度时，输出才会从低电平转为高电
+                                                                                          平？
+                            NTC用于开关电源限流
+
+
+
+
+         NTC电阻用于测温                              PTC用于电路短路保护
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (53/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   光敏电阻
+   • 光敏电阻利用半导体的光电效应制成的                                                                    • 光敏电阻5516
+     一种随光强而改变的电阻器；
+   • 一般光越强电阻值越小
+
+
+
+
+           白天光线较强，CDS阻值很小，Q1导通，灯灭；
+           夜晚光线较暗，CDS阻值很大，Q1截止，灯灭。
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (54/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   电容
+   • 公式 C=Q/U
+   • 单位 法拉 F 非常大，                                                                         • 陶瓷电容 与 电解电容
+     一般用 μF，nF，pF                                                                            – 瓷片电容无极性，容量不大，工作温度宽，
+   • 作用：                                                                                       频率高，稳定；消除高频干扰；
+      – 阻直流：只充电，不放电；充满后无法放电，                                                                   MLCC寄生电感较小
+        断开状态                                                                                 – 电解电容容量大，有极性，价格便宜；不耐
+      – 通交流：循环充电与放电；导通状态:                                                                      高温和大电压；常用于消除低频干扰
+        I = (du/dt)*C
+      – 滤波、储能等
+
+   • 类型：
+      – 滤波电容、旁路电容、耦合电容、退藕电容、
+        自举电容、谐振电容、高频消振、等
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (55/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   电容
+   • 电路去耦和旁路                                                                              • 电容标注方法
+   • 常用陶瓷、电解、独石                                                                           • 1）直接数字标注法：如电解电容，云母、
+   • 1）作为本集成电路的蓄能电容                                                                         瓷片电容。
+   • 2）滤除该器件产生的高频噪声，切断                                                                    • 2）10次幂标注法：中小容量（电解除
+     其通过供电回路进行传播的通路                                                                         外）部分用10次幂标注，由三位数构成，
+   • 3）防止电源携带噪声对电路构成干扰                                                                      前二位数字即为电容的容量，第三位则
+                                                                                            为10的倍乘数，如：
+                                                                                          • 103：10*103=10,000pf=0.01uf
+                                                                                          • 104：10*104=100,000pf=0.1uf
+                                                                                          • 681：68*10=680pf
+                                                                                          • 3）色环标注法及耐压等级标注
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (56/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   电感
+   • 电感器(Inductor)是能够把电能转化为
+                        • 主要作用有滤波、耦合信号、变压、阻
+     磁能而存储起来的元件。电感器的结构    抗匹配、与电容配合进行调谐、选频、
+     类似于变压器，但一般只有一个绕组。    振荡等作用，
+   • 通直流、阻交流，频率越高，线圈阻抗  • 基本单位是亨利，简称亨，符号H。
+     越大                 • 常用换算单位：毫亨（mF）、微亨（μF）
+   • 经常和电容器一起工作，构成LC滤波器、 等。它们之间的关系是：1H=1000mH；
+     LC振荡器等               1mH=1000μH。
+
+                                                                                          • 主要参数
+                                                                                          • 电感量、允许偏差、品质因数、
+                                                                                          • 分布电容、直流电阻、额定电流 等
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (57/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   二极管
+   • 二极管Diode是用半导体材料（硅、硒、                                                                 • 对二极管施加正向电压，流过二极管的
+     锗等）制成的一种电子器件，通常也称                                                                      电流将在正向电压之后迅速增加，导通
+     为PN结。它具有单向导电性能，即给二                                                                     状态。
+     极管阳极和阴极加上正向电压时，二极
+     管导通。当加上反向电压时，二极管截
+     止。 因此，二极管的导通和截止，则相
+     当于开关的接通与断开。
+   • 常见二极管有：
+                                                                                          • TVS二极管、稳压二极管等正是利用了
+   • 整流二极管、肖特基二极管、快恢复二
+     极管、稳压二极管、TVS二极管、发光                                                                     二极管的反向击穿特性工作。
+     二极管等。
+   • 主要作用：
+   • 整流、钳位、稳压、开关等
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (58/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   三极管
+   • 也称半导体三极管、双极型晶体管
+     Bipolar、晶体三极管，是一种电流型控
+     制的半导体器件。其作用是把微弱的电
+     信号放大成幅值较大的电信号。
+   • 三极管的内部有两个相距很近的PN结，
+     两个PN结把整块半导体分成三部分，形
+     成三个电极。分别叫做集电极C，基极B，
+     发射极E，排列方式有PNP和NPN两种。
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (59/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   三极管
+   • 按功能和用途可分为:                                                                           • 主要参数
+   • 低噪声放大晶体管：用于精密放大器                                                                     • 1）集电极最大允许功耗
+   • 中高频放大晶体管：用于高频放大电路                                                                    • 2）共射电流放大系数β
+   • 低频放大晶体管：用于低频电压级电流（功放）
+     放大
+                                                                                          • 3）集电极一基极反向电流
+   • 开关晶体管：用于开关电路（脉冲、变频、电机                                                                • 4）集电极一发射极反向电流
+     驱动等）                                                                                 • 5）特征频率
+   • 达林顿晶体管：用于需高放大倍数的输出电路
+   • 高反压晶体管：用于电机驱动电路
+   • 带阻晶体管、带阻尼晶体管：行输出及电机驱动
+     续流
+   • 微波晶体管：微波放大器及驱动电路
+   • 光敏晶体管、磁敏晶体管（传感器电路）等多种
+     类型
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (60/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   场效应管
+   • 三场效应晶体管（Field Effect Transistor
+     缩写FET）简称场效应管。
+   • 主要有两种类型：结型（junction FET-
+     JFET）和金属-氧化物半导体场效应管
+     （metal-oxide semiconductor FET，简称
+     MOS-FET）。后者主流，也称为MOS管。
+   • 场效应管有三个极性，分别为栅极G，漏极
+     D，源极S，常有的一般为N沟道和P沟道。
+   • 场效应管是电压型控制半导体器件，即通过
+     VGS（栅源电压）来控制Id（漏极电流）；
+     场效应管的控制输入端电流极小，因此输入
+     电阻（107～1012Ω）很大。
+   • 场效应管还具有温度稳定性较好、抗辐射能
+     力强、噪声低等优点。
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (61/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   场效应管与三极管对比
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (62/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   场效应管与三极管对比
+   • 场效应管的源极s、栅极g、漏极d分别对应  • 场效应管和三极管均可组成各种放大电路和
+     于三极管的发射极e、基极b、集电极c，它    开关电路，但由于前者制造工艺简单，且具
+     们的作用相似，在一些场合可以替换。       有耗电少，热稳定性好，工作电源电压范围
+   • 场效应管是电压控制电流器件，由vGS控制    宽等优点，因而被广泛用于大规模和超大规
+     iD，其放大系数gm一般较小，因此场效应管   模集成电路中。
+     的放大能力较差；三极管是电流控制电流器   • 三极管导通电阻大，场效应管导通电阻小，
+     件，由iB（或iE）控制iC。         只有几百毫欧姆；一般都用场效应管做开关
+   • 场效应管栅极几乎不取电流（ig=0）；三极   来用，场效应管的效率比较高。
+     管工作时基极总要吸取一定的电流。因此场   • 场效应管除了和晶体管一样可作为放大器件
+     效应管的栅极输入电阻比三极管输入电阻高。 及可控开关外，还可作压控可变线性电阻使
+   • 场效应管是由多子参与导电；三极管有多子     用。
+      和少子两种载流子参与导电，而少子浓度受                                                                 • 一般来说，场效应管的频率特性不如三极管。
+      温度、辐射等因素影响较大，因而场效应管                                                                   在数字电路中，MOS管的开关速度比TTL
+      比晶体管的温度稳定性好、抗辐射能力强。                                                                   的速度低，但耗电量与成本有优势。
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (63/64)
+Progress: MCS-51 Architecture >> OSC & Clock >> CPU & ALU >> Memory >> I/O Ports >> Power & Reset >> 8051 Derivatives >> Summary >> Supplementary
+
+
+   运放常见电路
+   Inverter Amp.                                                Non-inverter Amp.                                       Voltage follower
+   反相放大电路:                                                      同相放大电路:                                                 缓冲/电压跟随电路:
+   放大倍数为Av = R2 / R1                                            Av=R2 / R1
+
+                                                                                                                     Comparator 比较器电路:
+
+
+
+   Square-wave oscillator                                   Active low-pass filter                                   High-pass filter
+   方波震荡电路:                                                  有源低通滤波器电路:                                               高通滤波器电路:
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System2 8051
+                                    -> Lecture
+                                         Architecture
+                                               5 & 6 8051
+                                                       & IO
+                                                          Interrupt & Timer & Communication                                                         (64/64)
+

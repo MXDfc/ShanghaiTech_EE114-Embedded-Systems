@@ -1,0 +1,632 @@
+                             EE114: Introduction to
+                              Embedded Systems
+                   Dr. Tao Wu           吴涛
+                   wutao@shanghaitech.edu.cn
+                   Office: SIST Bldg 3-326
+                   CourseWeb: http://10.15.25.5/
+                   Website: http://small.shanghaitech.edu.cn
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           A Complete CPU
+                                  • MCU Structure
+                                        • The CPU
+                                               • Registers file （寄存器组）
+                                               • Instruction latch/decode/branch （指令）
+                                               • Stack（栈）
+                                               • Interrupt（中断）
+                                               • Clock/Reset（时钟/复位）
+
+                                        • Memory
+                                        • Bus
+                                        • Peripheral
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                           (2/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+                                          A Complete CPU – Video 23’
+
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review          (3/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Stack 栈
+   • 堆栈是一段连续的存储器空间                                                                Low addr
+
+   • 堆栈按照后入先出的方式工作(Last In First Out)                           TOP
+
+   • 只能向/从堆栈的顶部加入或取出数据                                                    0x13
+                                                                          0x12
+   • 顶端位置通过堆栈指针寄存器确定(SP，Stack Pointer)
+                                                                          0x11
+   • 两种基本的操作方式:                                                           0x10    High addr
+           推入PUSH: 将内容加入到堆栈顶端                                         0x10 is the first pushed item
+       取出PULL : 将堆栈顶端的内容取出                                            0x13 is the last pushed item
+
+
+
+   • 对于大多数CPU而言，“顶端”是指低位的地址空间； 但 8051是向上生长型的堆栈
+   • 堆栈容量不超过（256-8）字节，单片机复位后SP的值为07H，SP是入栈递增
+   • 汇编程序可以使用堆栈来保存局部变量，寄存器值
+   • C语言编译器使用堆栈来完成参数传递和返回值传递 -> C语言的函数调用
+   • CPU硬件 使用堆栈 来保存返回地址和寄存器上下文 (register context)
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                         (4/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Stack vs. Heap
+   • 堆Heap：是一个进程开启以后，系统分配给它的空间，一般这个空间是
+     全局的，系统中所有动态分配的对象（比如指针）都是在这个空间上分
+     配。 堆里的数据是有数据结构的，其空间占用是不连续的。
+     在没有OS的嵌入式系统中，通常不使用堆。
+
+   • 栈Stack：是一个线程维护的一个先进后出的数据结构，主要用于静态
+     变量的 分配及维护程序各个函数调用时使用。栈里的内容是没有数据结
+     构的，其空间占用是连续的。栈是微处理器的必要特性，是支持高级语
+     言编程的前提。
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review   (5/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example S12 CPU (16 bits)
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC      xx
+                                           0x3008: PSHA                      0x1FFD      xx
+                                           0x3009: PSHB
+                                           0x300A: JSR SubFunc
+                                                                             0x1FFE
+                                                                                         xx
+                                                                             0x1FFF
+                                           0x300C: PULLA                                 xx
+                                           0x300D: PULLB
+                                            ………..…                             SP = undefined
+                                  SubFunc: 0x4050: NOP                         PC = 0x3006
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (6/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC      xx
+                                           0x3008: PSHA                      0x1FFD      xx
+                                           0x3009: PSHB
+                                           0x300A: JSR SubFunc
+                                                                             0x1FFE
+                                                                                         xx
+                                                                             0x1FFF
+                                           0x300C: PULLA                                 xx
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x2000
+                                  SubFunc: 0x4050: NOP                         PC = 0x3008
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (7/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC      xx
+                                           0x3008: PSHA                      0x1FFD      xx
+                                           0x3009: PSHB
+                                           0x300A: JSR SubFunc
+                                                                             0x1FFE
+                                                                                         xx
+                                                                             0x1FFF
+                                           0x300C: PULLA                                0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFF
+                                  SubFunc: 0x4050: NOP                         PC = 0x3009
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (8/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC      xx
+                                           0x3008: PSHA                      0x1FFD      xx
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc                          0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                                0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFE
+                                  SubFunc: 0x4050: NOP                         PC = 0x300A
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (9/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC    0x30
+                                           0x3008: PSHA                      0x1FFD    0x0C
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc
+                                                                                       0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                               0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFC
+                                  SubFunc: 0x4050: NOP                         PC = 0x4050
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (10/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC    0x30
+                                           0x3008: PSHA                      0x1FFD    0x0C
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc
+                                                                                       0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                               0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFC
+                                  SubFunc: 0x4050: NOP                         PC = 0x4052
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (11/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC    0x30
+                                           0x3008: PSHA                      0x1FFD    0x0C
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc
+                                                                                       0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                               0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFE
+                                  SubFunc: 0x4050: NOP                         PC = 0x300C
+                                           0x4052: RTS                         A = 0x34
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (12/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC    0x30
+                                           0x3008: PSHA                      0x1FFD    0x0C
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc
+                                                                                       0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                               0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x1FFF
+                                  SubFunc: 0x4050: NOP                         PC = 0x300D
+                                           0x4052: RTS                         A = 0x56
+                                                                               B = 0x56
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (13/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+
+           Run Example
+                                                                            Register file after this instruction
+
+
+                                           0x3005: NOP                       0x1FFB      xx
+                                           0x3006: LDS $2000                 0x1FFC    0x30
+                                           0x3008: PSHA                      0x1FFD    0x0C
+                                           0x3009: PSHB                      0x1FFE
+                                           0x300A: JSR SubFunc
+                                                                                       0x56
+                                                                             0x1FFF
+                                           0x300C: PULLA                               0x34
+                                           0x300D: PULLB
+                                            ………..…                             SP = 0x2000
+                                  SubFunc: 0x4050: NOP                         PC = 0x300E
+                                           0x4052: RTS                         A = 0x56
+                                                                               B = 0x34
+
+                                                                  NOP: no operation, do nothing
+                                   current executed instruction   LDS : load stack pointer with a value
+                                                                  PSHx: push the contains of register 'x' into stack
+                                   current stack pointer
+                                                                  PULLx: pull from the stack and put in register 'x'
+                                                                  JSR : jump to subroutine
+                                                                  RTS : return from subroutine
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                          (14/24)
+                                                   8051 Review
+
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   MCS-8051单片机主要功能方框图
+
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review   (16/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   How it runs                                         Key terms: ALU, R0～R7, Acc, B, PSW, DPTR, SP, PC
+
+
+Clock                        Memory (RAM + ROM)
+
+
+
+
+                                        Processor
+
+              I/O peripherals                                      Power
+                                                                             Program statμs word (PSW)
+                SFR: special function register
+                (for recording the state, controlling I/O, etc.)
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                             (17/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   8051 I/O (hardware)
+                                                                    • Ports 0 has open-drain outputs
+                                                                      (“true” bidirectional).
+                                                                      – external memory access
+                                                                      – Drive devices
+                                                                      – open-collector output can connect to a
+                                                                        single line for wired logic connection
+                                                                    • Ports 1, 2, and 3 have internal
+              PORT 0 BIT                               PORT 1 BIT
+                                                                      pull-ups (quasi-bidirectional ports).
+                                                                     – To "measure" an external signal applied to
+                                                                       a GPIO line, set this line to HIGH first,
+                                                                       then read the state of the pin
+
+                                                                     P0                        P1/P2/P3
+
+
+              PORT 2 BIT                               PORT 3 BIT
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                               (18/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   8051 Memory Mapping
+                        SFR: special function register
+                        GPR: general-purpose register
+
+
+
+
+                                         PC                       DPTR   DPTR
+                                                             SP
+
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                   (19/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+                                                                                                       Red address:   bit addresses
+   SFR of original 8051                                                                                Black address: byte addresses
+                        F8h-FFh    (F8h-FFh)         Data and stack pointers
+                                                                                 CPU
+                        F0h-F7H   B (F0h-F7H)
+                        E8h-EFh    (E8h-EFh)
+                        E0h-E7h ACC (E0h-E7h)
+                        D8h-DFh   (D8h-DFh)                  Interrupt control
+                        D0h-D7h PSW (D0h-D7h)
+                        C8h-CFh    (C8h-CFh)                           I/O ports
+                        C0h-C7h    (C0h-C7h)                                                                                       128
+                        B8h-BFh
+                        B0h-B7h
+                                 IP (B8h-BFh)
+                                 P3 (B0h-B7h)
+                                                                              UART                                                 SFR
+
+                        A8h-AFh  IE (A8h-AFh)
+                        A0h-A7h P2 (A0h-A7h)
+                                                                          Timers
+                        98h-9Fh SCON (98h-9Fh)    SBUF
+                        90h-97h  P1 (90h-97h)
+                        88h-8Fh TCON (88h-8Fh)   TMOD         TL0       TL1            TH0    TH1
+                        80h-87h  P0 (80h-87h)     SP          DPL       DPH                                           PCON
+                                                                                                                      PCON
+
+
+
+
+                                                                                                                                    80
+                                                                                                                                  General
+                         30h-7Fh
+                                                                                                                                 purpose
+                                                                                                                                 registers
+
+
+
+
+                                    40h-47h      48h-4Fh     50h-57h   58h-5Fh     60h-67h   68h-6Fh       70h-77h    78h-7Fh     16 bit-
+                         20h-2Fh
+                                    00h-07h       08-0Fh     10h-17h   18h-1Fh     20h-27h    28-2Fh       30h-37h    38h-3Fh   addressable
+                         18h-1Fh      R0            R1         R2        R3          R4         R5           R6         R7        Bank 3
+                         10h-17h      R0            R1         R2        R3          R4         R5           R6         R7        Bank 2
+                         08h-0Fh      R0            R1         R2        R3          R4         R5           R6         R7        Bank 1
+                         00h-07h      R0            R1         R2        R3          R4         R5           R6         R7        Bank 0
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                                                 (20/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   Connecting external RAM/ROM
+
+
+
+
+                                                                Parallel RAM/ROM extensions are rarely μsed nowadays;
+                                                                But the logic & sequence apply to any peripheral or external chips
+
+
+
+
+                 MCU with more
+                 integrated
+                 peripherals
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                                        (21/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   8051 timer/counter (hardware)
+   • There are two 16 bits                                      • Count for what?
+     timers/counters in 8051
+      – Timer 0
+
+                                                                       (P3.4)
+
+
+
+                                                                       (P3.2)
+      – Timer 1
+
+
+
+
+   • Related SFR
+
+
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                       (22/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   8051 interrupts (hardware)                                                                  F8h-FFh
+                                                                                               F0h-F7H
+                                                                                               E8h-EFh
+                                                                                                          (F8h-FFh)
+                                                                                                         B (F0h-F7H)
+                                                                                                          (E8h-EFh)
+                                                                                               E0h-E7h ACC (E0h-E7h)
+                          TCON                      IE              IP                         D8h-DFh   (D8h-DFh)
+                                                                                               D0h-D7h PSW (D0h-D7h)
+   IT0=0                                                        PX0           自                C8h-CFh    (C8h-CFh)
+                                                                         1              高级中
+INT0                      IE0                                                 然         断请求
+                                                                                               C0h-C7h    (C0h-C7h)
+                                                                                               B8h-BFh  IP (B8h-BFh)
+                                                                         0    优
+    IT0=1                                     EX0                                              B0h-B7h P3 (B0h-B7h)
+                                                                              先     矢          A8h-AFh IE (A8h-AFh)
+                                                                PT0
+   T0                                                                    1    级     量          A0h-A7h P2 (A0h-A7h)
+                          TF0                                                       地
+                                                                                               98h-9Fh SCON (98h-9Fh)   SBUF
+
+                                              ET0                        0                     90h-97h  P1 (90h-97h)
+                                                                                    址          88h-8Fh TCON (88h-8Fh)   TMOD   TL0   TL1      TH0
+    IT1=0                                                       PX1      1              PC     80h-87h  P0 (80h-87h)     SP    DPL   DPH
+
+ INT1                     IE1
+        IT1=1                                                            0
+                                              EX1
+                                                               PT1           自          低级中
+                                                                         1                     30h-7Fh
+        T1                TF1                                                然          断请求
+                                                                             优
+                                              ET1                        0
+                                                                                    矢         • ORG 0000H
+                                                                             先
+       TX                                                      PS        1   级      量         • LJMP MAIN                 ;跳过中断地址表，转主程序
+                           TI
+                                                                                    地             ORG 0003H
+                                                                                              • 20h-2Fh 40h-47h   48h-4Fh    50h-57h 58h-5Fh 60h-67h   68
+       RX                                                                0                              00h-07h    08-0Fh    10h-17h 18h-1Fh 20h-27h    28
+                           RI                  ES        EA                         址             LJMP INT0F
+                                                                                              • 18h-1Fh   R0         R1   ;转INT0中断服务
+                                                                                                                               R2      R3      R4
+
+                         SCON                                                                     ORG 000BH
+                                                                                              • 08h-0Fh
+                                                                                                10h-17h   R0         R1        R2      R3      R4
+                                             源允许         总允许    优先级                                       R0         R1        R2      R3      R4
+                         中断标志
+                                                                                        PC        LJMP T0F
+                                                                                              • 00h-07h   R0    ;转T0中断服务
+                                                                                                                     R1        R2      R3      R4
+                                                                             硬件查询
+                                                                                              • ORG 0013H
+                                                                                              • LJMP INT1F                ;转INT1中断服务
+   TCON(88H)：定时控制寄存器                                                                          • ORG 001BH
+   SCON(98H)：串行口控制寄存器                                                                         • LJMP T1F                  ;转T1中断服务
+                                                                                              • ORG 0023H
+   IE(A8H) ： 中断允许寄存器                                                                          • LJMP SIOF                 ;转串口中断服务
+                                                                                              • ORG 0030H
+   IP(B8H) ： 中断优先级寄存器                                                             (8052+)     • MAIN：MOV SP，#5FH ;主程序
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                                                                              (23/24)
+Progress: A Complete CPU >> CPU Run Example >> 8051 Review
+
+
+   Communication Summary
+   • Wired communication
+      – Parallel: CPU and RAM
+        Serial: most peripherals
+      – Synchronoμs vs. asynchronoμs
+      – Simplex or duplex or half-duplex
+      – In terms of distance
+         RS232/RS485: long distance
+         I2C, SPI: inter-chip
+                                                                Half-Duplex
+      – Principle and how to μse
+         ▪ UART
+         ▪ I2C (Open-drain output & wired logic)
+         ▪ SPI
+
+
+EE114 Embedded System -> Lecture 9-10 A Complete CPU & Review                 (24/24)
+

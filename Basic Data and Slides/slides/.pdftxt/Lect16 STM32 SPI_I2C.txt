@@ -1,0 +1,1224 @@
+           EE114: Introduction to
+               Embedded Systems
+Dr. Tao Wu     吴涛      研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+               Demo Task
+
+       • 掌握 SPI 和 I2C 接口模块的硬件与应用
+       • SPI 模块实例 ：LCD/OLED & FLASH & ADC/DAC
+       • I2C 模块实例 ：OLED & MPU6050 & EEPROM
+          – OLED Wiki http://www.lcdwiki.com/
+          – 软件I2C和硬件I2C 的使用区别
+       • （进阶）多从机级联 I2C / SPI
+       • （进阶）其他协议 (RS485/CAN/Modbus/LVDS)
+       • 每种接口demo至少一种应用
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (2/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+  STM32 常见同步通信串口功能
+
+                  ◆ 理解和掌握通信的基本概念和常见的同步通信接口；
+                  ◆ 掌 握 STM32F103 微 控 制 器 SPI 接 口 模 块 功 能 ，
+                        标准外设库和软件实现的配置方法；
+                  ◆ 掌 握 STM32F103 微 控 制 器 I2C 接 口 模 块 功 能 ，
+                        标准外设库和软件实现的配置方法；
+                  ◆ 了解STM32F103微控制器CAN，I2S，RS232/485，USB，
+                        SDIO，FLASH，FSMC 等其他接口模块和功能。
+                                   简单学法：参考代码拿过来，跑通，Yeah ！
+                    我是学霸：每个模块的原理、配置、移植、集成 都要掌握 ！
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (3/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+                                                           还记得我吗？
+
+
+
+
+                   每个字节必须为8位，首先传输的时字节最高位（MSB）
+
+
+
+
+                                                                                                          (Figures are from internet)
+ 发送起始信号后，紧接着的一个字节其前7位是从设备地址，最后一位表示数据传输方向
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                     (4/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+          常见通信接口                                      UART，IIC，SPI， RS-232，RS-485，CAN
+
+       1、通信接口                                                               2、通信方式
+       • 内部通信：主要用于板级信号传输，                                                   ① 单工：信号只能单方向传输
+         通常应用于设备内部，特点是速度快，                                                  ②半双工/准双工：信号可以双方向传
+         距离短，常用的有： UART，IIC，SPI ；                                           输，但同一时刻只能一个方向传输，比
+       • 外部通信：主要用于设备级信号传输，                                                  如： IIC，RS-485，CAN
+         通常应用于设备之间，特点是速度慢，                                                  ③全双工：信号可以同时双方向传输，
+         距离远(差分传输)，常用的有：                                                    比如： UART，SPI，RS-232
+         RS-232，RS-485，CAN 。
+
+                                                                            4、通信网络
+       3、同步传输：
+                                                                            ① 一对一传输，不能构成总线网络：
+         异步传输：                                                              ② 一对多传输，可以构成总线网络：
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (5/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+同步串行接口SPI与I2C                                                    学习目标
+
+                                        1. STM32的SPI及其应用要点
+
+                                        2. STM32的SPI的应用实例
+
+                                        3. STM32的I2C及其应用要点
+
+                                        4. STM32的I2C的应用实例
+
+                       重点 - SPI 接口的特性、初始化与接收发送操作
+                       难点 - SPI 接口的具体应用（可靠性和容错性）
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (6/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         SPI接口原理
+    • SPI是个啥东东
+    SPI是串行外设接口(Serial Peripheral Interface)的
+    缩写，是一种高速、全双工同步通信总线，四线接口；
+    SPI以主从方式工作。通常有一个主设备和一个或多个
+    从设备，一般需要4根线，单向传输时则只需要3根线。
+    — SDI（数据输入）                      —主入从出
+    — SDO（数据输出）                      —主出从入
+    — SCLK（时钟）                       —由主设备产生
+    — CS（片选）                         —由主设备控制的从设备使能信号
+
+    • SPI的工作原理 —— 串行通讯协议
+    由SCLK提供时钟脉冲，数据输出或者输入通过
+    SDO线，数据在时钟上升沿或下降沿时改变，在紧
+    接着的下降沿或上升沿被读取，完成一位数据传输。
+    通过8次时钟信号的改变（上沿和下沿为一次），
+    就可以完成8位数据的传输。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (7/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         SPI接口原理
+                                                                          • SPI总线的时序
+  • SPI的特点和特性                                                             STM32的SPI口的时序由以下两个位控制
+  • 主设备通过对SCLK时钟线的控制完成                                                    • CPHA    SPI的相位Phase
+    对通讯的控制，允许随时暂停通信                                                       • CPOL   SPI的极性Polarity
+  • SPI的数据输入和输出线独立，允许                                                     两个位一共有4种组合，也就是说SPI有4
+    同时完成数据的输入和输出（双向）                                                      种时序，具体如何选择呢？
+  • 不同的SPI设备的实现方式不尽相同，                                                    取决于所用外部设备的SPI驱动电路时序
+    主要是数据改变和采集的时间不同，在
+    时钟信号上沿或下沿采集有不同定义， 容易懂？
+    具体请参考相关器件的文档
+  • SPI接口的一个缺点：有指定的流控制，
+    没有应答机制确认是否接收到数据
+  • SPI接口只适用于短距离通信
+  • 实际应用中，我们常使用普通GPIO，
+    软件控制电平来产生起始和停止信号。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (8/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+  CPHA=0
+  范例
+
+
+
+
+          •    时钟极性CPOL是指SPI通讯设备处于空闲状态时，SCK信号线的电平信号(即SPI通讯开始前、
+               NSS线为高电平时SCK的状态)。CPOL=0时， SCK在空闲状态时为低电平，CPOL=1时，则相反。
+          •    时钟相位CPHA是指数据的采样的时刻，当CPHA=0时，MOSI或MISO数据线上的信号将会在
+               SCK时钟线的“奇数边沿”被采样。当CPHA=1时，数据线在SCK的“偶数边沿”采样。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (9/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+                                                       3x USARTs, 3x 16-bit Timers              5x USARTs, 4+2 Timers
+         SPI接口硬件                                       2x SPI, 2x I2C, USB, CAN       MD 3x SPI, 2x ISC, 2x I2C, USB, CAN HD
+                                                       1x PWM, 2x ADC                           2x PWM, 3x ADC, 2x DAC, 1x SDIO
+ 1.通讯引脚 SPI1
+
+
+
+                         SPI2
+
+
+
+
+                         SPI3
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                               (10/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+                                                ➢ 波特率发生器:“控制寄存器CR1”中的BR[0:2]位控制
+         SPI接口硬件                                ➢ 4种 SPI 模式: “控制寄存器CR1”的 “CPOL” & “CPHA”位
+ 2. 时钟控制逻辑
+
+                                    • SPI1 是 APB2 上
+                                      的设备，最高通信
+                                      速率达36Mbtis/s，
+                                    • SPI2、SPI3 是
+                                      APB1 上的设备，
+                                      最高通信速率为
+                                      18Mbits/s
+
+
+
+
+        fpclk 频率是指SPI 所在的APB总线频率
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (11/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         SPI接口硬件
+ 3. 数据控制逻辑
+      写 数据寄存器DR -> 发送缓冲区
+      读 数据寄存器DR -> 接收缓冲区
+      控制寄存器 CR1
+      “DFF 位”配置长度成 8 位及 16 位模式
+      “LSBFIRST 位”配置MSB 还是LSB 先行
+
+ 4. 整体控制逻辑
+      控制寄存器 CR1 & CR2
+      配置SPI模式、波特率、LSB先行、主从
+      模式、单双向模式 等等
+      外设工作时，可以修改 “状态寄存器SR”，
+      读取相关状态位，控制产生SPI中断信号，
+      DMA请求，NSS控制信号等
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (12/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         SPI接口使用                                                             • STM32之SPI的基本固件库函数
+                                                                             SPI的库函数在stm32f10x_spi.c中定义、
+ • STM32之SPI总线的使用要领                                                          stm32f10x_spi.h中声明；SPI和I2S功能很多
+ — 使能SPI外设时钟                                                                 是合在一起共用一个函数；就SPI外设而言，其
+ — 使能被复用的GPIO的外设时钟；                                                          中最基本的是以下几个函数
+ — 设置GPIO端口为复用推挽输出；                                                          — SPI_Cmd ()
+                                                                                                      一般的SPI通信，
+  不能设为开漏输出 ->否则示波器上                                                          — SPI_Init ()
+                                                                                                       通常只需
+ 看输出是锯齿波，而不是需要的方波。                                                           — SPI_I2S_ReceiveData ()
+                                                                                                       这4个函数
+ — 调用 SPI_Init() 设置SPI 的工作模式                                                 — SPI_I2S_SendData ()
+ — 通过 SPI_Cmd() 使能SPI     void SPI_I2S_DeInit(SPI_TypeDef* SPIx);
+ — 收发数据 / 查看SPI传输状态 void SPI_Init(SPI_TypeDef* SPIx, SPI_InitTypeDef* SPI_InitStruct);
+                                                 void SPI_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
+                                                 void SPI_I2S_ITConfig(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT, FunctionalState NewState);
+                                                 void SPI_I2S_DMACmd(SPI_TypeDef* SPIx, uint16_t SPI_I2S_DMAReq, FunctionalState NewState);
+                   STM32 SPI                     void SPI_I2S_SendData(SPI_TypeDef* SPIx, uint16_t Data);
+                                                 uint16_t SPI_I2S_ReceiveData(SPI_TypeDef* SPIx);
+                   固件库函数                         void SPI_DataSizeConfig(SPI_TypeDef* SPIx, uint16_t SPI_DataSize);
+                                                 FlagStatus SPI_I2S_GetFlagStatus(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
+                                                 void SPI_I2S_ClearFlag(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
+                                                 ITStatus SPI_I2S_GetITStatus(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
+                                                 void SPI_I2S_ClearITPendingBit(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                               (13/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         SPI接口使用
+                                                typedef struct
+                                                {
+                                                                                 SPI 初始化结构体
+                                                  uint16_t SPI_Direction;                  /*设置SPI 的单双向模式 */
+                                                  uint16_t SPI_Mode;                       /*设置SPI 的主/从机端模式 */
+                                                  uint16_t SPI_DataSize;                   /*设置SPI 的数据帧长度，可选8/16 位 */
+     SPI 固件库函数                                    uint16_t SPI_CPOL;                       /*设置时钟极性CPOL，可选高/低电平*/
+                                                  uint16_t SPI_CPHA;                       /*设置时钟相位，可选奇/偶数边沿采样 */
+   - SPI_Cmd ()                                   uint16_t SPI_NSS;                        /*设置NSS 引脚由SPI 硬件控制还是软件控制*/
+   - SPI_Init ()                                  uint16_t SPI_BaudRatePrescaler;          /*设置时钟分频因子，fpclk/分频数=fSCK */
+                                                  uint16_t SPI_FirstBit;                   /*设置MSB/LSB 先行 */
+   - SPI_I2S_ReceiveData ()                       uint16_t SPI_CRCPolynomial;              /*设置CRC 校验的表达式 */
+   - SPI_I2S_SendData ()                        } SPI_InitTypeDef;
+
+                                 ① 配置相关引脚的复用功能，使能SPIx时钟
+                                                 RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1| xxx , ENABLE);
+            SPI                                  GPIO_Init();
+           固件库                   ② 初始化SPIx，设置工作模式
+                                           void SPI_Init(SPI_TypeDef* SPIx, SPI_InitTypeDef* SPI_InitStruct);
+           应用                    ③ 使能SPIx  void SPI_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
+           编程                    ④ SPI传输数据 void SPI_I2S_SendData(SPI_TypeDef* SPIx, uint16_t Data);
+           步骤                               uint16_t SPI_I2S_ReceiveData(SPI_TypeDef* SPIx) ;
+                                 ⑤ 查看SPI传输状态       SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_RXNE);
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (14/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1                                                 SPI FLASH Memory Chip
+                                                                                      W25Q64BV Datasheet:
+                                                            总容量 8MByte, 128块(Block)，每块64KB，16个扇区(Sector)；
+                                                            每个扇区4KB，16页(Page)，每页 256 Byte -> Page是最小读写单元。
+                                                            DI pin to serially write instructions, addresses or data
+                                                            to the device on the rising edge of CLK -> CPHA = ? ;
+                                                            DO pin to read data or status from device on the falling edge CLK.
+                                                            Modes 0 (0,0) and 3 (1,1) are supported.
+                                                            Check diagrams on Page Write/Read, Sector/Block/Chip Erase, etc.
+                                                                                                                怎么实现？
+                                                           The Read Data (03H) allows one              Instr.(1xByte) + Addr.(3xByte)
+                                                           more data bytes in std SPI mode                    Then read ?xByte
+                                                                             Read Data Instruction Sequence Diagram
+
+
+
+
+                                                                                                       MSB
+            W25Q64BV Serial Flash Memory Block Diagram
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                     (15/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (16/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+                                                                                                     ②初始化SPIx，
+STM32的 SPI 应用实例 -1                                                                                   设置SPIx工作模式
+      ①配置相关引脚的复用功能
+
+
+
+                                                                                                                            ③使能SPIx
+
+                                                                                                        ④SPI传输数据
+
+
+                                                                                                                            构建了一个
+                                                                                                                            发送并接收
+                                                                                                                            1xByte函数
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                               (17/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1
+              读取8位 Device ID                                              uint8_t SPI_ReadDevice_ID(void) //读取ID号
+                                                                          {
+                                                                            uint8_t flash_id;
+                                                                            FLASH_SPI_CS_LOW;              //片选使能
+                                                                            SPI_FLASH_Send_Byte(Device_ID); // 宏定义0xAB
+                                                                            SPI_FLASH_Send_Byte(DUMMY);        // CS保持Low
+                                                                            SPI_FLASH_Send_Byte(DUMMY);
+                                                                            SPI_FLASH_Send_Byte(DUMMY);
+                                                                            flash_id = SPI_FLASH_Send_Byte(DUMMY);          能理解
+                                                                            FLASH_SPI_CS_HIGH;
+                                                                            printf("Device_ID：%x\r\n", flash_id);           差异？
+     读取 MANUFACTURER ID 和 Device ID                                       }
+                                                                            return flash_id;
+
+                                                                          发送第一个字节数据为“9Fh”，读取厂商ID和芯片ID
+                                                                          uint32_t SPI_Read_JEDEC_ID(void) //读取JEDEC ID号
+                                                                          {
+                                                                            uint32_t flash_id;
+                                                                            FLASH_SPI_CS_LOW;               //片选使能
+                                                                            SPI_FLASH_Send_Byte(READ_JEDEC_ID);
+                                                                            flash_id = SPI_FLASH_Send_Byte(DUMMY);
+                                                                            flash_id <<= 8;
+                                                                            flash_id |= SPI_FLASH_Send_Byte(DUMMY);
+                                                                            flash_id <<= 8;
+                                                                            flash_id |= SPI_FLASH_Send_Byte(DUMMY);
+                                                                            FLASH_SPI_CS_HIGH;
+                                                                            return flash_id;
+                                                                            printf("JEDEC_ID：%x\r\n", flash_id);
+                                                                          }
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                           (18/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1                                                                      Page Write 函数封装
+
+                       Page Write 时序
+
+
+
+
+                                                                                            //写入数据量不能超过pagesize
+
+                                                                                                                    能看懂吗？
+                                                                                                                   能自己Code？
+                                                                    // Page Read 函数封装，读取FLASH Page内若干字节的内容
+                                                                    void SPI_Read_Data(uint32_t addr, uint8_t *readBuff, uint32_t numByteToRead)
+                                                                    {
+                       Page Read 时序                                   FLASH_SPI_CS_LOW;            //片选使能
+                                                                      SPI_FLASH_Send_Byte(READ_DATA);
+                                                                        SPI_FLASH_Send_Byte((addr>>16)&0xff);
+                                                                        SPI_FLASH_Send_Byte((addr>>8)&0xff);
+                                                                        SPI_FLASH_Send_Byte(addr&0xff);
+                                                                        while(numByteToRead--)
+                                                                        {
+                                                                               *readBuff = SPI_FLASH_Send_Byte(DUMMY);
+                                                                               readBuff++;
+                                                                        }
+                                                                        FLASH_SPI_CS_HIGH;
+                                                                    }
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                       (19/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1
+                                     主函数 main.c                                                              串口调试 验证
+
+
+
+
+                                                                  思考 & 拓展：
+                                                                  1）能否编写任意位置写入任意大小数据 的函数？
+                                                                  2）能否能根据时序图其他指令，如擦除sector，
+                                                                  Dual SPI，Quad SPI 高速SPI读写等功能？
+                                                                  3）能否学习编写软件SPI 函数功能？
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (20/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1                                                          扩展内容 : QSPI
+
+ 队列串行外围接口协议Queued SPI缩
+ 写为QSPI，是Motorola公司推出的SPI
+ 接口的扩展，比SPI应用更加广泛。连
+ 接单、双或四（条数据线）SPI Flash 。
+ 该接口可以在以下三种模式下工作：
+ ① 间接模式：使用 QSPI 寄存器执行全部 QSPI为四线半双工，IO0~3 引脚被用于向同一个方向传输数
+                            据，单次可传输 4bit，此时 MOSI 和 MISO 为 IO0、IO1，而
+ 操作。
+                            WP、HOLD 会被用作 IO2、IO3，至于 CS 和 CLK 的作用不变。
+ ② 状态轮询模式：周期性读取外部 Flash             指令         地址
+                                                   交替
+                                                        空周期    数据
+                                                   字节
+ 状态寄存器，标志位置 1 时会产生中断
+ （如擦除或烧写完成，会产生中断）。
+ ③ 内存映射模式：外部 Flash 映射到微控
+ 制器地址空间，从而系统将其视作内部
+ 存储器；采用双闪存模式时，将同时访
+ 问两个 Quad-SPI Flash，吞吐量和容量均
+ 可提高二倍。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (21/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -1                                                       扩展内容 : STM32 内部 Flash 读写
+                                                                                                             扇区擦除过程：
+                                                                                                             • 检查 FLASH_SR 寄存器中的“忙碌寄
+                                                                                                               存器位 BSY”，以确认当前未执行任
+                                                                                                               何 Flash 操作；
+                                                                                                             • 在 FLASH_CR 寄存器中，将“激活页
+                                                                                                               擦除寄存器位PER ”置 1，
+                                                                                                             • 用FLASH_AR 寄存器选择要擦除的页；
+                                                                                                             • 将FLASH_CR 的“开始擦除寄存器位
+                                                                                                               STRT ”置 1，开始擦除；
+                                                                                                             • 等待 BSY 位被清零，表示擦除完成
+
+
+
+
+  区域   名称                     块地址                       大小                                                       写入数据：
+        页0           0x0800 0000 - 0x0800 07FF        2 Kbytes                                                   • 检查 FLASH_SR 中的 BSY 位，以确
+   主                                                                                                               认当前未执行任何其它Flash 操作；
+        页1           0x0800 0800 - 0x0800 0FFF        2 Kbytes
+   存                                                                                                             • 将 FLASH_CR 的 “激活编程寄存器
+        页2           0x0800 1000 - 0x0801 17FF        2 Kbytes                                                     位PG” 置 1；
+   储
+        页3           0x0800 1800 - 0x0801 FFFF        2 Kbytes                                                   • 向指定的FLASH存储器地址执行数
+   器                                                                                                               据写入操作，每次只能以16位的方
+         .                       .                        .                                                        式写入；
+       页255          0x0807 F800 - 0x0807 FFFF        2 Kbytes                                                   • 等待 BSY 位被清零，表示写入完成
+   系统存储区             0x1FFF F000 - 0x1FFF F7FF        2 Kbytes
+    选项字节             0x1FFF F800 - 0x1FFF F80F        16 bytes
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                               (22/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2                                                       OLED 液晶模块                                   3线制和4线
+                                                                                                                     制SPI的区别
+                                                                                           硬件SPI接口                     在哪？
+           具有SPI接口的OLED12864模块
+        有机发光显示OLED（Organic Light                                                   PA5（SCL，SPI时钟信号）
+     Emitting Display）是比液晶显示技术更为先进的                                                PA7（SDA，主出从入数据）
+     新一代平板显示技术。
+        它共五种接口，包括：6800、8080 两种并行                                                  如果在STM32应用系统中，只有一个SPI
+     接口方式、3 线或 4 线的串行 SPI 接口方式、I2C                                                接口芯片。
+     接口方式，这五种接口是通过屏上的BS0~BS2来配                                                    例如，只有一个OLED12864模块通过SPI
+     置的模块对外采用七脚的 SPI/I2C的兼容方式:                                                    接口与STM32连接，则片选信号可不用，
+                                                                                  直接将OLED的CS接地，即始终选中。
+        -1-GND：电源地
+        -2-VCC：电源正（3～5.5V）
+        -3-D0： OLED的D0脚，在SPI和I2C中为时钟管脚                                                  0.96寸OLED
+        -4-D1： OLED的D1脚，在SPI和I2C中为数据管脚                                                  128*64点阵
+        -5-RES：OLED的RES脚，用来复位（低电平复位）                                                    SSD1306驱动
+        -6-DC： OLED的D/C脚，数据(1)和命令(0)控制管脚                                                实际显示效果
+        -7-CS： OLED的CS脚，也就是片选管脚
+                                                                                     常规SPI模块 - LCD wiki
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (23/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2
+             模块化设计——1                                                                   模块化设计——2
+  Project文件，其下增加了两个文件夹                                                           KEIL的包含路径也要做相应的调整，
+  — myoled文件夹                                                                    即：添加新增的文件夹到C/C++选
+                                         文件夹myoled下存放                            项下的Include Paths
+                                        的是OLED12864模块的
+                                        接口程序，包含头文件和
+                                        C代码文件等oledfont.h
+                                        为字模文件bmp.h为
+                                        BMP格式图形文件
+
+
+  — system文件夹
+
+                                                                                  Include Paths下
+                                                                                  新增的内容
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (24/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2
+           程序框架——                                                                   程序代码及其分析——1
+   本例的工程文件视图如图                                                              —delay.c、delay.h
+                                                                            延时所用的delay.c、delay.h可以使基于
+                                    本例涉及以下八个文件                              TIM，或者是基于SysTick定时器而开发
+                                    它们分别是                                   的延时程序
+                                    ——delay.c
+                                    ——delay.h
+                                                                            —stm32f10x_conf.h
+                                    ——myoled.c
+                                    ——myoled.h                              由于本例使用了SPI、SysTick、GPIO、
+                                    ——stm32f10x_conf.h                      RCC等外设。对默认部分要调整的是
+                                    ——main.c                                #include "stm32f10x_dbgmcu.h"
+                                    两个辅助文件（字库和图形）                           #include "stm32f10x_gpio.h"
+                                    ——bmp.h                                 #include "stm32f10x_rcc.h"
+                                    ——oledfont.h                            #include "stm32f10x_spi.h"
+                                                                            #include "misc.h"
+             本例没有使用中断，所以不需要
+             stm32f10x_it.c、                                                         这些外设头文件必须由默认的
+             stm32f10x_it.c                                                          关闭状态，修改为使用状态
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (25/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2
+           程序代码及其分析——2                                                         程序代码及其分析——2
+   —myoled.h—                                                                                                               重点讨论
+                                                                      #define         Brightness       0xFF
+   —OLED12864模块接口函数的说明                                                #define         X_WIDTH          128
+                                                                                                                               三个函数
+    #ifndef __OLED_H                                                  #define         Y_WIDTH          64
+    #define __OLED_H                                                  #define         OLED_CMD         0               //写命令
+    #include "stm32f10x.h"                                            #define         OLED_DATA        1               //写数据
+    //OLED宏指令定义                                                       void SetupSPI(void);                             //SPI1初始化
+    //LCD_RST 复位：低电平有效                                                void OLED_WR_Byte(u8 dat,u8 cmd); //以下均为OLED控制用接口函数
+    #define LED_RST_Set() GPIO_SetBits(GPIOA, GPIO_Pin_10)            void OLED_Display_On(void);
+    #define OLED_RST_Clr() GPIO_ResetBits(GPIOA, GPIO_Pin_10)         void OLED_Display_Off(void);
+    //LCD_DC OLED指令/数据选择，= 1：指令，= 0：数据                                void OLED_Init(void);
+    #define OLED_DC_Set() GPIO_SetBits(GPIOA, GPIO_Pin_9)             void OLED_Clear(void);
+    #define OLED_DC_Clr() GPIO_ResetBits(GPIOA, PIO_Pin_9)            void OLED_DrawPoint(u8 x,u8 y,u8 t);//画点函数
+    //LCD_CS 片选：低电平有效                                                 void OLED_Fill(u8 x1,u8 y1,u8 x2,u8 y2,u8 dot);
+    #define OLED_CS_Set() GPIO_SetBits(GPIOA, GPIO_Pin_8)             void OLED_ShowChar(u8 x,u8 y,u8 chr);
+    #define OLED_CS_Clr() GPIO_ResetBits(GPIOA, PIO_Pin_8)            void OLED_ShowNum(u8 x,u8 y,u32 num,u8 len,u8 size);
+    //OLED模式设置                                                        void OLED_ShowString(u8 x,u8 y, u8 *p);
+    #define SIZE                   16                                 void OLED_Set_Pos(unsigned char x, unsigned char y);
+    #define XLevelL                0x00                               void OLED_ShowCHinese(u8 x,u8 y,u8 no);
+    #define XLevelH                0x10                               void OLED_DrawBMP(unsigned char x0, unsigned char y0,
+    #define Max_Column             128                                unsigned char x1, unsigned char y1,unsigned char BMP[]);
+    #define Max_Row                64                                 #endif
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                   (26/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2
+            程序代码及其分析——3                                                                     程序代码及其分析——3
+   —myoled.c—
+   —本例只有写入，没有从OLED12864读取操作                                                                 同类型可一起初始化，不同类型要分开初始化
+void SetupSPI(void)
+{                                                   复用推挽输出                        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  SPI_InitTypeDef SPI_InitStructure;                                              GPIO_Init(GPIOA, &GPIO_InitStructure);    //初始化上述3引脚
+  GPIO_InitTypeDef GPIO_InitStructure;
+                                                                                  GPIO_ResetBits(GPIOA, GPIO_Pin_8);         //PA8=0：选中
+  //允许 SPI1 和GPIOA时钟，均在APB2总线上的                                                   //SPI1 配置，思考为什么这样配置
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1|RCC_APB2Periph_GPIOA, ENABLE);       SPI_InitStructure.SPI_Direction = SPI_Direction_1Line_Tx; //主发送
+  //配置 SPI1 引脚，由于只 SCK和 MOSI ，即PA5和PA7                                            SPI_InitStructure.SPI_Mode = SPI_Mode_Master;              //主机模式
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;                          SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;          //数据长度为8位
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;                               //根据OLED的时序要求，这两个脉冲沿做如下设置
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;                                 SPI_InitStructure.SPI_CPOL = SPI_CPOL_High; //极性
+  GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化上述2引脚                               SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge; //相位
+                                                                                  SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;         //外部软件片选
+  //PA.8、9、10推挽输出，为SPI口的片选，命令/数据，复位                                               SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10;                //4比较合适，有文献介绍说8，会出现时序配合出错的问题
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;                               SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB; //第1位为高位
+                                                                                  SPI_Init(SPI1, &SPI_InitStructure);               //SPI1设置
+                                                                                  SPI_Cmd(SPI1, ENABLE);                            //SPI1使能
+                                                                              }
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                                (27/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+STM32的 SPI 应用实例 -2
+           程序代码及其分析——3                                                          程序代码及其分析——4
+   —myoled.c—                                                          —BMP和汉字字模的获取
+   —向OLED写入字节函数（SSD1306）                                               —PCtoLCD2002.exe软件简介
+  //参数1:待写入字节，参数2:命令/数据=0：命令=1:数据                                      为了在OLED12864等不带汉字库的液晶屏幕上显示图形和
+  void OLED_WR_Byte(u8 dat,u8 cmd)                                     汉字，必须通过字模提取软件获取图形和字模数据
+  {                                                                    提取的选项设置必须根据所使用的OLED模块的以及接口函
+    if(cmd)                   //数据吗                                    数的要求正确设置，否则，会导致图片显示混乱。
+       OLED_DC_Set();         //1：数据
+    else
+       OLED_DC_Clr();         //0：命令                     发送1
+    OLED_CS_Clr();            //片选                        字节
+    SPI_I2S_SendData(SPI1,dat); //SPI写1字节数据（发送）
+    while(SPI_I2S_GetFlagStatus(SPI1,SPI_I2S_FLAG_BSY)!=RESET);                                                             PCtoLCD2002
+                              //等待发送完成                                                                                      .exe字模提取软
+    OLED_CS_Set();            //片选拉高，释放LCD
+                                                                                                                              件的主界面
+    OLED_DC_Set();            //默认高，数据状态
+  }
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                (28/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         STM32的 SPI 仿真                                           DAC (MCP4921) & Temp. Sensor (TC72)
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (29/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+同步串行接口SPI与I2C                                                    学习目标
+
+                                        1. STM32的SPI及其应用要点
+
+                                        2. STM32的SPI的应用实例
+
+                                        3. STM32的I2C及其应用要点
+
+                                        4. STM32的I2C的应用实例
+
+                           重点 - I2C 接口的特性、初始化与接收发送操作
+                           难点 - I2C 接口软硬件实现的具体应用（可靠性）
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (30/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+ 典型的 I2C 协议 Protocol                                            还记得吗？
+                                                                                            SCL为高电平时，读数据有效
+  •     Start & Stop sequences                                          •     Data sequence SCL为低电平时，写数据有效
+
+
+
+
+  •     Data format               每个字节必须为8位，首先传输的时字节最高位（MSB）
+
+
+
+
+      发送起始信号后，紧接着的一个字节其前7位是从设备地址，最后一位表示数据传输方向                                                                     (Figures are from internet)
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                                      (31/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+          I2C 接口原理                           ——SPI与I2C总线的区别
+                                               I2C的数据输入输出用的是一根线，而SPI的数据
+                                               输入与输出是分开的，使用I2C的端口占用更少；
+        I2C总线的概况——1                            I2C数据线是双向的，所以隔离比较复杂；
+    ——I2C总线的基本特性                               系统内部通信可用I2C，若要与外部通信最好用
+    ——I2C即IIC，为“Inter-Integrated Circuit”（集成   SPI；I2C和SPI都不适合长距离传输。
+    电路总线）的缩写；它是一种高性能的同步串行总线。
+    基本的I2C总线数据传输速率为100Kbits/s和7位寻址；
+    后增强为快速模式（400Kbits/s）和10位寻址，以满足
+    更高速度和更大寻址空间的需求；
+    近来又增加了高速模式，其速度可达3.4Mbits/s。                                                 器件类型由D7-D4共4位决定的，自定义地址码
+    ——I2C串行总线一般有两根信号线：双向数据线SDA，                                                 由D3-D1共3位组成，这也就是寻址码。
+    与时钟线SCL。                                                                    -> 同一I2C总线上同一型号I2C设备最多只能挂
+    各设备连接到总线的输出端口时必须是漏极开路（OD）                                                   8片。读写控制码：最低一位就是R/W位
+    或 集电极开路（OC）输出。                                                            数据是从最高位开始传输
+    各设备的SDA是“与”关系，SCL也是“与”关系。                                                 数据传输前必须有开始信号，传输结束后必须有结束信号
+
+    ——主从式通信方式——
+    主机：发出启动信号、时钟信号以及传送结束时发出停
+    止信号的设备。从机：被主机寻访的设备；
+    每个接到I2C总线的设备都有一个唯一的地址。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (32/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+          I2C 接口原理
+           STM32的I2C总线的基本特点                                                          STM32的I2C总线的应用要点
+    ——关于STM32之I2C模块的传说                                                       ——把I2C的中断优先级提升到最高。对STM32系统
+    ——不少开发者在开发STM32的I2C接口程序时，                                                而言，它最优选的I2C工作模式是中断或者DMA，或
+    总是会出现程序卡顿在某一处的现象，于是很容易得                                                  者两者的结合，而不是查询方式（POLLING）
+    出结论：STM32本身I2C接口很差劲、很复杂，不                                                ——把多于2个字节的发送与接收封装成利用DMA收
+    如其他MCU的I2C接口好用；                                                          发的函数，而把一个字节的接收和发送单独封装为一
+    ——很多开发者放弃使用STM32本身的I2C模块，                                                个POLLING（轮询）函数
+    而采用软件模拟的方式实现I2C通信；                                                       ——不要让I2C工作在88kHz的频率上（有实验
+    ——建议充分使用STM32本身的I2C功能；对它的                                                证明这个速度容易出现问题）。因此，在满足需要的
+    特性和配置有清晰的把握。                                                             情况下，不建议使用高速度，而采用较低速度，例如：
+                                                                             100kHz即可
+     如果在程序中加入有效的容错机制，例如总线状态                                                  ——STM32之I2C的硬件接口负责实现满足I2C总线
+    判断、超时处理、应答机制，STM32的I2C模块及                                                的规约，应用程序必须利用I2C 控制寄存器和I2C的
+    其库函数还是十分好用的。                                                             事件标志组合实施通信相关的工作：
+                                                                             接收、发送和其它相关处理，在发送或接收完成后一
+                                                                             定要查询并清除相关标志。
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (33/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+          I2C 接口原理
+            STM32的I2C总线的应用要点                                                         STM32的I2C总线的应用要点
+   ——I2C总线死锁原因及其解决办法                                                        ——STM32的I2C接收程序流程
+   查阅STM32的官方手册可知，在I2C_CR1寄存器中                                              ① 检测I2C总线是否空闲
+   有一个Software reset位，即SWRST位。                                              ② 按I2C协议发出起始信号
+   该位可以在出错或死锁时，用于复位STM32的I2C                                                ③ 发出7位器件地址和写模式（伪写）
+   外设模块的I2C控制器                                                              ④ 重新使能STM32的I2C外设模块，以清除相应事件
+   在低功耗的STM32Fxx系列的用户指南中也提到可                                                标志EV6
+   以用PE位复位          熟悉套路很重要啊！                                               ⑤ 发出要读取的存储区首地址 寄存器地址（发送方）
+                                                                            ⑥ 重发起始信号
+    ——STM32的I2C接收程序流程                                                       ⑦ 发出7位器件地址和读模式
+    ① 检测I2C总线是否空闲                                                           ⑧ 接收并应答——
+    ② 按I2C协议发出起始信号       器件内地址
+                        （寄存器地址）                                             ——第一种情况：如果是单字节接收，则不应答，
+    ③ 发出7位器件地址和写模式                                                          发送停止信号，读取1字节数据
+    ④ 发送要写入的存储区首地址                                                          ——第二种情况，如果是多字节接收，则最后一个
+    ⑤ 用页写入方式或字节写入方式写入数据                                                     字节不需应答，读取数据，最后一个字节接收前发送停
+    （多字节在这里循环）                                                              止信号
+                 用单字节循环也可以写入
+    ⑥ 清除应答标志
+                 多字节；只是速度会慢点
+    ⑦ 发出停止信号
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (34/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+          I2C 接口应用                                                                       I2C协议特点：
+           STM32的I2C稳健性设计的                                                   1. 串行协议，多主机模式；
+           三个原则                                                              2. 起始信号，SCL为高电平时，
+                                                                                SDA下降沿，主机发出；
+  ——采用官方建议的“中断+DMA”方式设计I2C通
+  信程序。为避免通信过程中的关键时序被干扰，建                                                     3. 停止信号，SCL为高电平时，
+  议将I2C的中断级别设为较高；                                                               SDA上升沿，主机发出；
+  ——必须等待和查询相关状态（包括事件信息），                                                     4. 数据与地址按8位/字节传输，
+  并在此过程中加入超时处理，以免总线死锁或出现                                                        高位在前；
+  问题时陷入查询死循环状态；
+                                                                             5. 传输过程中，SCL为低电平时，
+  ——如果出现超时，则转入总线出错恢复处理程序。
+  根据ST官方建议，为使总线恢复正常，可通过设置                                                       SDA更改状态，SCL为高电平时，
+  CR1寄存器的SWRST位产生软复位，然后重新初始                                                     SDA状态需稳定；
+  化I2C外设模块，完成这样两步即可将I2C总线从死                                                  6. 每传输一个字节，接收器必须
+  锁或出错中恢复过来。
+                                                                                回应1个应答位(ACK)给发送器。
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (35/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+                      技能：
+  I2C 接口应用实例 -1       • 掌握 硬件和软件I2C 两种方式连接OLED/IMU模块
+                      • 学习如何封装函数，以及函数调用
+            4管脚 IIC通信
+  OLED 显示模块           • 学会查阅芯片数据手册
+            128*64点阵
+
+                                注意新款和老款的主要区别：
+                                • 驱动：SSD1315vs1306
+                                • 引脚顺序：
+                                  新款GND、VCC、SCL、SDA；
+                                  老款VCC、GND、SCL、SDA。
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (36/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+  I2C 接口应用实例 -2                                                                  惯性传感器 – MPU6050
+
+
+
+
+  MPU6050 能同时检测三轴加速度、三轴陀
+  螺仪(角速度)的运动数据以及温度数据。
+  利用芯片内部的DMP 模块（Digital Motion
+  Processor ），可对传感器数据进行滤波、
+  融合处理，直接通过IIC接口向主控器输出姿
+  态解算后的数据，降低主控器的运算量。
+  其姿态解算频率最高可达200Hz，非常适合
+  用于对姿态控制实时要求较高的领域：手机、
+  智能手环、四轴飞行器等的姿态检测。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (37/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+ 惯性传感器 – MPU6050
+    参考范例                    说明                                                MPU-6000 / 6050 Datasheet
+                            硬件I2C，MPU6050 基本驱动程序，                            程序设计要点：
+    硬件 STM32-               不包含DMP 功能。                                       1. 初始化STM32的I2C；
+    MPU6050                 本程序通过串口输出简单测量数据。
+                                                                             2. 使用I2C 向MPU6050 写入控制参数；
+                            (不支持匿名上位机可视数据)
+                                                                                （设置角速度和加速度的满量程范围，
+    软件 STM32-               软件I2C，MPU6050 基本驱动程序，                               其他参数，如中断，AUX IIC接口，
+    MPU6050                 不包含DMP 功能，通过串口和液晶                                   FIFO，采样率，低通滤波器等）；
+                            屏输出简单测量数据。
+                                                                             3. 使能角速度传感器（陀螺仪）和
+    STM32-                  移植自官方驱动程序，使用了DMP                                    加速度传感器。
+    MPU6050-DMP             功能，显示基本数据，支持匿名上                                  4. 定时读取加速度、角速度及温度数据。
+    例程                      位机可视数据。默认使用软件I2C。
+                              bsp_i2c.h 封装                                   程序模块：
+                                                                             •   I2C 的硬件/软件定义和封装
+                                                                                 (bsp_i2c.h和bsp_i2c.c)
+                                                                             •   寄存器定义(mpu6050.h)
+                                                                             •   初始化MPU6050和I2C指令读取传感器数
+                                                                                 据 (mpu6050.c)
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (38/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    Quadrotor Movement
+
+                                                                                      roll：横滚，将物体绕X轴
+                                                                                      旋转（localRotationX）
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (39/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    Quadrotor Movement
+
+          pitch：俯仰，将物体绕Y轴                                                             yaw：航向，将物体绕Z轴
+          旋转（localRotationY）                                                          旋转（localRotationZ)
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (40/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+ 惯性传感器 – MPU6050                                                 MPU6050 z 轴向上放置时，Z 方向的加速度是正 9.8 m/s2
+                                                                 左右。这个地球的重力加速度就是展开姿态解算的依据。
+
+
+
+
+                                                                 IMU姿态的晃动会让陀螺仪检测到绕各个轴的转动，
+                                                                 只要明确姿态角速度与各个轴角速度的对应关系就
+                                                                 可以通过陀螺仪得到姿态角速度。
+                                                                 (1) 用 phi 表示 Ф;           𝐴𝑦                   𝐴𝑦
+                                                                                   tan ∅ =    , 𝑖. 𝑒. ∅ = tan−1
+                                                                 (2) 用 theta 表示 θ;         𝐴𝑧                   𝐴𝑧
+                                                                 (3) 用 trans 表示由陀螺仪输出到姿态角速度的转换矩阵;
+                                                                 (4) 用 gx 表示陀螺仪 x 轴输出;
+                                                                 (5) 用 gy 表示陀螺仪 y 轴输出;
+                                                                 (6) 用 gz 表示陀螺仪 z 轴输出。 𝑔𝑦𝑟𝑜 = [𝑔𝑥 𝑔𝑦 𝑔𝑧]
+
+                                                                              [𝑟𝑜𝑙𝑙𝑔𝑦𝑟𝑜, 𝑝𝑖𝑡𝑐ℎ𝑔𝑦𝑟𝑜, 𝑦𝑎𝑤𝑔𝑦𝑟𝑜]′= 𝑡𝑟𝑎𝑛𝑠 ∙ 𝑔𝑦𝑟𝑜
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                           (41/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+                                                                              每个人都能尝试完成 这个demo
+             IMU 姿态检测                                                         MPU6050 DMP + 匿名上位机
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (42/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+             IMU 滤波算法
+
+
+ “低通”滤波里滤除的是高频噪声：
+ 即在“旧的滤波值”和“新的采样
+ 值”之间权衡相信两者中的哪一个
+ 更多一些来达到合适的滤波效果。
+ 核心思想：在两者中选择相信谁更
+ 多一些。
+ 互补滤波：通过一个介于 0 和 1 之
+ 间的 α 值来选择相信加速度计多一
+ 些，还是相信陀螺仪多一些。
+
+ 扩展知识点：卡尔曼滤波
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (43/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         PS2 遥控实例                                                                        具体实现不作要求
+
+PS2通讯协议的原理分析
+第一点：CS在数据输出或者输入的时候，都
+是低电平的；先拉高再拉低，然后数据进行
+传输，传输完成之后再把CS拉高。
+第二点：DI(Data Input)与DO(Data Output)是同
+时完成的，说明这是全双工通信。
+第三点：在时钟上降沿的时候，DI和DO的数
+据有交叉，也就是说数据进行交换(还不稳定)，
+是不能够读和写数据的。在时钟为下降沿的
+时候读和写数据，数据已经稳定。
+第四点：由于是从0到7，可以知道有8位数据，
+并且是从低位到高位进行读写。我们可以把
+数据放到数组中。
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (44/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         PS2 遥控实例
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (45/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+               AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (54/68)
+                  USART              RS-232           RS-485       I2C          SPI      CAN
+                                                                   多对多          一对多
+                                                      一对多                                多对多
+设备数量              一对一                一对一                           8位256个，      每个设备有片
+                                                      最多128个                             设备个数理论无上限
+                                                                   16位65536个    选信号
+
+                                                                                         半双工
+通信模式                                 全双工              半双工          半双工          全双工
+                                                                                         （收发不能同时）
+
+                  传输距离较
+                                     最长通信距离                                              最远可达10千米
+通信距离              短：15米左                              1200米        ~ 1米         ~ 15米
+                                     20米左右                                               （速率低于5Kbps）
+                  右
+                                     通信速度最快                        100K、400K、   时钟线频率有   最高速率可达到
+通信速度              20kbps                              最快10Mbps
+                                     20Kbps                        3.4Mbps      关        1Mbps（距离<40M）
+                                                最少2根               两根线
+                                     至少3根RX/TX、                                          两根CAN-H和CAN-L，
+                  两根线                           A（Data+）           SDA（数据线） 四根线
+通信方式                                 GND，只发或                                             从设备可根据数据线
+                  有Ack                          B（Data -）          SCL（时钟线） 无Ack
+                                     只接2根线                                               自动同步时钟
+                                                4线时4根              无Ack
+                                                      差分传输方式                             差分传输方式
+                                     -5V到-15V为逻
+                                                      A-B在2V到6V之                         高速：差分电平2V为
+                  TTL电平包括            辑1；
+逻辑电平                                                  间为逻辑0，       通常TTL电平      TTL电平    逻辑0，0V为逻辑1；
+                  5V和3.3V            5V到15V为逻
+                                                      在-2V到-6V之                          低速：差分电平3V为
+                                     辑0。
+                                                      间为逻辑1                              逻辑0，-2.5V为逻辑1
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+                     Q & A
+
+       • SPI和I2C 接口区别? 硬件与软件实现方式的差异？
+       • 128x64 OLED 点阵显示有多少 bit？多少字节？ 用什么数据
+         结构存储？
+       • 如何使显示的代码相对独立？如何提高刷新速度？
+       • 是否需要每次都刷新全屏幕？
+       • 如果多个模块需要调用IIC 库函数，如何进行有效的封装？
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (56/68)
+            STM32
+
+
+
+
+                                                      The   End!
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    界面库 (GUI library)
+  • LittlevGL / LVGL                                                       • TouchGFX
+  • 开源免费GUI，支持触摸屏操作，自带丰富控件： • 运行的界面非常炫，堪比手机的APP界面。
+    窗口、按键、标签、list、图表等，还可以自定       • 现已被ST收购，在ST MCU/MPU上可免费使用。
+    义控件；支持很多特效：透明、阴影、自动显示           官方地址：http://touchgfx.com/
+    隐藏滚动条、界面切换动画、图标打开关闭动画、 • 2种使用方法：一是利用TouchGFX Designer软
+    平滑的拖拽控件、分层显示、反锯齿、仅耗少量           件，支持图片和控件拖拽、可快速生成在KEIL
+    内存的字体等等。                        或IAR等IDE中可打开的项目工程；二是，
+  • LVGL 常见于 MCU级别的设备，支持各类输入        STM32CUBEMX 增加了对TouchGFX的支持，
+    输出接口与芯片，支持使用GPU。                可以使用CubeMX开发TouchGFX应用。
+  • https://lvgl.io/ Demos - LVGL • https://support.touchgfx.com/
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (58/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    界面库 (GUI library)
+  • emWin                                                                  • Qt for MCU
+  • 德国Segger公司开发的嵌入式图形界面库，GUI                                              • 一个完整的图形框架和工具包，用于在资源受限
+    以“C”源代码的形式提供。                                                            的设备上创建和提供类似智能手机的用户体验。
+  • 绘制2D图形；显示位图文件、文字；                                                      • 支持跨MPU、MCU重用UI，并使用现成组件实现
+  • 提供各种窗口对象（图形控件）                                                           快速开发。
+  • STemWin是Segger公司为ST公司定制的emWin；                                         • https://www.qt.io/qt-for-mcu
+    ST芯片可以免费使用STemWin。
+  • https://www.segger.com/products/user-
+    interface/emwin/
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (59/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+            IMU 芯片比较
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (62/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    超声波ToF技术芯片
+  MEMS超声波ToF技术芯片
+  SmartSonic™传感器系列嵌入了功能强大
+  的片上处理器，具有更高的计算能力。
+  TDK提供了包括测距和存在感应在内的多
+  种片上运行算法。
+
+                                                                         范例：
+                                                                         source/application/
+                                                                         smartsonic-hellochirp-examplemain.c
+                                                                         app_config.h: 一些配置选项和版本选择
+                                                                         source/drivers/chirpmicro: SonicLib的
+                                                                         API驱动，调用api进行驱动的初始化、配
+                                                                         置、管理等。
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (63/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+   I2C通信异常 案例分析                                                            问题分析
+                                                                          首先想到的是否跟SDA 和SCL 的上升沿
+  问题描述                                                                    建立时间有关系，见参考手册
+  IC通信时，速率为 100KHz时通信正常，
+  但工作在400KHz时，有时会产生错误。
+  把I2C GPIO配置为推挽输出后产生错误
+  的概率会下降。
+
+                                                                            SCL波形，开漏模式时测量上升沿时间
+
+                                                                                                                    上拉电阻为4.7K
+  失败时，SDA和SCL在通信没有完成时都                                                                                              时，Rise time是
+  被异常拉高。                                                                                                            ~180ns，
+                                                                                                                    符合规格书要求
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (64/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+   I2C通信异常 案例分析                                                            问题分析
+
+  上拉电阻2.2K, Rise time是72ns                                            直接抓出问题时的示波器波形
+  这时出现通信异常概率比原来                                                       发现绿色SDA的高电压值~2V，处于一
+                                                                      个临界状态，这可能导致I2C停止通信，
+  4.7K上拉时小很多。但问题是
+                                                                      并把SDA和SCL电平拉高！
+  功耗变大
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (65/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+   I2C通信异常 案例分析                                                            问题解决
+  按规格书要求高电平必须在70%VDD
+                                                                   进一步分析是看谁把SDA的电平拉低，建议
+                                                                   在SCL/SDA 线路接电阻测量出问题 时，I2C主
+                                                                   从两端的电压变化。
+
+                                                                   STM32芯片是和两个I2C slave通信，一个是充
+                                                                   电管理芯片， 另一个是LED 驱动芯片。最后
+                                                                   发现是LED驱动芯片进入低功耗模式时把I2C
+                                                                   SDA脚拉低导致I2C SDA电平被拉低，进而影
+                                                                   响了STM32和充电管理芯片之间的I2C通信。
+
+                                                                   最后修改了 LED 驱动芯片进入低功耗的时机，
+                                                                   问题得到解决。
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (66/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+   I2C通信异常 案例分析                                                问题描述
+
+    STM32在复位I2C slave后，下一包数据有时会发送失败，并收到BERR错误。
+
+
+
+
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (67/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+   I2C通信异常 案例分析                                                问题分析
+
+
+
+
+  采集示波器图形发现最后一个NACK的上升沿
+                                                                               问题解决
+  变化时，SCL为高。一般如果I2C从设备接收
+  到数据有错误（例如校验错误）或从设备无                                                          排查一下从机端为什么会发送NACK
+  法处理接收的数据时，它就会发送NACK。                                                         信号并进行相应优化处理。
+  现在这个NACK上升沿恰好引起了主机误判，                                                        同时增加 I2C 超时处理机制，复位
+  以为是STOP信号（SCL为高时SDA低变高），                                                     主从I2C，并重新初始化I2C外设。
+  所以导致产生BERR错误。                                                                最后问题得到解决。
+EE114 Embedded System -> Lecture 16 STM32 SPI & I2C                                                                         (68/68)
+

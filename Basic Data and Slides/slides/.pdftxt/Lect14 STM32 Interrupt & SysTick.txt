@@ -1,0 +1,1542 @@
+           EE114: Introduction to
+            Embedded Systems
+Dr. Tao Wu     吴涛      研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+             Demo Task
+
+       • 熟悉EXTI 硬件、库函数和配置步骤
+
+       • 完成EXTI 标准外设库应用实例
+
+       • 了解SysTick 硬件和配置步骤
+
+       • 讲解SysTick 定时器应用实例
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (2/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+   STM32 Interrupt & Systick
+     ◆ 理解和掌握中断的概念和中断处理过程；
+     ◆ 理解和掌握STM32F103微控制器的中断类型、优先级概念
+       和中断向量表；
+     ◆ 了解STM32F103微控制器的NVIC中断结构和特点；
+     ◆ 掌握STM32F103微控制器EXTI内部结构、工作原理和特性；
+     ◆ 熟悉NVIC和EXTI相关的标准外设库函数和HAL库函数；
+     ◆ 掌握STM32的中断配置过程；
+     ◆ 掌握基于标准外设库函数进行外部中断的开发过程；
+     ◆ 了解基于HAL库进行外部中断的开发过程。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (3/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+   STM32 Interrupt & Systick
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (4/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+1 中断的相关概念
+
+
+                                         1                1.1 什么是中断？
+
+                                                 2              1.2 为什么使用中断？
+
+                                                           3      1.3 中断处理流程
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (5/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  1.1 什么是中断？
+                    中断是单片机
+       计算机在执行程序过程中， 实时处理内部
+                    或外部事件的
+      当出现异常情况（断电等）
+                     一种机制。
+      或特殊请求（数据传输等）
+      时，计算机暂停现行程序的
+      运行，转向对这些异常情况
+      或特殊请求进行处理，处理
+                                                                            中断和异常
+      完毕后再返回到现行程序的                                                          其本质都是
+      中断处，继续执行原程序，                                                          对主程序的
+      这就是“中断”。                                                               “中断”
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (6/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  1.2 为什么使用中断？
+                                                                 可提高CPU效率
+
+                                                                 可实现对实时事件
+            CPU的 等待 外设 + 中断                                      的及时处理（实时
+            速度快    速度慢                                           处理）
+
+                   降低CPU效率                                       可对突发故障进行及
+                                                                 时处理（异常处理）
+
+                 中断在嵌入式系统占有极其重要的地位，中断机制使得系统
+            能更有效更合理地发挥效能和提高效率。
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (7/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 1.3 中断处理流程
+
+         中断请求                                 中断响应              中断服务           中断返回
+     中断请求是中断                              CPU的中断系统              为处理中断而       CPU退出中断服
+     源向CPU发出中                             判断中断源的                编写的程序称为      务程序，返回到
+     断请求信号，此                              中断请求是否符               中断服务程序，      中断请求响应之
+     时中断控制系统                              合中断响应条件，              是由开发人员针      前被中止的位置
+     的中断请求寄存                              如果符合条件，               对具体中断所要      继续执行主程序。
+     器被置位，向                               则暂时中断当前               实现的功能进行      这部分操作同样
+     CPU请求中断。                             程序并控制程序               设计和编写的，      由硬件来实现，
+                                          跳转到中断服务               需要由开发人员      不需要开发人员
+                                          程序                    来实现。         进行处理。
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (8/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+2 STM32中断和异常
+
+
+
+                                                2.1             STM32中断和异常向量表
+
+                                      2.2           STM32中断优先级
+
+                           2.3           STM32中断服务程序
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (9/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+2 STM32中断和异常                                                    STM32的内部中断处理机制
+
+
+
+
+          Pin0
+
+
+
+
+          Pin1
+
+
+
+            …
+
+
+         Pin15
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (11/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+复用功能输出模式（Alternate Function，AF）
+
+            STM32F103ZE系列微控制器有
+         144个引脚，其中的GPIO引脚除了作
+         为通用输入/输出引脚使用外，还可
+                                                                当I/O引脚作为复用功能
+         以作为片上外设（如串口、ADC、                                       时，可选择复用推挽输出
+         IIC等）的引脚，即可以作为多个外                                      模式或复用开漏输出模式，
+                                                                在选择复用开漏输出模式
+         设引脚使用，称为复用I/O端口                                         时，需外接上拉电阻。
+
+         AFIO（Alternate Function I/O），
+         但一个引脚某一时刻只能使用复用功
+         能中的一个。
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (12/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.1 STM32中断和异常向量表
+   ARM公司设计的Cortex-M3                                               ➢ STM32F10x系列产
+   内核可支持256个中断：                                                       品有84个中断通道，
+   ➢ 15个内核中断                                                          包括16个内核中断
+   ➢ 240个外部中断                                                         和68个可屏蔽中断；
+                     使用Cortex-M3内
+   具有256级的可编程中断优
+                     核的芯片制造商对                                      ➢ STM32F103系列芯
+   先级设置，即除了3个固定 中断进行精简
+                                                                      片只有60个可屏蔽
+   的高优先级（Reset、NMI、
+                                                                      中断
+   硬件失效），其他中断和异
+   常的优先级是                                                          ➢ STM32F107系列有
+   可以由用户进行设置的                                                         68个可屏蔽中断。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (13/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.1 STM32中断和异常向量表                                                    入口地址一般存放在程序
+                                                                   存储器（ROM），默认情况下，
+                     中断向量表                                         Cortex-M3
+           当发生了异常或中断，
+                                                                   内核的中断向量表从零地址处
+                                                                向量编号    向量入口地址           说明
+      内核要想响应这些异常或
+                                                                  -开始，   0x00000000 MSP的初始值
+      中断，就需要知道这些
+      异常或中断的服务程序的                                                 1且每个向量占用4个字节。
+                                                                         0x00000004 复位向量（PC初始值）
+
+      入口地址，再由入口地址                                                                   NMI 异 常 服 务 程 序 的
+                                                                  2    0x00000008
+                                                                                    入口地址
+      找到相应的中断服务程序，                                                3    0x0000000C
+                                                                                    硬Fault异常服务程序的
+                                                                                    入口地址
+      由中断入口地址组成的表                                                                   其它中断服务程序的
+                                                                  …        …
+      称作中断向量表。                                                                      入口地址
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                       (14/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                          Cortex-M3嵌套向量中断控制器
+  2.1 中断与异常（NVIC）
+                                                                 Nested vectored interrupt controller (NVIC)
+       编号           类别                    优先级         优先级类型            地址                      说明
+        0           N/A                    N/A                      0x00000000    没有编号为0的异常，此为正常状态
+        1         复位（Reset）              -3(最高)           固定        0x00000004    复位
+        2           NMI                     -2            固定        0x00000008    不可屏蔽中断（来自外部NMI输入脚）
+                                                                                  只要FAULTMASK没有置位，硬Fault服务例程
+         3       硬（Hard）Fault                -1           固定        0x0000000C
+                                                                                  会被强制执行
+         4         存储器 Fault                 0           可编程        0x00000010    MPU访问违例以及访问非法位置均可引发
+         5          总线Fault                  1           可编程        0x00000014    总线收到了错误响应，
+         6          用法Fault                  2           可编程        0x00000018    由于程序错误导致的异常。
+                                                                    0x0000001C-
+       7-10     保留（Reserved）               保留             保留                      保留
+                                                                    0x0000002B-
+        11           SVCall                  3           可编程        0x0000002C    执行系统服务调用指令（SVC）引发的异常
+                 调试监视器                                                            调试监视器（断点、数据观察点、或是外部
+        12                                   4           可编程        0x00000030
+               （Debug Monitor）                                                    调试请求）
+        13         Reserved                 N.A.          N.A.      0x00000034    保留
+        14          PendSV                   5           可编程        0x00000038    为系统设备而设的“可挂起请求”
+        15          SysTick                  6           可编程        0x0000003C    系统滴答定时器 System tick timer
+        16          WWDG                     7           可编程        0x00000040    窗口看门狗中断 Window Watchdog Interrupt
+        …             ……                    ……           可编程                      ……
+       256      Interrupt #239              247          可编程                      外部中断#239
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                         (15/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  3.4 中断与异常（NVIC）                                                     NVIC具有以下特性
+
+   Cortex-M3内核集成了一个外设
+                                                                01 可嵌套中断支持，即高优先级的
+   ——NVIC用于专门负责中断。                                                   中断可以打断低优先级的中断。
+          作用                                                    02 向量中断支持，缩短中断延迟时间。
+          ◆ 统一管理和配置中断
+                                                                03   动态优先级调整支持。软件可以
+          ◆ 通过优先级来控制                                                 在运行期间更改中断的优先级。
+              中断的嵌套和调度。
+                                                                04 引入新特长新技术，中断延迟
+                                                                     大大缩短
+         在NVIC中，优先级的数
+         值越小，则优先级越高。                                            05 中断可屏蔽
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (16/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  3.4 中断与异常（NVIC）                                                  响应中断的过程
+
+                 保存现场                                           取向量       更新寄存器
+
+                    • 处理器将相                                                  • 将堆栈指针进
+                      关的寄存器                                      • 从中断向        行更新，在向
+                      xPSR、PC、                                     量表中找        量取出后，程
+                      LR、R12及                                      到相应的        序寄存器指针
+                      R0~R3压入堆                                     中断服务        （PC）指向中
+                      栈中。                                          程序的         断服务程序的
+                    • 如果当前使                                        入口地址        入口地址，更
+                      用的是PSP，                                                  新程序寄存器
+                      则压入进程                                                    指针（PC）以
+                      堆栈，否则                                                    及更新链接寄
+                      压入主堆栈。                                                   存器（LR）。
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (17/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  3.4 中断与异常（NVIC）                                               响应中断的过程
+                                   堆栈指针R13(SP)
+                                     • MSP堆栈指针
+                                     • PSP堆栈指针
+                                   连接寄存器R14（LR）
+                                   1. 函数调用
+                                   当使用bl或者blx跳转到子过程时，R14
+                                   保存了返回地址，可在调用结尾恢复。
+                                   2. 中断
+                                   异常中断发生时，R14被设置成该异常
+                                   模式将要返回的地址。
+                                     • 中断到来
+                                     • 调用中断处理函数
+ R0‐R7 也被称为低组寄存器（ 32 位），所有指令都能访问它们。
+                                     • 中断返回
+ R8‐R12 也被称为高组寄存器（ 32 位）；只有很少的 16 位
+ Thumb 指令能访问它们， 32位的指令则不受限制。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (18/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  3.4 中断与异常（NVIC）
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (19/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.1 STM32中断和异常向量表
+
+                   typedef enum IRQn
+                   {
+     STM32在标准外设库
+                        /*Cortex-M3 Processor Exceptions Numbers */
+   stm32f10x.h文件中，   NonMaskableInt_IRQn= -14,
+   通过宏定义将中断通道号          /*!< 2 Non Maskable Interrupt */
+                     MemoryManagement_IRQn= -12,
+   （中断号）与宏名联系           /*!< 4 Cortex-M3 Memory Management Interrupt */
+   起来，这样在使用中断时， BusFault_IRQn = -11,
+   直接引用宏名即可。            /*!< 5 Cortex-M3 Bus Fault Interrupt */
+                   ……
+                   } IRQn_Type;
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (20/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                中断优先级寄存器NVIC_IPRx
+ 2.2 STM32中断优先级
+
+       NVIC中断配置的相关函数存放在标准外设                                              STM32使用Cortex-M3
+   库misc.c和misc.h文件中，共定义了5个相关                                           的8位优先级寄存器中的4
+   函数及NVIC初始化结构体                                                        位来配置中断优先级，即
+                                                                        STM32中的NVIC只支持16
+   void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup);
+   void NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct);                   级中断优先级的管理。
+   void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset);
+                                                                        又被分组成抢占优先级
+   void NVIC_SystemLPConfig(uint8_t LowPowerMode,                       PreemptionPriority和
+   FunctionalState NewState);                                           响应优先级SubPriority
+   void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource);            (子优先级)；
+                                                                        抢占优先级高的就会
+                                                                        优先得到执行。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (21/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.2 STM32中断优先级
+
+      中断分组管理函数
+       用于设置中断的                                  void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup)
+      优先级分组，此函数                                   NVIC_PriorityGroup
+                                                                       抢占优先级   响应优先级
+                                                                                                描述
+                                                                        取值范围    取值范围
+      只有一个参数                                                                         抢占优先级占0位，
+                                                NVIC_PriorityGroup_0     0        0～15
+      NVIC_PriorityGroup，                                                            响应优先级占4位
+                                                                                     抢占优先级占1位，
+      其取值共有5组，每组                                NVIC_PriorityGroup_1    0，1    0～7
+                                                                                     响应优先级占3位
+      的抢占优先级和响应                                                                      抢占优先级占2位，
+                                                NVIC_PriorityGroup_2 0，1，2，3 0，1，2，3
+                                                                                     响应优先级占2位
+      优先级所占位数均不
+                                                                     0，1，2，3，        抢占优先级占3位，
+      同，取值范围不同                                  NVIC_PriorityGroup_3           0，1
+                                                                     4，5，6，7         响应优先级占1位
+                                                                                     抢占优先级占4位，
+                                                NVIC_PriorityGroup_4   0～15     0
+                                                                                     响应优先级占0位
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                           (22/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.2 STM32中断优先级                                                 结构体
+
+        中断初始化函数: void NVIC_Init (NVIC_InitTypeDef * NVIC_InitStruct)
+
+         作用：设置抢占优先级和响应优先级                                       指向NVIC_InitTypeDef
+                                                                结构体的指针
+                  typedef struct                                          写错了
+                                                                         不会报错
+                  {
+                    uint8_t NVIC_IRQChannel;            //配置中断源，IRQ通道
+                    uint8_t NVIC_IRQChannelPreemptionPriority; //配置抢占优先级（主）
+                    uint8_t NVIC_IRQChannelSubPriority;       //配置响应优先级（子）
+                    FunctionalState NVIC_IRQChannelCmd;       //使能中断通道
+                  } NVIC_InitTypeDef;
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (23/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 2.2 STM32中断优先级                                                       中断优先级判断原则
+
+     高抢先优先级的中断可以打                                                             抢占优先级的优先级
+     断低抢先优先级的中断服务，                                                            总是高于响应优先级；
+     构成中断嵌套；                                                            规则3
+     中断优先级的数值越小，                                                规则1
+             填写标题
+                                                                              规则5
+     优先级级别越高；                                                         规则4     Reset NMI Hard Fault 的
+                                                     规则2
+                                                                              优先级为负，且不可修改，
+                                                                              高于普通的中断优先级。
+                           中断优先级判断：先判断抢占优先级的大小，如果抢占优先级
+                           相同，则比较响应优先级的大小，若抢占优先级和响应优先级
+                           均相同，则根据中断向量表中的顺序来决定；
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                          (24/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                stm32f10x_it.c中断处理函数
+ 2.3 STM32中断服务程序
+
+
+          STM32将中断服务程序
+      统一放在标准外设库
+      stm32f10x_it.c 文件中，
+      其中的每个中断服务函数都
+      只有函数名，函数体都是空
+      的，需要用户自己编写相应
+      的函数体，但中断服务程序
+      的函数名是不能更改的
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (25/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI          EXTI （ External interrupt & event
+                         controller，外部中断/事件控制器）
+     STM32芯片之外的外设的中断
+                         支持19个外部中断/事件请求，每个
+   （I/O端口）由EXTI和NVIC共同负责，中 断 / 事 件 都 有 独 立 的 触 发 和 屏 蔽
+   即STM32的每一个GPIO引脚都可以 设 置 ， 具 有 中 断 模 式 和 事 件 模 式
+   配置成一个外部中断触发源          两种设置模式。
+                                                       通过外部信号的边沿产生中断        由软件实现
+                               中断模式                    信号传送给NVIC，触发中断，
+                                                       最终实现中断服务程序的执行        相应功能
+         设置
+         模式                                            产生脉冲将系统从睡眠和停止      事件属于硬件
+                               事件模式                    模式中唤醒，从而产生相应外
+                                                       设的触发信号供外设电路使用     触发执行的过程
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (26/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI
+                                                                     STM32中，每一个GPIO
+                                                                    都可以触发一个外部中断
+
+                                                          19条外部
+                                                           中断线
+
+                                                                                    *线19
+                  线0~15                         线16               线17      线18
+                                                                                    为互联
+                                                                                    网型专
+                  对应I/O引脚                        连接到PVD           连接到RTC   连接到USB   有
+                  的外部中断；                          输出              闹钟事件     唤醒事件
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (27/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI                                                             STM32F1 EXTI内部功能框图
+                                                                External interrupt/event controller block diagram
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                  (28/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI                                                             STM32F1 EXTI内部功能框图
+                                                                External interrupt/event controller block diagram
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                  (29/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI
+
+              GPIO的中断是以组为单位的，同
+         组的外部中断公用一条外部中断线。
+             例如：PA0、PB0、PC0、PD0、PE0、
+         PF0、PG0这些为一组，如果使用PA0
+         作为外部中断源，那么PB0、PC0、
+         PD0、PE0、PF0、PG0就不能同时再
+         作为外部中断使用了，在此情况下，
+         只能使用类似于PB1、PC2这种末端
+         序号不同的外部中断源。
+                                                                GPIO引脚和外部中断线的映射关系图
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (30/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+3 STM32外部中断EXTI
+    中断标志                                   中断服务函数
+  EXTI0                 void EXTI0_IRQHandler(void)
+                                                                ◆ EXTI0-EXTI4这5个外部中断
+  EXTI1                 void EXTI1_IRQHandler(void)               有着各自独立的中断服务函数，
+                        void EXTI2_IRQHandler(void)               如EXTI3的中断服务函数为
+  EXTI2
+                                                                  void EXTI3_IRQHandler(void)；
+  EXTI3                 void EXTI3_IRQHandler(void)             ◆ EXTI5-9共用一个中断服务函数
+  EXTI4                 void EXTI4_IRQHandler(void)              void EXTI9_5_IRQHandler(void)；
+  EXTI5-9               void EXTI9_5_IRQHandler(void)           ◆ EXTI10-15共用一个中断服务函数
+                                                                void EXTI15_10_IRQHandler(void)；
+  EXTI10-15 void EXTI15_10_IRQHandler(void)
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (31/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+4 EXTI模块的标准外设库接口函数及应用
+
+
+
+                                         4.1 EXTI标准外设库接口函数
+
+                                         4.2 EXTI标准外设库中断配置步骤
+
+                                         4.3 EXTI标准外设库应用实例
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (32/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 4.1 EXTI标准外设库接口函数
+          标准外设库的stm32f10x_exti.c文
+          件定义了EXTI相关的库函数。
+
+          stm32f10x_exti.h头文件中声明
+          了EXTI相关的库函数，共有8种。
+
+                                 EXTI_Init函数                    定义了EXTI_InitTypeDef结构体
+                                                                   用于检查指定的EXTI线路触发请求
+     EXTI相关                      EXTI_GetITStatus函数
+                                                                   发生与否，返回值：SET或RESET
+     的库函数
+                                 EXTI_ClearITPendingBit函数                 用于清除EXTI线路挂起位
+
+                                 GPIO_EXTILineConfig函数                用于选择GPIO管脚用作外部中断线路
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (33/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 4.1 EXTI标准外设库接口函数                                                     EXTI_InitTypeDef结构体
+
+             typedef struct            指定某个具体的外部中断线路，
+                                         如外部中断线0，EXTI_Line0
+             {
+               uint32_t EXTI_Line;
+                                                 用于设置EXTI线路是中断请求模式还是事
+                  //中断/事件线                       件模式，取值可以是EXTI_Mode_Interrupt
+               EXTIMode_TypeDef EXTI_Mode;       或EXTI_Mode_Event
+                 //EXTI模式 （中断/事件）
+               EXTITrigger_TypeDef EXTI_Trigger;
+                                                    用于设置外部中断的触发方式，
+                 //触发类型（上/下/上下）                     上升沿触发或下降沿触发等
+               FunctionalState EXTI_LineCmd;
+                 //EXTI使能（IMR/EMR）
+             }EXTI_InitTypeDef;
+                                                                用于使能或失能外部中断线路，
+                                                                取值为ENABLE或DISABLE
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (34/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 4.2 EXTI标准外设库中断配置步骤
+
+       1                                                         2     开启I/O端口的
+               GPIO初始化配置                                               时钟和复用时钟
+      GPIO_InitTypeDef GPIO_InitStructure;                       GPIO用作EXTI外部中断功能引脚，必
+      GPIO_InitStructure.GPIO_Port = GPIOE;                     须开启复用功能，打开相应引脚的AFIO
+      GPIO_InitStructure.GPIO_Pin =                             时钟，通过调用
+      GPIO_Pin_3;                                               RCC_APB2PeriphClockCmd()函数实现：
+      GPIO_InitStructure.GPIO_Mode =                            RCC_APB2PeriphClockCmd(
+      GPIO_Mode_IN_FLOATING;
+                                                                RCC_APB2Periph_GPIOE|
+           // 初始化I/O口为浮空输入模式
+                                                                RCC_APB2Periph_AFIO, ENABLE);
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (35/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 4.2 EXTI标准外设库中断配置步骤
+
+       3 设置I/O                        GPIO引脚作为中断功能引脚用来触发外部中断时，需将GPIO
+                                    的引脚与相应的中断线关联在一起，使用库函数
+             引脚与中
+             断线路的                   GPIO_EXTILineConfig来实现这种映射关系。如
+             映射关系                   GPIO_EXTILineConfig(GPIO_PortSourceGPIOE, GPIO_PinSource3);
+
+     EXTI_InitStructure.EXTI_Line = EXTI_Line3; //设置外部中断线3中断
+     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+                                            //设置为中断模式
+                                                                             4
+     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling; 初始化EXTI，
+                                                                    配置EXTI相关
+                                            //设置为下降沿触发
+                                                                    参数并使能
+     EXTI_InitStructure.EXTI_LineCmd = ENABLE; //使能该外部中断线
+     EXTI_Init(&EXTI_InitStructure);
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                     (36/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 4.2 EXTI标准外设库中断配置步骤                                             6   编写中断服务程序
+      5     初始化NVIC，                                       中断服务程序主要包括检测中断线路的
+            配置NVIC参数并使能                                  状态、中断处理的内容和清除相关的中断。
+                                                         例如EXTI2的中断服务程序：
+NVIC相关的配置主要包括配置中断优先级的中断分组，
+                                                         void EXTI2_IRQHandler(void)
+确定各具体中断的抢占优先级和响应优先级的大小。 {
+NVIC_InitTypeDef NVIC_InitStructure;                       if(EXTI_GetITStatus(EXTI_Line2)!=RESET)
+NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);              //判断某个线上的中断是否发生
+NVIC_InitStructure.NVIC_IRQChannel = EXTI3_IRQn;           {
+NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority =0;       中断逻辑… // 中断任务
+                                                               EXTI_ClearITPendingBit(EXTI_Line2);
+NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+                                                               //清除中断标志
+NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+                                                           }
+NVIC_Init(&NVIC_InitStructure);                          }
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (37/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例
+
+
+           功能                                             硬件设计
+                         通过一个按键
+                  控制LED灯状态翻                                                  STM32F103                      +3.3V
+
+                  转，每按下按键                                         K1                           LED   R1
+                                                                       PE3
+                  一次，LED灯的状
+                                                                                         PB5         470Ω
+
+
+
+                  态变化一次。
+
+                                                                 LED连接在STM32F103的PB5引脚上，
+                                                                按键K1连接在STM32F103的PE3引脚上
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                       (38/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例                                             软件设计
+
+
+                                                                  1. 新建 exti_key.h 文件
+                                        添加exti_key.c到工程中
+                                                                  #ifndef __EXTI_KEY_H
+                                                                  #define __EXTI_KEY_H
+    在BSP文件夹下新建exti_key.h和exti_key.c                               #include "stm32f10x.h"
+   文件，并加入到工程中：                                                    void EXTI_Key_Init(void);
+    在快捷功能栏中找到 ，单击进入，在                                             #endif
+   “Groups” 一栏中找到“BSP”，选中，然后
+   单击“Add Files”，添加要加入工程的.c文件。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (39/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例
+                                                                         2．新建 exti_key.c 文件
+    #include "exti_key.h"
+    #include "misc.h"
+
+                                                                        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    void EXTI_Key_Init(void)
+                                                                        NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    {
+                                                                        NVIC_Init(&NVIC_InitStructure);
+        GPIO_InitTypeDef GPIO_InitStructure;
+                                                                        EXTI_InitTypeDef EXTI_InitStructure;
+                                                                        EXTI_ClearITPendingBit(EXTI_Line3);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE|RCC_APB2P
+                                                                        GPIO_EXTILineConfig(GPIO_PortSourceGPIOE,GPIO_PinSource3);
+    eriph_AFIO,ENABLE);
+                                                                        EXTI_InitStructure.EXTI_Line = EXTI_Line3;
+        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+                                                                        EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+                                                                        EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+        GPIO_Init(GPIOE,&GPIO_InitStructure);
+                                                                        EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+        NVIC_InitTypeDef NVIC_InitStructure;
+                                                                        EXTI_Init(&EXTI_InitStructure);
+        NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+                                                                    }
+        NVIC_InitStructure.NVIC_IRQChannel = EXTI3_IRQn;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                                     (40/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例
+                      3. main.c文件                                           3. stm32f10x_it.c文件
+        #include "stm32f10x.h"
+                                                                void EXTI3_IRQHandler(void)
+        #include "led.h"
+                                                                {
+        #include "exti_key.h"
+                                                                  if(EXTI_GetITStatus(EXTI_Line3) != RESET)
+        int main(void)                                            {
+        {                                                            GPIO_WriteBit(GPIOB,
+            LED_Init();                                         GPIO_Pin_5,(BitAction)((1-
+            GPIO_ResetBits(GPIOB, GPIO_Pin_5);                  GPIO_ReadOutputDataBit(GPIOB, GPIO_Pin_5))));
+            EXTI_Key_Init();                                         EXTI_ClearITPendingBit(EXTI_Line3);
+            while(1)                                              }
+            {                                                   }
+            }
+          }
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                   (41/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例                                             中断处理程序，实现LED灯翻转
+                            uint8_t led = 1;
+                            void EXTI3_IRQHandler(void)                    还记得在哪
+                            {                                             编写这个函数？
+                                if(EXTI_GetITStatus(EXTI_Line3) != RESET)
+                                {
+                                    led = ~led;  //状态翻转
+                                    if(led == 1) //如果等于1，则PB5复位点亮，否则置1熄灭
+                                      GPIO_ResetBits(GPIOB,GPIO_Pin_5);
+                                    else
+                                      GPIO_SetBits(GPIOB, GPIO_Pin_5);
+                               }
+                               EXTI_ClearITPendingBit(EXTI_Line3); //清除EXTI3的中断标志位
+                            }
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (42/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例                                             使用STM32的外部中断步骤
+
+          使用RCC_APB2PeriphClockCmd()函数配置时钟，
+          初始化GPIO引脚为复用功能
+            使用GPIO_EXTILineConfig()函数配置I/O引脚
+            与外部中断线路的映射关系
+
+                         使用EXTI_Init()函数配置外部中断
+
+                                 使用NVIC_Init()配置中断优先级等
+
+                                        编写中断服务函数
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (43/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例
+
+
+          嵌入式系统开发的程序架构
+          由初始化部分和主程序部分
+          组成，初始化部分涉及到
+          系统所用外设的初始化配置
+          程序，主程序部分一般是由
+          while(1){ } 构成的无限循环，
+                                                                 结构简单，容易实现，但由于主程序部分
+          程序实体一直循环不停地
+                                                                是一个轮流执行的无限循环体，遇到突发事
+          轮流执行                                                  件，无法保证系统响应的及时性
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (44/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  4.3 EXTI标准外设库应用实例                                             前后台系统的程序架构图
+
+
+
+
+          前台程序通过中断来处理事件，后台程序是一个无限循环的应用
+     程序实体，负责嵌入式系统软、硬件资源的分配、管理等日常事务。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (45/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+                                                                void EXTI_Key_Config(void)
+    扩展：多个中断源宏定义                                                 {
+                                                                   GPIO_InitTypeDef GPIO_InitStructure;
+                                                                   EXTI_InitTypeDef EXTI_InitStructure;
+                                                                   /*开启按键GPIO 口的时钟*/
+                                                                   RCC_APB2PeriphClockCmd(KEY1_INT_GPIO_CLK, ENABLE);
+                                                                  /* 配置 NVIC 中断*/
+                                                                  NVIC_Configuration();
+
+                                                                /*--------------------------KEY1 配置---------------------*/
+                                                                  /* 选择按键用到的GPIO */
+                                                                 GPIO_InitStructure.GPIO_Pin = KEY1_INT_GPIO_PIN;
+                                                                  /* 配置为浮空输入 */
+                                                                 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+                                                                 GPIO_Init(KEY1_INT_GPIO_PORT, &GPIO_InitStructure);
+                                                                 /* 选择EXTI 的信号源 */
+                                                                 GPIO_EXTILineConfig(KEY1_INT_EXTI_PORTSOURCE, |
+                                                                 KEY1_INT_EXTI_PINSOURCE);
+                                                                 EXTI_InitStructure.EXTI_Line = KEY1_INT_EXTI_LINE;
+                                                                 /* EXTI 为中断模式 */
+                                                                 EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+                                                                 /* 上升沿中断 */
+                                                                 EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+                                                                 /* 使能中断 */
+                                                                 EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+                                                                 EXTI_Init(&EXTI_InitStructure);
+
+                                                                 /*--------------------------KEY2 配置------------------*/
+  宏定义指定与硬件电路设计相关配置，                                               /* 使能中断 */
+                                                                                       …… 完全一样 ……
+
+  这对于程序移植或升级非常有用                                                  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+                                                                  EXTI_Init(&EXTI_InitStructure);
+                                                                }
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                                (46/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+6 SysTick 定时器
+     ➢ HSE 高速外部时钟（通常8MHz）
+       ▪ RCC_CR 寄存器位16：HSEON控制
+     ➢ HSI 高速内部时钟（内部固定8M)
+       ▪ RCC_CR 寄存器位0：HSION控制
+     ➢ PLLCLK 锁相环时钟
+      ▪ 通常最大72M; 源为HSI/2时64M
+     ➢ SYSCLK 系统时钟 (CFGR：SW)
+      ▪ 通常配置SYSCLK=PLLCLK=72M
+
+      SysTick定时器的时钟源可以是内部时钟
+      （FCLK）或者是外部时钟，系统默认的
+      SysTick定时器是由AHB时钟（HCLK）8分频
+      得到的，即SysTick的频率为 9MHz。
+      SysTick定时器从初值计数到0时，会自动重
+      装初值继续计数，同时触发中断；因此，只
+      需确定计数次数就可以精确得到延迟时间。                                           STM32F1时钟系统
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (47/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+6 SysTick 定时器
+
+      Cortex-M3内核中的SysTick定时器，是                                 SysTick定时器一共有四个寄存器
+      一个24位的从重载值向下递减到0的计                                           SysTick控制及状态寄存器CTRL
+      数器，是NVIC的一部分，根植于NVIC；                                        SysTick重装载数值寄存器LOAD
+      常用于精确定时，为操作系统提供                                              SysTick当前数值寄存器 VAL
+      必要的时钟节拍，为RTOS的任务调度                                           SysTick校准数值寄存器 CALIB
+      提供一个有节奏的“心跳”。
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (48/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+6 SysTick 定时器                                                     SysTick定时时间计算
+
+
+                                                                ⚫ t= reload * ( 1/clk )
+   1. t：一个计数循环的时间，
+      跟reload和CLK有关                                             ⚫ Clk=72M 时，t= (72) *(1/ 72 M ) = 1us
+                         ⚫ Clk=72M 时，t= (72000) *(1/ 72 M )= 1ms
+   2. CLK：72M或者9M，由
+      CTRL寄存器（CLKSOURCE） ⚫ Clk=9M 时，t= (9) *(1/ 9 M ) = 1us
+      是否8分频配置            ⚫ Clk=9M 时，t= (9000) *(1/ 9 M )= 1ms
+   3. RELOAD：24位，                                               ⚫ 时间单位换算:
+      用户自己配置                                                        1s = 1000 ms = 1000 000 us
+                                                                       = 1000 000 000 ns
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                           (49/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.1 SysTick的标准外设库函数                                                                打开文件看看
+                                                                                     能否看懂
+                                                                                    SysTick 配置
+        1．SysTick相关寄存器的定义在core_cm3.h文件中
+
+        typedef struct
+        {
+          __IO uint32_t CTRL;                /*!< Offset: 0x00 SysTick Control and Status Register */
+          __IO uint32_t LOAD;                /*!< Offset: 0x04 SysTick Reload Value Register       */
+          __IO uint32_t VAL;                 /*!< Offset: 0x08 SysTick Current Value Register     */
+          __I uint32_t CALIB;                /*!< Offset: 0x0C SysTick Calibration Register       */
+        } SysTick_Type;
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                           (50/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.1 SysTick的标准外设库函数                                            2．SysTick的库函数
+
+      1）SysTick_Config(uint32_t ticks)，定义在core_cm3.h头文件中，代码如下：
+
+      static __INLINE uint32_t SysTick_Config(uint32_t ticks)
+      {
+        if (ticks > SysTick_LOAD_RELOAD_Msk) return (1); /* 若重装载值超过24位，失败返回1 */
+        SysTick->LOAD = (ticks & SysTick_LOAD_RELOAD_Msk) - 1;      /* 设置重装载寄存器*/
+        NVIC_SetPriority (SysTick_IRQn, (1<<__NVIC_PRIO_BITS) - 1); /* 设置系统中断的优先级 */
+        SysTick->VAL = 0;                         /* 装载SysTick的计数值（当前计数值清0）*/
+                           /* 设置系统定时器的时钟源为AHBCLK=72M;
+        SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk |
+                    SysTick_CTRL_ENABLE_Msk;      /* 使能SysTick中断和SysTick定时器 */
+        return (0);                               /* 成功，返回0*/
+      }
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (51/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.1 SysTick的标准外设库函数                                            2．SysTick的库函数
+        2）SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource)，在misc.c文件中定义。
+
+        void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource)
+        {                                       此函数用于选择SysTick定时器的时钟源，有两个选项：
+            /* Check the parameters */         SysTick_CLKSource_HCLK和SysTick_CLKSource_HCLK_Div8。
+          assert_param(IS_SYSTICK_CLK_SOURCE(SysTick_CLKSource));
+          if (SysTick_CLKSource == SysTick_CLKSource_HCLK)
+             { SysTick->CTRL |= SysTick_CLKSource_HCLK;
+             }                      AHB时钟，不分频，则SysTick的时钟频率为72MHz，设重装
+          else                      载值为72000，则延时时间为 72000*(1/72000 000Hz)=1ms。
+             { SysTick->CTRL &= SysTick_CLKSource_HCLK_Div8;
+             }
+                                     为AHB的8分频，则SysTick的时钟频率为9MHz(72MHz/8=9MHz)。
+        }                             设重装载值为9000，则延时时间为 9000*(1/9000 000Hz)=1ms。
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                        (52/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.2 SysTick定时器应用实例
+         基于STM32F10x v3.5.0标准外设库操作SysTick定时器实现精确延时1ms。
+
+
+                                                                初始化SysTick：
+                                                                ➢ 利用SysTick_Config(uint32_t ticks)函数配置
+                                                                  SysTick的重装载初值；
+           SysTick定时器                                           ➢ 利用SysTick_CLKSourceConfig(uint32_t
+                                                                  SysTick_CLKSource)函数选择SysTick的时钟源
+          配置流程/步骤
+                                                                  编写delay延迟函数
+
+                                                           编写SysTick中断处理函数
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                            (53/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.2 SysTick定时器应用实例                                                        #ifndef __SYSTICK_H
+                                                                           #define __SYSTICK_H
+                                                                           #include "stm32f10x.h"
+                   软件代码实现                                                  void SysTick_Init(void);
+                                                                           void Delay_ms(uint16_t nCount);
+             新建systick.h头文件                                                #endif
+                                                                #include "systick.h"
+                                                                __IO uint32_t TimingDelay;
+               新建systick.c文件                                     //定义一个全局变量，注意类型为volatile的
+                                                                void SysTick_Init(void)
+                                                                {
+                新建main.c文件                                         SysTick_Config(9000);
+                                                                   //9000为重装载值，SysTick时钟频率为 9 MHz，定时时间1 ms
+                                                                   SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+                                                                }
+              编写中断处理函数                                          void Delay_ms(uint16_t nCount)
+                                                                {                               毫秒级别的延时函数
+                                                                   TimingDelay = nCount;
+            编写LED相关的代码                                             while(TimingDelay != 0);   – 方式 1
+                                                                }
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                       (54/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.2 SysTick定时器应用实例                                             #include "stm32f10x.h"
+                                                                #include "led.h"                                main.c
+                                                                #include "systick.h"
+                   软件代码实现                                       int main(void)
+                                                                { LED_Init();
+                                                                   SysTick_Init();
+             新建systick.h头文件                                        while(1)
+                                                                   { GPIO_SetBits(GPIOB, GPIO_Pin_5);
+                                                                      Delay_ms(1000);       // 延时 1000 * (1/1000) = 1 s
+                                                                      GPIO_ResetBits(GPIOB, GPIO_Pin_5);
+               新建systick.c文件                                          Delay_ms(1000);
+                                                                   }
+                                                                }
+
+                新建main.c文件                                      extern __IO uint32_t TimingDelay;
+                                                                /* 添加外部声明，告诉编译器这是在外部定义的一个变量 */
+                                                                // Systick 已经配置为每 1ms 发生一次中断；
+                                                                // 内部中断入口处理函数
+              编写中断处理函数                                          void SysTick_Handler(void)
+                                                                {
+                                                                     if ( TimingDelay != 0x00 )
+            编写LED相关的代码                                                    {
+                                                                          }
+                                                                                 TimingDelay --;
+
+                                                                }                               ** 添加在stm32f10x_it.c **
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                             (55/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.2 SysTick定时器应用实例                                                   实验现象：LED灯精确延迟 1s 循环闪烁。
+
+                   软件代码实现                                       #include "led.h"                       led.c
+                                                                void LED_Init(void)
+             新建systick.h头文件                                     {
+                                                                  GPIO_InitTypeDef GPIO_InitStructure;
+                                                                    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+               新建systick.c文件                                        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+                                                                    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+                                                                    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+                新建main.c文件                                          GPIO_Init(GPIOB, &GPIO_InitStructure);
+                                                                }
+
+              编写中断处理函数
+                                                                              #ifndef __LED_H            led.h
+                                                                              #define __LED_H
+                                                                              #include "stm32f10x.h"
+                                                                              void LED_Init(void);
+            编写LED相关的代码                                                        #endif
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                               (56/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.3 SysTick定时器应用实例
+
+   微秒和毫秒的延时函数 - 方式2
+    内部调用SysTick_Config
+    这个固件库函数
+    systick 的counter 从reload 值往
+    下递减到0 的时候，CTRL 寄存
+    器的位16: countflag 会置1，且
+    读取该位的值可清0，可以使用
+    软件查询的方法来实现延时。
+
+    SystemCoreClock 宏 定 义 为
+    72000000
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (57/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+ 6.3 SysTick定时器应用实例
+
+   微秒和毫秒的延时函数 - 方式3
+    使用SYSTEM文件夹下 delay.c/.h 文件，
+    先调用delay_init()；默认接外部晶振8MHz，
+    初始化将计算出fac_us和fac_ms的值
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (58/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                         void HAL_Delay(uint32_t Delay)
+ 6.4 SysTick定时器HAL应用实例                                                   { uint32_t tickstart = HAL_GetTick();
+                                                                           uint32_t wait = Delay;
+                                                                           /* Add a freq to guarantee minimum wait */
+                 HAL库有一个延时函数                                               if (wait < HAL_MAX_DELAY)
+                 HAL_Delay(uint32_t Delay)，                                { wait += (uint32_t)(uwTickFreq);
+                                                                           }
+                 提供毫秒级的延时                                                  while ((HAL_GetTick() - tickstart) < wait)
+                                                                           { }
+                                                                         }
+                                                                uint32_t HAL_GetTick(void)
+    HAL_Delay( )函数通过调用
+                                                                { return uwTick;
+   HAL_GetTick( )函数，返回uwTick值                                   }
+                                                                __IO uint32_t uwTick;
+   通过单击鼠标右键“Go To
+                                                                __weak void HAL_IncTick(void)
+   Definition of ‘ ’ ”跳转到uwTick                                 { uwTick += uwTickFreq; }
+                                                                #define HAL_MAX_DELAY 0xFFFFFFFFU
+   uwTickFreq的定义：uwTickFreq默
+                                                                HAL_TickFreqTypeDef uwTickFreq= HAL_TICK_FREQ_DEFAULT; /* 1KHz */
+   认为系统的TICK，频率为1kHz                                            HAL_TICK_FREQ_DEFAULT = HAL_TICK_FREQ_1KHZ
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                                (60/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+    ❑ Pointers are the basis for data structures
+
+
+
+
+                                                                Organization of data
+           Abstract data type
+                                                                Functions to facilitate access
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (61/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+    ❑ Finite State Machine (FSM)
+
+
+
+
+     • Use Moore when the output is needed to be IN the state
+     • Use Mealy when the output is needed to CHANGE the state
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (62/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+                                                                • PE1=0, PE0=0 means
+      MCU                                                         no cars exist on either road
+                                                                • PE1=0, PE0=1 means
+                                                                  there are cars on the East road
+                                                                • PE1=1, PE0=0 means
+                                                                  there are cars on the North road
+                                                                • PE1=1, PE0=1 means
+                                                                  there are cars on both roads
+
+             goN,           PB5-0 = 100001 makes it green on North and red on East
+             waitN,         PB5-0 = 100010 makes it yellow on North and red on East
+             goE,           PB5-0 = 001100 makes it red on North and green on East
+             waitE,         PB5-0 = 010100 makes it red on North and yellow on East
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (63/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+
+
+
+
+         State \ Input                      00                  01      10      11
+         goN (100001,30)                    goN                 waitN   goN     waitN
+         waitN (100010,5)                   goE                 goE     goE     goE
+         goE (001100,30)                    goE                 goE     waitE   waitE
+         waitE (010100,5)                   goN                 goN     goN     goN
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (64/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+
+
+
+
+     struct State {                                             struct State {
+      uint32_t Out;                                              uint32_t Out;
+      uint32_t Time;                                             uint32_t Time;
+      uint32_t Next[4];                                          const struct State *Next[4];
+     };                                                         };
+     typedef const struct State State_t;                        typedef const struct State State_t;
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                         (65/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+        State \ Input                        00                 01          10                11
+        goN (100001,30)                      goN                waitN       goN               waitN
+        waitN (100010,5)                     goE                goE         goE               goE
+        goE (001100,30)                      goE                goE         waitE             waitE
+        waitE (010100,5)                     goN                goN         goN               goN
+           #define     goN       0                                 #define     goN       &FSM[0]
+           #define     waitN     1                                 #define     waitN     &FSM[1]
+           #define     goE       2                                 #define     goE       &FSM[2]
+           #define     waitE     3                                 #define     waitE     &FSM[3]
+           State_t FSM[4]={                                        State_t FSM[4]={
+           {0x21,3000, {goN,waitN,goN,waitN}},                     {0x21,3000, {goN,waitN,goN,waitN}},
+           {0x22, 500, {goE,goE,goE,goE}},                         {0x22, 500, {goE,goE,goE,goE}},
+           {0x0C,3000,{goE,goE,waitE,waitE}},                      {0x0C,3000,{goE,goE,waitE,waitE}},
+           {0x14, 500, {goN,goN,goN,goN}}};                        {0x14, 500, {goN,goN,goN,goN}}};
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                            (66/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+    PE1 is input
+    PE2 is output
+    Touch and release cycles
+     10% is 50,450ms
+     30% is 150,350ms
+     50% is 250,250ms
+     70% is 350,150ms
+     90% is 450,50ms
+
+    Start with 50% duty cycle
+
+
+                      0                                                 0
+        High                               Low                   High            Low    What if you
+          1                                 0                     1               0       do push
+                                  0                                         0
+        50ms                              450ms                 250ms           250ms   the button?
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                         (67/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+    PE1 is input
+    PE2 is output
+    Touch and release cycles
+     10% is 50,450ms
+     30% is 150,350ms
+     50% is 250,250ms
+     70% is 350,150ms
+     90% is 450,50ms
+
+    Start with 50% duty cycle
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (68/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+                扩展知识
+                                                                      FSM Engine in C (Pointers)
+             FSM Engine in C (Index)                            State_t *Pt; // state pointer
+  void main(void) {                                             uint32_t Input;
+   uint32_t S;      // state index                              void main(void) {
+   uint32_t Input;
+                                                                    // initialize ports and timer
+      // initialize ports and timer                                 …
+      …
+      S = High30;          // start state                           Pt = High30;       // start state
+      while(1) {                                                    while(1) {
+        GPIO_PORTE_DATA_R = fsm[S].Out;      // set LED               GPIO_PORTE_DATA_R = Pt->Out; // set LED PE2
+        SysTick_Wait1ms(fsm[S].Delay);                                SysTick_Wait1ms(Pt->Time);
+        Input = {GPIO_PORTE_DATA_R&0x02)>>1; // PE1                   Input = {GPIO_PORTE_DATA_R&0x02)>>1; // PE1
+        S = fsm[S].Next[Input];                                       Pt = Pt->Next[Input];
+      }                                                             }
+  }                                                             }
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                       (69/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+       小结
+                                                                    EXTI模块的标准外设
+                            STM32中断和异常                              库接口函数及应用          SysTick定时器
+                            ➢ 中断和异常向量表                              ➢ 接口函数            ➢ SysTick标准
+                            ➢ 中断优先级                                 ➢ 中断配置步骤            外设库函数
+                            ➢ 中断服务程序                                ➢ 应用实例            ➢ 应用实例
+
+
+                     1                     2                    3       4         5        6
+
+      中断的相关概念                                            STM32              EXTI模块的HAL库
+      ➢ 什么是中断？                                           外部中断               接口函数及应用
+      ➢ 为什么使用中断？                                         EXTI               ➢ 接口函数
+      ➢ 中断处理流程                                                              ➢ 应用实例
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (70/88)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+               AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                     (49/100)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+               Q&A
+
+           • PB4 端口作为 EXTI中断的时候该如何配置
+           • PA11 端口作为 EXTI中断的时候该如何配置
+           • 中断配置时为什么要打开AFIO？
+
+           • Systick 的默认时钟来自哪里？
+           • Systick 中断函数在哪里查看？为什么需要定义
+             __IO uint32_t TimingDelay 和 extern __IO uint32_t TimingDelay;
+
+           • 如何配置 void SysTick_Delay_ms(uint32_t ms) 和
+             void SysTick_Delay_us(uint32_t us)
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (71/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+5 EXTI模块的HAL库接口函数及应用                                                  扩展内容
+
+
+                                                                目 录
+
+                                5.1 EXTI的 HAL库接口函数
+
+                                              5.2 EXTI的HAL库应用实例
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (72/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                  EXTI的HAL库接口函数的源码定义在
+ 5.1 EXTI的HAL库接口函数                                              stm32f1xx_hal_exti.c源文件中，其对应的头文件
+                                                                stm32f1xx_hal_exti.h声明了EXTI所有的库函数
+           类型                                  函数及功能描述
+             HAL_EXTI_SetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig);
+             功能描述：设置外部中断EXTI的外部中断线路
+             HAL_EXTI_GetConfigLine(EXTI_HandleTypeDef *hexti, EXTI_ConfigTypeDef *pExtiConfig);
+             功能描述：获取已配置好的外部中断EXTI的外部中断线路
+        配置函数
+             HAL_StatusTypeDef HAL_EXTI_ClearConfigLine(EXTI_HandleTypeDef *hexti);
+             功能描述：将已设置好的外部中断线路清除
+             HAL_EXTI_GetHandle(EXTI_HandleTypeDef *hexti, uint32_t ExtiLine);
+             功能描述：获取EXTI的句柄
+             void HAL_EXTI_IRQHandler(EXTI_HandleTypeDef *hexti);
+             功能描述：外部中断EXTI的中断处理函数
+             uint32_t HAL_EXTI_GetPending(EXTI_HandleTypeDef *hexti, uint32_t Edge);
+        引脚功能 功能描述：获取被挂起的外部中断线/事件线
+        操作函数 void HAL_EXTI_ClearPending(EXTI_HandleTypeDef *hexti, uint32_t Edge);
+             功能描述：清除被挂起的外部中断/事件线
+             void HAL_EXTI_GenerateSWI(EXTI_HandleTypeDef *hexti);
+             功能描述：产生一个软件中断
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                      (73/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  5.2 EXTI的HAL库应用实例
+
+                                                         硬件设计
+                                                                 +3.3V
+          功能                                                                          STM32F103
+                                                                                                                      +3.3V
+
+
+                        采用基于                                             WAKE_UP                        LED3   R1
+
+                                                                                PA0               PB5          470Ω
+                  HAL库设计方式，                                                S2                           LED2   R2
+
+                  通过两个按键                                                        PE3               PE5          470Ω
+
+
+
+                  分别控制两个
+                  LED灯状态翻转。
+                                                                 按键WAKE_UP连接在STM32F103的PA0
+                                                                引脚上，按下时PA0为高电平，按键S2连
+                                                                接在STM32F103的PE3引脚上。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                                 (74/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  5.2 EXTI的HAL库应用实例                                              软件设计流程
+
+
+
+               新建
+                                          STM32Cube
+            STM32Cube                                           生成工       编写应     下载调
+                                           MX功能参
+             MX工程，                                              程代码       用程序     试验证
+                                            数配置
+             选择MCU
+
+
+
+
+                              RCC和                      MCU      GPIO引脚    配置外部
+                             时钟配置                      引脚选择      参数配置      中断参数
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (75/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——STM32CubeMX配置
+                                                                            RCC配置
+   目录下新建一个文件夹，用来存放后面建立的                                         HSE选择“Crystal/Ceramic Resonator”
+ STM32CubeMX工程。工程文件名最好是英文名称，                                    （晶振/陶瓷谐振器），
+ 且最好是英文路径。这里采用STM32F103ZET6芯片。                                  LSE选择“Disable”
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                      (77/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——STM32CubeMX功能参数配置
+                       MCU引脚选择                                       GPIO引脚参数配置
+   ➢ LED2连接在PE5引脚上，LED3连接在PB5引脚上，设置                             ➢ 在“GPIO”参数配置中设置PA0为上升沿触发；
+     为GPIO_Output；设置PA0为GPIO_EXTI0外部中断线作                        ➢ PE3的“GPIO mode”设置为下降沿触发，添加
+     为WAKE_UP按键使用，用于控制LED3灯闪烁；                                    用户标签S2。
+   ➢ 设置PE3为GPIO_EXTI3作为按键S2使用，                                  ➢ PB5和PE5两个LED灯设置为推挽输出，分别添
+     用于控制LED2灯闪烁。                                                 加用户标签为LED2和LED3。
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (78/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——STM32CubeMX功能参数配置
+                           时钟配置                                        配置外部中断参数
+                                                                ➢ 在“NVIC”选项页中，设置“Priority Group”进
+       通过图形化方式直观对系统时钟进行配置，                                        行优先级分组；
+     系统时钟采用外部高速时钟，配置STM32F103                                   ➢ 勾选“EXIT_Line0 interrupt”使能PA0外部中断
+                                                                  线；
+     系列芯片最大时钟为72MHz，配置APB2为
+                                                                ➢ 类似地，勾选“EXTI_Line3 interrupt”使能PE3
+     72MHz，配置APB1为36MHz。                                          外部中断线。
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                         (80/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+                                                                  在“Code Generator”选项栏中找到“Generated files”
+  软件设计——生成工程代码                                                  框，勾选“Generate peripheral initialization as a pair
+                                                                of ’.c/.h’ files per IP”，将外设初始化的代码设置生成为
+                                                                独立的.c源文件和.h头文件。
+
+         配置keil工程名称和存放位置
+        定义“Project Name”为“MyProject_EXTI”，
+        “Toolchain/IDE”选择“MDK-ARM V5”；
+
+
+
+
+                                                                   点击“Generate Code”生成工程代码，生成
+                                                                    代码后，会提示是否打开该工程窗口
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                       (82/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——编写应用程序
+
+        ◆ 在keil 中单击编译按钮，对
+          生成的工程进行编译；
+        ◆ 在stm32f1xx_it.c文件中可以
+          找到所定义的中断函数；
+        ◆ 外部的两个按键中断触发后，
+          首先会调用GPIO相应引脚的
+              外部中断处理函数。
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (84/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——编写应用程序                                                   /* USER CODE BEGIN 4 */
+                                                                 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+                                                                 {
+                                                                    if(GPIO_Pin == GPIO_PIN_3)
+                                                                    {
+                                                                      HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_5);
+                                                                    }
+                                                                   if(GPIO_Pin == GPIO_PIN_0)
+                                                                   {
+                                                                       HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+                                                                   }
+   ◆ 比如用户按键S2连接在                                                 }
+     PE3引脚上会触发外部中断EXTI3的中                                        /* USER CODE END 4 */
+
+     断处理程序 EXTI3_IRQHandler(void)，                              ◆ 当中断发生时，会调用HAL_GPIO_EXTI_Callback()
+     而这个函数又调用                                                     函数，但程序中只给出了一个虚函数，需要用
+     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3)                         户添加应用程序代码来实现相关功能。
+     函数，参数为GPIO_PIN_3，即EXTI3中                                   ◆ 在main.c文件中的
+     断。单击右键跳转到这个函数，可以                                             /*USER CODE BEGIN 4*/和/*USER CODE END 4*/
+     看到该函数的原型。                                                    之间添加中断回调函数相应的程序代码。
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                                          (85/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+  软件设计——下载调试验证
+
+
+                                                           通过ST-LINK
+                                                           仿真器或其
+         应用程序                                              它下载器下            可以看到，
+         编写完毕                                              载到目标板
+                                                                            按下相应的按键，
+                                                                            其对应的LED灯
+                              重新编译一下                                        的状态会发生
+                                                                       进行
+                              工程，生成工                                   验证   改变。
+                              程hex文件
+
+
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (87/88)
+Progress: 中断相关概念 >> STM32中断和异常 >> 外部中断EXTI >> EXTI模块 标准外设库 >> SysTick定时器 >> 小结 >> EXTI模块 HAL库
+
+
+
+            STM32
+
+
+
+
+                                                                The   End!
+
+
+EE114 Embedded System -> Lecture 14 STM32 Interrupt & SysTick                                   (88/88)
+

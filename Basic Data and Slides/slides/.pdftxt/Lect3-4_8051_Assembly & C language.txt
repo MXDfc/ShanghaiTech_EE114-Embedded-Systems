@@ -1,0 +1,2978 @@
+                                    EE114: Introduction to
+                                     Embedded Systems
+                   Dr. Tao Wu           吴涛 研究员，博导
+                   wutao@shanghaitech.edu.cn
+                   Office: SIST Bldg 3-326
+                   CourseWeb: http://10.15.25.5/
+                   Website: http://small.shanghaitech.edu.cn
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+                                                            目标 Objective
+                                                                                  • (A51) 拆字程序 & 符号函数程序
+                                                                                  • n 字节求补程序 & 内外RAM数据传递
+  • 理解
+                                                                                  • 片内RAM 10个数据排序
+  • 8051汇编指令、寻址方式                                                                 • 练习：20ms 延时程序
+   与 存储空间 的关联                                                                     • 练习：ASCII码 转换为4位二进制数
+  • 8051 汇编编程要点                                                                   • (C51) 2000H-20FFH 的内容清零
+  • 8051 C51编程要点                                                                  • C51 与 A51 延时比较
+                                                                                  • 按键控制 LED （C51 I/O输入输出）
+  • 课件和Demo的范例程序
+                                                                                  • Display: Programming LCD16x2
+  • 完成 练习和测验                                                                      • Input: 4x4 Keypad interfacing
+                                                                                  • 测验 Testing
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (2/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Lecture #3: Assembly & C language
+  • What you will learn:                                                          • Inside CPU/Memory are all “0/1”s
+     – How to use assembly language to run the                                    • How does “0/1” work ?
+       computer / MCU
+     – The relation among
+       different level computer languages
+     – 8051 instruction categories
+     – Program pointer, data pointer, stack, etc.
+     – The processes from compiling to assembling
+     – Programing with C51
+     – The C51 data types and their
+       correspondence in A51
+                                                                                                 The first 8051 chip by Intel in 1980
+     – The C51 routines (functions) and their
+       correspondence in A51
+                                                                                                          (Figures are from internet)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (3/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  How to get your computer (a larger logic circuits) work?
+
+   Different levels of representation / interpretation
+
+
+
+
+                                                                                                       (Figures are from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (4/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Scripting Language
+  • Micropython Example                                                           • Arduino Example
+  from machine import Pin, I2C                                                    #include <Servo.h>
+                                                                                  Servo myservo; // create servo object
+  import ssd1306                                                                  int pos = 0;     // variable to store the servo
+                                                                                  position
+  # ESP32 Pin assignment                                                          void setup() {
+  i2c = I2C(0, scl=Pin(22), sda=Pin(21))                                            myservo.attach(9); // attaches the servo on pin
+                                                                                  9
+  oled_width = 128                                                                }
+                                                                                  void loop() {
+  oled_height = 64                                                                  for (pos = 0; pos <= 180; pos += 1) {
+  oled = ssd1306.SSD1306_I2C(oled_width,                                              // goes from 0 degrees to 180 degrees
+  oled_height, i2c)                                                                   // in steps of 1 degree
+                                                                                      myservo.write(pos);
+  oled.text('Hello, World!', 10, 10)                                                  // tell servo to go to position 'pos'
+                                                                                      delay(15);             // waits 15ms
+  oled.show()                                                                       }
+                                                                                    for (pos = 180; pos >= 0; pos -= 1) {
+                                                                                      // goes from 180 degrees to 0 degrees
+                                                                                      myservo.write(pos);
+                                                                                      // tell servo to go to position 'pos'
+                                                                                      delay(15);             // waits 15ms
+   esp32-micropython-ssd1306                                                        }
+   - Wokwi Arduino and ESP32 Simulator                                            }         Sweep - Wokwi Arduino simulator
+   https://wokwi.com/projects/305568836183130690                                               https://wokwi.com/arduino/libraries/Servo/Sweep
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (5/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Assembly language 汇编语言
+  • The computer’s vocabulary is called the instruction set (指令集)
+  • Instructions in a symbolic format called assembly language
+  • Ingredients of an assembly language
+     – Assembly-language syntax example:                                                       Destination
+                                                                                                operand
+                                                        Mnemonics                              目标操作数
+                                                         助记符                                                      Source
+                                                                                                                  operand
+                                                                                                                  源操作数
+                                              Label: ADD A, Rn
+                                                                         指令字节数
+                                                                         指令机器周期数
+                                                                                                                    指令
+                                                                                                                   操作码
+
+                                                                                                              (Atmel 8051 Manual)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (6/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Assembly language example
+                                   The compiling result (.lst file in the Listings folder)
+                       LOC         OBJ              LINE                SOURCE
+                       0000                         1                  ORG 0H                    ; PC   start from 0H                Directive
+                       0000        7D25             2                  MOV R5, #25H              ; R5<- 25H                           伪指令
+                       0002        7F34             3                  MOV R7, #34H              ; R7<- 34H                          （并不生成
+                       0004        7400             4                  MOV A, #0                 ; A<- 0                             实际代码）
+                       0006        2D               5                  ADD A, R5                 ; A<- R5    (A=A+R5)
+                       0007        2F               6                  ADD A, R7                 ; A<- R7    (A=A+R7)
+                       0008        2412             7                  ADD A, #12H               ; A<- 12H (A=A+12H)
+                       000A        80FE             8           HERE:SJMP HERE                   ; jump to the label of "loop"
+                                                    9                  END
+                    ROM           Machine                             Assembly
+                    Address       Code                                Language
+
+                                         myfile.asm                      myfile.obj                        myfile.abs
+                       Complier                         Assembler                              Linker                    Loader
+
+
+                                                        myfile.list                  Other obj files                    myfile.hex
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (7/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  .hex files
+  • Intel HEX is a file format that conveys binary information in ASCII text
+    form. It is commonly used for programming microcontrollers, EPROMs, and
+    other types of programmable logic devices.
+
+                               .lst file
+               LOC OBJ            LINE      SOURCE
+               0000                 1       org 0000H                                                    00 data
+                                                                                                         01 EOF
+               0000 740A            2      mov A, #10
+                                                                                 .hex file
+               0002 240A            3      add A, #10
+                                                                                :06000000740A240A80FED0
+               0004 80FE            4      sjmp $
+                                                                                :04010000741480FEF5
+                                    5
+                                                                                :00000001FF
+               0100                 6       org 0100H
+               0100 7414            7       mov A, #20
+               0102 80FE            8      sjmp $                                          (https://en.wikipedia.org/wiki/Intel_HEX)
+                                    9       end
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (8/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Processor Datapath (example)
+
+                                                                               Memory          Register
+                           Fetch            Decode           Execute                            write
+                                                                                Acess            back
+
+
+
+
+        Program status word (PSW)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (9/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  General-purpose and SFRs                                                         Black: byte addressable; Red: bit addressable
+                          F8h-FFh    (F8h-FFh)
+                          F0h-F7H   B (F0h-F7H)
+                          E8h-EFh    (E8h-EFh)
+                          E0h-E7h ACC (E0h-E7h)
+                          D8h-DFh   (D8h-DFh)
+                          D0h-D7h PSW (D0h-D7h)
+                          C8h-CFh    (C8h-CFh)
+                          C0h-C7h    (C0h-C7h)                                                                                  128
+                          B8h-BFh IP (B8h-BFh)                                                                                  SFR
+                          B0h-B7h P3 (B0h-B7h)
+                          A8h-AFh IE (A8h-AFh)
+                          A0h-A7h P2 (A0h-A7h)
+                          98h-9Fh SCON (98h-9Fh)    SBUF
+                          90h-97h  P1 (90h-97h)
+                          88h-8Fh TCON (88h-8Fh)   TMOD       TL0       TL1        TH0          TH1
+                          80h-87h  P0 (80h-87h)     SP        DPL       DPH                                        PCON
+
+
+
+
+                                                                                                                                 80
+                           30h-7Fh                            General-purpose                                                  General
+                                                                                                                              purpose
+                                                                                                                              registers
+
+
+                                                                registers (GPR)
+                                      40h-47h      48h-4Fh   50h-57h   58h-5Fh   60h-67h       68h-6Fh   70h-77h   78h-7Fh     16 bit-
+                           20h-2Fh
+                                      00h-07h       08-0Fh   10h-17h   18h-1Fh   20h-27h        28-2Fh   30h-37h   38h-3Fh   addressable
+                           18h-1Fh      R0            R1       R2        R3        R4             R5       R6        R7        Bank 3
+                           10h-17h      R0            R1       R2        R3        R4             R5       R6        R7        Bank 2
+                           08h-0Fh      R0            R1       R2        R3        R4             R5       R6        R7        Bank 1
+                           00h-07h      R0            R1       R2        R3        R4             R5       R6        R7        Bank 0
+
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (10/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  System clock and instruction cycle (8051)
+                                                                                  • 每个机器周期由6个状态周期组成，每个状态周期由2个
+                                                                                    振荡周期组成，状态周期即S1、S2、S3、S4、S5、S6，
+                                                                                    而每个状态周期由两个节拍Pl，P2组成。所以一个机器
+                                                                                    周期可依次表示为S1P1、S1P2、S2P1、S2P2……S6P1、
+                                                                                    S6P2共12个振荡周期。
+                                                                                  • 一般情况下，算术逻辑操作发生在节拍P1期间，而内部
+                                                                                    寄存器之间的传送发生在节拍P2期间，这些内部时钟信
+                                                                                    号无法从外部观察，故用XTAL2振荡信号作参考，而
+                                                                                    ALE可作为外部工作状态指示信号用，还可以XTAL2和
+                                                                                    ALE用于外部定时。
+                                                                                  • 在一个机器周期中通常出现两次ALE信号：一次在S1P2
+                                                                                    与S2P1期间，另一次在S4P2与S5P1期间。由ALE信号
+                                                                                    控制从ROM中取两次操作码，读入指令寄存器，指令周
+                                                                                    期的执行开始于S1P2时刻，而总是结束于S6P2时刻。
+                                                                                  • MCS-51的指令周期一般只有1～2个机器周期，只有乘、
+                                                                                    除两条指令占4个机器周期，当用12MHz晶体作振荡频
+                                                                                    率时，执行一条指令的时间，也就是一个指令周期为1µs
+                                                                                    （这样的指令约占全部指令的一半）、2µs及4µs。振荡
+                                                                                    频率越高，指令执行速度越快。
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (11/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  System clock and instruction cycle (8051)
+                                               Timing: Opcode, Encoding, Data, Byte, Cycle
+
+
+
+
+                                                                                        (Atmel 8051 Microcontrollers Hardware Manual)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (12/88)
+                          8051 Addressing modes
+                                                    寻址方式
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Memory architecture and pointers
+                                                                                                            每一条指令都有
+                                                                                                            特定的寻址方式
+
+            •   PC: Program Counter (16 bits)                                       •   #data: Constant data (8 or 16 bits)
+            •   SP: Stack Pointer (8 bits)                                          •   xxH : address in hex
+            •   DPTR: Data Pointer (16 bits)                                        •   Byte addressable addr.
+            •   Ri (i=0,1): Data Pointer (8 bits)                                   •   Bit addressable addr.
+
+
+
+                                                                                                                      每一款单片机
+                                                                                                                      的存储空间都
+                                                                                                                      需要牢记于心
+                                 PC                                    DPTR                    DPTR
+                                                  SP
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (14/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (15/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+  1. Register Direct Addressing Mode
+  • 寄存器直接寻址
+
+     MOV A, R4
+
+
+
+
+                         E0H
+
+
+
+
+                                                                                                          (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (16/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (17/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+  2. Direct Addressing Mode
+  • 直接寻址
+    MOV A, 04H
+
+
+
+
+                                                                    E0H
+
+
+
+
+                                                                                                         (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (18/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                   (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (19/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+  3. Register Indirect Addressing Mode
+  • 寄存器间接寻址
+
+     MOV A, @R0                      Only R0, R1, DPTR
+
+
+
+
+                                                                                                          (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (20/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                     (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (21/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+                                                                                    把操作数（即立即数）包含在指令字节中。
+  4. Immediate Addressing Mode (IMM)                                                在指令格式中，在立即数前冠以符号
+                      Compare with
+                                                                                    “#”表示立即寻址方式。
+  • 立即寻址
+                                      Direct Addressing Mode
+
+   MOV A, #6AH                                MOV A, 04H
+
+
+
+
+                                                                  Acc
+
+
+
+
+                                                                                                         (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (22/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                    (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (23/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+  5. Indexed Addressing Mode
+  • 基址+变址寻址
+
+     MOVC A, @A+DPTR
+
+
+
+
+                                                                                                         (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (24/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                     (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (25/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes - example
+  6. Relative Addressing Mode                                                     • Conditional jumps
+  • 相对寻址
+
+              JC 70H                   If 𝐶 = 1 then
+
+
+
+
+                                                                                                         (Figures are from internet)
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (26/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing modes                                                                                           (Atmel 8051 Manual)
+
+
+
+
+                     中文对照
+
+
+
+
+                                                                                                                    (DS Textbook)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (27/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Bit Addressing Mode
+  1. 位寻址的寻址范围
+  • 内部RAM中的 20H-2FH 字节地址范围，共128位，
+    位地址为 00H-7FH。
+  • 特殊功能寄存器的可寻址位。可位寻址的特殊功能寄存器有
+    B、ACC、PSW、IP、IE、SCON、TCON、P0~P3，共11个。
+  • PSW中的CY作为位累加器。
+
+  2. 位寻址方式
+                                 MOV C, ??
+  • 位寻址方式使用直接寻址方式，有下列表示形式：
+  • 直接地址方式: 在指令中直接给出位地址。         MOV C，0D2H
+                                 MOV C，PSW.2
+  • 点操作符方式: 在字节地址或寄存器名与位序号之间加一个点。MOV C，0D0H.2
+  • 位名称方式: 直接给出寄存器的位名称。          MOV C，OV
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (28/88)
+                               Fundamentals of Assembly
+                               Language & Instruction Set
+                                 8051 汇编指令集 (A51)
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  8051 Instruction Set                                                                             By opcode length
+  Five categories of instructions                                                 • 1. single byte (49)
+     – Data transfer                              数据传送指令 (28)                        – NOP                       opcode 0000 0000
+                                                                                     – MOV A, R1                 opcode 1110 1001
+     – Arithmetic operations                       算术运算指令
+       (24)                                                                       • 2. double bytes (46)
+                                                                                     – MOV A, #40H               opcode 0111 0100 (74H)
+     – Logical operations                          逻辑运算指令                            –                        imm data 0100 0000 (40H)
+       (25)
+                                                                                  • 3. triple bytes (16)
+     – Program branching                          控制跳转指令 (17)                        – MOV 20H, #3AH             opcode 0111 0101 (75H)
+
+     – Boolean variable manipulation                    位操作指令                        –                          op addr 0010 0000 (20H)
+       (17)                                                                          –                          imm data 0011 1010 (3AH)
+                                                                                     – MOV DPTR，#1000H opcode 1001 0000 (90H)
+  Totally 111 instructions
+                                                                                     –              opdata High addr 0001 0000 (10H)
+                                                                                     –              opdata Low addr 0000 0000 (00H)
+      Refer to the Atmel 8051 Microcontrollers
+                  Hardware Manual
+                  for detailed information
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (30/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  51单片机汇编指令集一
+  • 数据传送类指令（7种助记符）                                                                • 算术运算类指令（8种助记符）
+     – MOV（英文为Move）                                                                  – ADD(Addition) 加法；
+       对内部RAM和特殊功能寄存器SFR的数据进行传送；
+                                                                                     – ADDC(Add with Carry) 带进位加法；
+     – MOVC（Move Code）
+                                                                                     – SUBB(Subtract with Borrow) 带借位减法；
+       读取程序存储器数据表格的数据传送；
+                                                                                     – DA(Decimal Adjust) 十进制调整；
+     – MOVX (Move External RAM)
+       对外部RAM的数据传送；                                                                  – INC(Increment) 加1；
+
+     – XCH (Exchange) 字节交换；                                                          – DEC(Decrement) 减1；
+
+     – XCHD (Exchange low-order Digit)                                               – MUL(Multiplication、Multiply) 乘法；
+       低半字节交换；
+                                                                                     – DIV(Division、Divide) 除法；
+     – PUSH (Push onto Stack) 入栈；
+
+     – POP       (Pop from Stack) 出栈；                                         有疑问请查询官方手册
+                                                                              https://www.keil.com/products/C51/
+                                                                              https://www.win.tue.nl/~aeb/comp/8051/set8051.html
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (31/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  51单片机汇编指令集二
+  • 控制转移类指令（17种助记符）                                                               • 控制转移类指令（17种助记符）
+     – ACALL（Absolute subroutine Call）                                               – JZ (Jump if Zero) 结果为０则转移；
+       子程序绝对调用；
+                                                                                     – JNZ (Jump if Not Zero) 结果不为０则转移；
+     – LCALL（Long subroutine Call）子程序长调用；
+                                                                                     – JC (Jump if the Carry flag is set)
+     – RET（Return from subroutine）子程序返回；                                               有进位则转移；
+
+     – RETI（Return from Interruption）中断返回；                                           – JNC (Jump if Not Carry) 无进位则转移；
+
+     – SJMP（Short Jump）短转移；                                                          – JB (Jump if the Bit is set) 位为１则转移；
+
+     – AJMP（Absolute Jump）绝对转移；                                                      – JNB (Jump if the Bit is Not set)
+                                                                                       位为０则转移；
+     – LJMP（Long Jump）长转移；
+                                                                                     – JBC (Jump if the Bit is set and Clear the
+     – CJNE (Compare Jump if Not Equal)
+                                                                                       bit) 位为１则转移，并清除该位；
+       比较不相等则转移；
+                                                                                     – NOP (No Operation) 空操作；
+     – DJNZ (Decrement Jump if Not Zero)
+       减１后不为０则转移
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (32/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  51单片机汇编指令集三                                                                     • 位操作指令（1种助记符）
+  • 逻辑运算类指令（10种助记符）                                                                  – CLR     位清零；
+     – ANL(AND Logic) 逻辑与；                                                           – SETB (Set Bit) 位 置１
+     – ORL(OR Logic) 逻辑或；
+
+     – XRL(Exclusive-OR Logic) 逻辑异或；
+
+     – CLR(Clear) 清零；
+
+     – CPL(Complement) 取反；
+
+     – RL(Rotate left) 循环左移；
+
+     – RLC(Rotate Left throught the Carry flag) 带进位循
+       环左移；
+
+     – RR(Rotate Right) 循环右移；
+
+     – RRC (Rotate Right throught the Carry flag) 带进位
+       循环右移；
+
+     – SWAP (Swap) 低4位与高4位交换；；
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (33/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Data transfer that access internal data memory
+  space 数据传送指令 (内部，片内RAM)
+
+
+
+
+                                                                                                 9          0
+
+
+
+
+                                                                                                     DPTR: 16 bits data pointer
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (34/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Data transfer that access external data memory
+  space 数据传送指令 (外部，片外RAM)
+
+
+
+
+                                                E            0                                         F                 2 or 3
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (35/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Lookup table read instructions (only 2 instructions)
+  数据查表指令 (程序ROM，硬件接线设置内/外ROM)
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (36/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  8051 典型取指时序                                              外部ROM                  执行MOVC 指令码时的总线周期 (外部ROM)
+                                                   MOVC A，@A+DPTR
+
+
+
+
+                                                                                  执行MOVX 指令码时的总线周期 (外部RAM)
+
+
+
+                                                         外部RAM
+
+                                                       MOVX A，@Ri
+                                                       MOVX A，@DPTR
+                                                       MOVX @Ri， A
+                                                       MOVX @DPTR，A
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (37/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Arithmetic operations 算术运算指令
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (38/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Logic operations 逻辑运算指令
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (39/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Unconditional jumps
+
+                              • LJMP addr16 (16 bits address)
+                              • AJMP addr11 (11 bits address)
+                              • SJMP rel (8 bits relative address)
+
+
+
+
+                               • LCALL addr16 (16 bits address)
+                               • ACALL addr11 (11 bits address)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (40/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Conditional jumps
+
+
+
+
+                                        https://www.keil.com/support/man/docs/is51/is51_instructions.htm
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (41/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Boolean instructions 位操作指令
+  (17 instructions)
+
+
+
+
+                                                                                          (Atmel 8051 Microcontrollers Hardware Manual)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (42/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Test
+  ✓下列指令为若P1口最低位为高电平就转                                                             ✓比较下面相对偏移指令
+   LP，否则执行下一句的是（ ）。
+
+
+  • A. JNZ P1.0, LP                                                            指令                            机器指令编码
+                                                                               CJNE A, direct，rel            10110101       直接地址           相对地址
+  • B. JB P1.0, LP                                                                                           10110100       立即数            相对地址
+                                                                               CJNE A, ＃data，rel
+  • C. JNB P1.0, LP                                                            CJNE Rn,＃data，rel             10111rrr       立即数            相对地址
+                                                                               CJNE @Ri,＃data，rel 10110111                  立即数            相对地址
+  • D. JC P1.0, LP
+
+
+                                                                               https://www.keil.com/support/man/docs/is51/is51_cjne.htm
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (43/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Table of all instructions
+                                    https://www.win.tue.nl/~aeb/comp/8051/set8051.html
+                            0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f
+
+                     0x00 NOP      AJMP LJMP RR        INC    INC    INC    INC    INC    INC   INC   INC   INC     INC    INC   INC
+
+                     0x10 JBC      ACALL LCALL RRC     DEC    DEC    DEC    DEC    DEC    DEC   DEC   DEC   DEC     DEC    DEC   DEC
+
+                     0x20 JB       AJMP RET     RL     ADD    ADD    ADD    ADD    ADD    ADD   ADD   ADD   ADD     ADD    ADD   ADD
+
+                     0x30 JNB      ACALL RETI   RLC    ADDC ADDC ADDC ADDC ADDC ADDC ADDC ADDC ADDC ADDC ADDC ADDC
+
+                     0x40 JC       AJMP ORL     ORL    ORL    ORL    ORL    ORL    ORL    ORL   ORL   ORL   ORL     ORL    ORL   ORL
+
+                     0x50 JNC      ACALL ANL    ANL    ANL    ANL    ANL    ANL    ANL    ANL   ANL   ANL   ANL     ANL    ANL   ANL
+
+                     0x60 JZ       AJMP XRL     XRL    XRL    XRL    XRL    XRL    XRL    XRL   XRL   XRL   XRL     XRL    XRL   XRL
+
+                     0x70 JNZ      ACALL ORL    JMP    MOV    MOV    MOV    MOV    MOV    MOV   MOV   MOV   MOV     MOV    MOV   MOV
+
+                     0x80 SJMP AJMP ANL         MOVC DIV      MOV    MOV    MOV    MOV    MOV   MOV   MOV   MOV     MOV    MOV   MOV
+
+                     0x90 MOV ACALL MOV MOVC SUBB SUBB SUBB SUBB SUBB SUBB SUBB SUBB SUBB SUBB SUBB SUBB
+                     0xa0 ORL      AJMP MOV     INC    MUL    ?      MOV    MOV    MOV    MOV   MOV   MOV   MOV     MOV    MOV   MOV
+
+                     0xb0 ANL      ACALL CPL    CPL    CJNE CJNE CJNE CJNE CJNE CJNE CJNE CJNE CJNE CJNE CJNE CJNE
+
+                     0xc0 PUSH AJMP CLR         CLR    SWAP XCH      XCH    XCH    XCH    XCH   XCH   XCH   XCH     XCH    XCH   XCH
+
+                     0xd0 POP      ACALL SETB SETB DA         DJNZ XCHD XCHD DJNZ DJNZ DJNZ DJNZ DJNZ DJNZ DJNZ DJNZ
+
+                     0xe0 MOVX AJMP MOVX MOVX CLR             MOV    MOV    MOV    MOV    MOV   MOV   MOV   MOV     MOV    MOV   MOV
+
+                     0xf0   MOVX ACALL MOVX MOVX CPL          MOV    MOV    MOV    MOV    MOV   MOV   MOV   MOV     MOV    MOV   MOV
+
+                                                                                                                  (Atmel 8051 Manual)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (44/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  How to represent negative number using binary?
+     Two‘s complement (二进制补码) is a mathematical operation on binary numbers,
+     as well as a binary signed number representation based on this operation.
+
+
+
+
+                                                                                                                练习： 十进制整数+97和-97：
+                                                                                                                +97原码 = 0110_0001b
+                                                                                                                +97补码 = 0110_0001b
+                                                                                                                -97原码 = 1110_0001b
+                                                                                                                -97补码 = 1001_1111b
+
+
+     整数的补码：
+     正数的补码 = 原码
+     负数的补码 = {原码符号位不变} + {数值位按位取反后+1}
+         or = {原码符号位不变} + {数值位从右边数第一个1及其右边的0保持不变,左边按位取反}
+                                                                                                                               (Figures are from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                   (45/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Examples
+  ➢拆字程序:                                                                          ➢符号函数程序:
+  • 将内部RAM 50H单元中一个8位 二进制数拆开，                                                     • 设其中x的值存于35H单元，
+    分成两个4位数，高4位存入61H单元，低4位存                                                         y值存于36H单元，编程求解此函数。
+    入60H单元，60H/61H单元的高4位清0。                                                       • 1～7FH为正数；80H～0FFH为负数。
+
+              ORG 8000H                                                                    ORG 8000H
+  CZCX:       MOV R0，#50H ;设源数据指针为R0                                              FHHS: MOV A，35H                ; 取数
+                                                                                           CJNE A，#0，NEQ0        ;≠0转移
+              MOV R1，#60H ;设目的数据指针为R1
+                                                                                           MOV A，#00H            ; (A)=0
+              MOV A，@R0 ;取要拆的数
+                                                                                           SJMP OK               ; 跳转
+              ANL A，#0FH ;高4位清零，拆出低4位                                             NEQ0: CJNE A，#7FH，ISPN
+              MOV @R1，A   ;存低4位                                                      ; (A)不等于7FH转移；如果(A)<7FH，则C=1，否则C=0
+              INC R1      ;调整目的地址指针                                                        SJMP GT0    ; 7FH为正数
+              MOV A，@R0 ;重新取数                                                     ISPN: JNC LT0        ; (A)>7FH 为负数
+              ANL A，#0F0H ;低4位清零，拆出高4位                                            GT0:     MOV A，#01H ; (A)=1
+                                                                                           SJMP OK
+              SWAP A      ;移到低4位
+                                                                                  LT0:     MOV A，#0FFH ; (A)=-1 补码
+              MOV @R1，A    ;存结果
+                                                                                  OK:      MOV 36H，A   ; 存结果
+                                                                                           SJMP $
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (46/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Practice
+  ➢ n 字节求补 子程序                                                                    ➢将内部数据 RAM 中20H～3FH 单元的
+                                                                                   内容传送到外部数据存储RAM 以2000H
+     ; 子程序名称：QUBU
+                                                                                   开始的连续单元中去。
+     ; 入口参数：（R0）= 求补数低字节指针
+            （R7）= n-1 字节
+     ; 出口参数：（R0）= 求补后的高字节指针
+     ; 使用寄存器：R0、R7                                                                START: MOV R0，#20H             ; 设置R0 首地址
+                                                                循环按位
+                                                                                               MOV DPTR，#2000H
+  QUBU: MOV A，@R0     ；取低字节数                                    取反后+1                                       ; 设置外部RAM 首地址
+        CPL A         ；取反                                      要累加进位
+                                                                                               MOV R1，#32        ; 设R1 为计数器
+        ADD A，#01H    ；加1
+        MOV @R0，A ；取补后送回                                                          LOOP:        MOV A，@R0         ; 取内部RAM 数
+  NEXT: INC R0        ；调整数据指针                                                                  MOVX @DPTR，A ; 送外部RAM
+        MOV A，@R0 ；取下一个字节       如何传递
+                                   进位                                                          INC R0            ; 指向下一个数据
+        CPL A         ；取反
+        ADDC A，#0     ；加上低位的进位                                                                 INC DPTR          ; 调整外部RAM 指针
+        MOV @R0，A ；取补后送回                                                                       DJNZ R1，LOOP      ; 未完继续，循环R1次数
+        DJNZ R7，NEXT                                                                           SJMP $            ; 暂停
+               ; R7 为主程序传递的参数，即n-1
+        RET
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (47/88)
+                                    Writing Assembly program
+                                                            汇编程序实践
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Assembly language
+  • Directive 伪指令
+     – ORG 定位 (program memory)
+     – END 汇编结束
+     – EQU 赋值
+     – DB 定义字节 (1 byte = 8 bits)
+     – DW 定义字 (1 word = 16 bits)
+     – “ $ ” 当前行
+     – “ # ” direct number 立即数
+     – “ ; ” 注释
+     – “ , ” 分割操作数
+     – xxx: 代替行号，用于跳转
+     – DS 定义存储区
+     – BIT 位定义 HULED BIT P1.0
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (49/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Basic flow control structures
+                                                                                                            流程图是指用各种图形、符号、
+                                                                                                            指向线等来说明程序设计的过程。
+
+
+
+
+                                                             How to form the limited loop and
+    An endless loop example:                                 conditional structure with the jumps
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (50/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Assembly language
+  • Program structures
+     – Sequential structure
+       顺序
+     – Branch structure 跳转
+        ▪ Using JMP, CJNE, DJNZ, etc.
+
+     – Loop structure 循环
+        ▪ Using JZ, JNZ, etc.
+
+     – Subroutine (function)
+       函数
+        ▪ Using CALL, RET, etc.
+        ▪ Use the stack for transferring data
+          among functions, e.g., PUSH, POP
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (51/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  8051 Stacks
+  • The Stack Pointer (SP) is 8 bits.                                             • Take effects with the following
+  • It is incremented before data is stored                                         functions
+    during PUSH and CALL executions. While
+                                                                                     – ACALL, LCALL
+    the stack may reside anywhere in on-chip                                                                                  子程序绝对调用
+    RAM, the
+  • Stack Pointer is initialized to 07H after a
+    reset -> the stack begins at location 08H.
+
+
+                                                                                     – RET, RETI
+                                                                                                                                子程序返回
+
+
+
+
+                                                                                     – PUSH, POP
+                                                                                                                                   入栈
+
+                       Last in, first out
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (52/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  A51 Example
+  ➢ 排序: 把片内RAM中地址40H～49H中的10个
+       无符号数逐一比较，并按从小到大的顺序依次                                                       下面程序实现了什么功能？
+       排列在这片单元中。                                                                         ORG 00H
+                                                                                         MOV R0, #40H                        ; 置数据指针
+                                                                                         MOV R7, #10                         ; 置计数器初值
+                                                                                         MOV R3, #0                          ; 结果单元清零
+                                                                                         MOV R2, #0                          ;
+                                                                                  LOOP1: MOV A, R2                           ; 取加数
+                                                                                         ADD A, @R0                          ; 求和
+                                                                                         MOV R2, A                           ; 存结果低8 位
+                                                                                         JNC LOOP2                           ; 无进位, 跳转
+                                                                                         INC R3                              ; 有进位,
+                                                                                                                             ; 结果高8位加1
+                                                                                  LOOP2: INC R0                              ; 修改指针
+                                                                                         DJNZ R7, LOOP1                      ; 未完,继续
+                                                                                         END
+2024
+EE114Spring
+     Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (53/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Practice: 设计20ms延时程序                                                             ASCII码转换为4位二进制数
+  • 延时程序与MCS-51指令执行时间有很大的关系                                                       • 由ASCII编码表可知，转换方法为：先将
+  • 在使用 12MHz 晶振时，一个机器周期为lμS，                                                       ASCII码减30H，若大于等于10，则再减7。
+    执行一个条“DJNZ”指令的时间为2μS，
+    20ms = 2μS×10000，                                                             • 参考程序如下：
+  • 由于8位的计数值最大为256，这时可用双重循                                                          ; 功能： ASCII码转换为4位二进制数。
+    环方法 20ms = 2μS×100×100，                                                         ; 入口：（R0）= ASCII码。
+                                                                                    ; 出口：（R0）= 转换后的二进制数。
+  • 延时 20ms 程序如下：
+  D20MS: MOV R4，#100                               ; 外循环初值=100                    ASCBIN: MOV A，R0                    ; 将ASCII码送A
+  DY1:   MOV R3，#100                               ; 内循环初值=100                            CLR C                       ; CY清零
+  DY2:   DJNZ R3，DY2                               ; 100×2=0.2ms                          SUBB A，#30H                 ; ASCII码减去30H
+         DJNZ R4，DY1                               ; 0.2×100=20ms                         MOV R0，A                    ; 得二进制数
+                                                                                          SUBB A，#10                  ; 与10比较
+         RET
+                                                                                          JC AEND                     ; 小于则结束
+   void MSdelay(unsigned int val)                                                         MOV A，R0                    ; 二进制数送A
+   { unsigned int i, j;                                                                   SUBB A，#07H                 ; 大于等于再减7
+                                             C51 更简洁吗？
+     for(i=0;i<=val;i++)                                                                  MOV R0，A                    ; 得二进制数
+        for(j=0;j<112;j++);                                                       AEND： RET
+   }    /* Delay of 1 ms for 11.0592MHz Frequency */
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (54/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C51 function call
+                                                                                                                         • Disassembly
+  • The C codes
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (55/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C51 loop & if statement va Assemby Codes                                                                                                Version 2
+
+  • The C codes                                      • Disassembly by 2 compliers
+                                                                                               Version 1
+
+                                                                                               0x08 <- n
+
+
+
+
+                                                                                                  50
+
+
+
+
+          Can you write a
+           working ASM                                                                           R7 <- i
+              code ?
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (56/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Summary
+  • An instruction set architecture (ISA) is an abstract model of a computer.
+    A realization of an ISA, such as a central processing unit (CPU), is called
+    an implementation.
+  • The role of assembly language in computer programing: It is any low-level
+    programming language in which there is a very strong correspondence between
+    the instructions in the language and the architecture's machine code
+    instructions.
+     – Assembly language may also be called symbolic machine code.
+
+  • 8051 ISA and assembly language
+     – Five categories of instructions                                               – Stack
+     – Totally 111 instructions                                                      – Program status word (PSW)
+     – Addressing mode                                                               – CISC vs. RISC
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (57/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Addressing Summary 寻址总结
+   寻址方式                   英文        符号表示                                 寻址存储空间
+                          Immediate
+   立即                               #data                                程序存储器
+                          constants
+                          Direct
+   直接                                direct                              内部RAM和SFR
+                          Addressing
+         Register                                                        R0～Ｒ7、A、B、
+   寄存器                                            寄存器名
+         direct                                                          CY、DPTR
+         Register                                 @R0,@R1                内部RAM 00H~7FH
+   寄存器间接
+         Indirect                                 @DPTR                  外部RAM 64KB
+                                                  @A+PC
+   基址加变址 Indexed                                          程序存储器
+                                                  @A+DPTR
+   相对寻址                   Relative                Rel                    程序存储器
+   位寻址                    Bit Addr.                                      RAM 20H~2FH & SFR
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (58/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  汇编语言的力量
+
+
+
+
+                                                                                                                               (from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                     (59/88)
+                                                                MCS-51
+                                                            C语言编程
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Compiling From C to assembly language
+                                                                              A51 MACRO ASSEMBLER SHOW_LST                                 10/11/2017 23:59:45 PAGE   1
+
+
+                                                                              MACRO ASSEMBLER A51 V8.2.5.0
+                                                                              OBJECT MODULE PLACED IN .\Objects\show_lst.obj
+                                                                              ASSEMBLER INVOKED BY: C:\Keil_v5\MDK\C51\BIN\A51.EXE show_lst.a51 SET(SMALL) DEBUG
+                                                                              PRINT(.\Listings\show_lst.lst) OBJECT
+                                                                                           (.\Objects\show_lst.obj) EP
+
+                                                                              LOC OBJ      LINE      SOURCE
+
+                                                                              0000             1   org 0000H
+
+                                                                              0000 740A        2   mov A,#10
+
+                                                                              0002 240A        3   add A,#10
+
+                                                                              0004 80FE     4      sjmp $
+
+                                                                                               5   end
+
+                                                                              A51 MACRO ASSEMBLER SHOW_LST                                 10/11/2017 23:59:45 PAGE   2
+
+                                                                              SYMBOL TABLE LISTING
+                                                                              ------ ----- -------
+
+                                                      :06000000740A
+                                                                              NAME         T Y P E V A L U E ATTRIBUTES
+                                                      240A80FED0
+                                                      :00000001FF
+                                                                              REGISTER BANK(S) USED: 0
+                                                        .hex file
+    (Figures are from internet)                                               ASSEMBLY COMPLETE. 0 WARNING(S), 0 ERROR(S)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                                 (61/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Why use C to program embedded systems
+  • The benefit of C, compared to the                                                    Why do we still need to know
+                                                                                         the assembly language ??
+    assembly language
+     – High efficient for programing the
+       embedded systems
+     – Good legibility, easy to maintain
+     – Many established function libraries
+     – Easy to transplant among different
+       computing platforms
+                       C Programming Language                                           Embedded C Programming Language
+               In nature, it is a native development                                      In nature, It is cross-development
+          It is independent of hardware architecture                                           It is hardware dependent
+                                                                                               Used for limited resources
+                    Used for desktop application
+                                                                                                  like RAM and ROM
+     Get refreshed at
+     https://www.runoob.com/cprogramming/c-tutorial.html                                               (Figures are from internet)
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (62/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Basic Structure of Embedded C Program:
+  • The five layers are:
+  1. Comments
+  2. Pre-processor directives
+  3. Global declaration
+  4. Local declaration
+  5. Main function()
+                    #include<reg51.h>
+                    #include<intrins.h>
+                    void delay (int);
+
+
+
+                                                                                                   类型函数名（参数表）
+                                                                    void delay (int)
+                                                                                                   {
+                                                                    {
+                                                                                                     数据说明部分
+                                                                      _nop_();
+                                                                                                     语句执行部分
+                                                                    }
+                                                                                                   }
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (63/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C-51 其他事项                                                                                reg52.h 部分内容                             似曾相识？
+  • C-51头文件常见的有:
+     – reg51.h, math.h, ctype.h, stdio.h, stdlib.h
+
+  • C-51的基本语句
+     – if 选择语言
+     – switch/case 多分支选择语言
+     – while 循环语言                                                                          STDIO.h: I/O相关函数
+     – do-while 循环语言
+     – for 循环语言
+
+  • C-51中断服务程序
+        函数名() interrupt n
+        Example: void timer0_ISR (void) interrupt 1
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (64/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C51 存储模式和类型
+                                                                                   Memory                               Description
+  • The memory model determines the                                              存储类型
+                                                                                  Type           寻址空间                       数据长度              值域范围
+    default memory type to use for function                                         code       Program memory (64 KBytes);
+                                                                                               accessed
+                                                                                                 直接寻址片内 by opcode MOVC @A+DPTR.               0～255
+    arguments, automatic variables, and                                          data
+                                                                                    data
+                                                                                                                            8位
+                                                                                                 RAMaddressable internal data memory;
+                                                                                               Directly
+    declarations.                                                                              fastest access to variables (128 bytes).
+
+                                                                                 bdata
+                                                                                   idata         可位寻址片内
+                                                                                               Indirectly                    1位
+                                                                                                          addressable internal data memory; 0/1
+  • The C51 Compiler provides three                                                              RAM across the full internal address space (256 bytes).
+                                                                                               accessed
+
+    memory models:                                                                               间接寻址片内                                       0～255
+     – Small Model                                                               idata
+                                                                                   bdata                                     8位
+                                                                                               Bit-addressable internal data memory;
+                                                                                                 RAMmixed bit and byte access (16 bytes).
+                                                                                               supports
+
+     – Compact Model                                                                xdata      External data memory (64 KBytes);
+                                                                                 pdata         accessed
+                                                                                                 片外页RAM                    8位
+                                                                                                        by opcode MOVX @DPTR.                 0～255
+     – Large Model                                                                   far       Extended RAM and ROM memory spaces
+                                                                                               (up to 16MB);
+               Parameter                            Default                      xdata           片外RAM
+                                                                                               accessed                      16位
+                                                                                                         by user defined routines              0～65535
+                                                                                                                                  or specific chip extensions
+                          Default         Default                   Default                    (Philips 80C51MX, Dallas 390).
+   Memory         s&                                Pointer
+                          Global         Constant                   Pointer
+    Model      Automatic                           Definition
+                         Variables       Variables                   Size          pdata       Paged (256 bytes) external data memory;
+               Variables                               s                         code            程序ROM
+                                                                                               accessed by opcode MOVX @Rn.
+                                                                                                                            16位               0～65535
+   SMALL          data         data         data           *        3 bytes
+  COMPACT        pdata        pdata        pdata           *        3 bytes                 char data var1;
+   LARGE         xdata        xdata        xdata           *        3 bytes                 bit data flags;
+           http://www.keil.com/support/man/docs/c51/c51_le_memmodels.htm                    unsigned char xdata vextor[10];
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                           (65/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C-51运算符 & 数据类型                                                                   Data Types        Bits      Bytes          Value Range
+                                                                                                                             -128 ~ +127 or
+                                                                                   enum              8 / 16    1 or 2
+                                                                                                                            -32768 ~ +32767
+                                                                                   signed
+                                                                                                      16         2          -32768 ~ +32767
+   +      -     *      /              加; 减; 乘; 除                                   short int
+                                                                                   unsigned
+                                                                                                      16         2              0 ~ 65535
+                                      大于; 大于等于                                     short int
+   > >= < <=                                                                       signed int         16         2          -32768 ~ +32767
+                                      小于; 小于等于                                     unsigned int       16         2             0 ~ 65535
+  ==           !=                                                                                                            -2147483648 ~
+                               判断等于;                 判断不等于                         signed long int    32         4
+                                                                                                                              +2147483647
+                                                                                   unsigned
+                                                                                                      32         4          0 ~ 4294967295
+                                                                                   long int
+  && || !                     逻辑与; 逻辑或; 逻辑非                                        float              32         4
+                                                                                                                            ±1.175494E-38 ~
+                                                                                                                            ±3.402823E+38
+                                                                                                                            ±1.175494E-38 ~
+                                                                                   double             32         4          ±3.402823E+38
+  >>           <<                    位右移;              位左移                         signed char        8          1            -128 ~ +127
+                                                                                   unsigned char      8          1              0 ~ 255
+   &            |                    按位与;              按位或                         bit                 1                         0 to 1
+   ^            ~                                                                  sbit                1                         0 or 1
+                                  按位异或; 按位取反                                       sfr                8          1              0 ~ 255
+                                                                                   sfr16              16         2             0 ~ 65535
+                                               http://www.keil.com/support/man/docs/c51/c51_le_datatypes.htm
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (66/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Float and bit data types
+                                                                                   • How to represent a decimal number?
+                                                                                      – Fixed point
+                                                                                      – Floating point
+                                                 Signed and
+                                                 unsigned integers
+
+
+
+
+                                                                                         40490FDA H
+                                                                                       = 01000000010010010000111111011010 B
+                                                                                       → S=0; Fraction=10010010000111111011010;
+                                                                                          Exponent=10000000
+                                                                                       𝑋 = −1 0
+                                                                                           × (1 + 0.10010010000111111011010𝐵)
+                                                                                           × 2 10000000𝐵−127𝐷
+                                                                                          = −1 0 × (1 + 0.5707962512969971𝐷)
+                                                                                            × 2 128𝐷−127𝐷
+                                                                                          = 3.1415925025939942
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                 (67/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example: 2000H-20FFH 的内容清零
+  • The C codes                                                                   • Assembly
+  #include <reg51.h>                                                                     ORG 0000H
+  void main( )                                                                    SE01: MOV R0, #00H
+   {                                                                                     MOV DPTR, #2000H
+     int i;                                                                                          ;(2000H) 送DPTR
+     unsigned char xdata *p=0x2000;                                               LOOP1: CLR A
+           /* 指针指向2000H单元 */                                                             MOVX @DPTR,A       ;0 送(DPTR)
+     for(i=0;i<256;i++)                                                                  INC DPTR           ;DPTR+1
+        {                                                                                INC R0             ;字节数加1
+           *p=0; p++;                                                                    CJNE R0, #00H, LOOP1
+        }                                                                                            ;不到FF个字节再清
+           /*清零2000H-20FFH单元 */                                                   LOOP: SJMP LOOP
+  }
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (68/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example: C51 与 A51 延时比较
+  ➢ C51实现500ms的延时 &                     P1.0输出周期1s的方波：                                  ORG 0000H
+  #include <reg51.h>                                                              DELAY_1S:    ;延时子程序，12M晶振延时
+  void delay(int c);      //声明子函数                                                       MOV R4, #10
+  sbit P10 = P1^0;                                                                L3:   MOV R2, #200     ;1指令周期
+  int main(void)
+                                                                                  L1:   MOV R3, #249     ;1指令周期
+  {   while(1)         //循环持续输出方波
+                                                                                  L2:   DJNZ R3 , L2     ;2指令周期
+         {       P10=0;    //输出低电平           delay(50);
+                 P10=1;   //输出高电平            delay(50);
+                                                                                        DJNZ R2 , L1     ;2指令周期
+         }                                                                              DJNZ R4 , L3     ;2指令周期
+  }                                                                                     RET              ;2指令周期
+  void delay_10ms(int c) // 子函数                                                   循环体延时时间:
+  { int i,j,k;
+                                                   是不是                            [(249*2+1+2)*200+1+2]*10*12/12000000
+      for(i=0;i<c;i++)                            很难精确？                           =1.002030 s
+         for(j=0;j<20;j++)                       和编译器也有关！                         加上ACALL指令和MOV、RET指令算出来整个函数
+             for(k=0;k<248;k++);                                                  的时间为1.002035 s
+  }
+                                                                                  通常选用的是 11.0592MHz 的晶振:
+  判定大小和加1都用一个周期；20*(2+1+248*2) = 9980 μs；
+                                                                                  [(249*2+1+2)*200+1+2]*10*12/11059200
+  加上调研赋值等语句，延时子函数接近10ms；
+                                                                                  = 1.08727213541666666... S
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (69/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example: 按键控制 LED                                                               void main(void)
+                                                                                  {
+  • 程序实现的功能为：                                                                        while(1)
+    按第一个按键，绿色LED 灯亮；                                                                {
+                                                                                      if(!key1)       //第一个按键按下时key1为0，进入此分支
+    按第二个按键，红色LED 灯亮；                                                                  {
+    按第三个按键，黄色LED 灯亮；                                                                     P1 = 0xFE;   //使P1.0 口为0，第一个LED绿灯亮
+    按第四个按键，3 个LED 灯全亮。                                                                   _nop_();     // delay();
+    3 个LED 灯分别由P1.0 、P1.1 、P1.2 控制；                                                   }
+                                                                                      if(!key2)       //第二个按键按下时key2为0，进入此分支
+    4 个按键分别与P3.2 、P3.3 、P3.4 、P3.5 相连。                                                {
+  • 可自行搭建Proteus仿真练习                                                                    P1 = 0xFD;    //使P1.1 口为0，第二个LED红灯亮
+                                                                                         _nop_();     // delay();
+                                                                                      }
+  • _nop_()函数实现 NOP 指令，程序中用于延时；                                                       if(!key3)       //第三个按键按下时key3为0，进入此分支
+    该函数定义在 intrins.h 头文件中。                                                            {
+    还可以自定义delay() 函数。                                                                   P1 = 0xFB;    //使P1.2 口为0，第三个LED黄灯亮
+                                                                                         _nop_();     // delay();
+                                                                                      }
+  #include <reg52.h>                                                                  if(!key4)       //第四个按键按下时key4为0，进入此分支
+  #include <intrins.h>     // _nop_() 函数声明                                            {
+  sbit key1 = P3^2; //声明P3.2口 为key1                                                      P1 = 0xF8;   //使P1.3 口为0，三个LED 灯都亮
+                                                                                         _nop_();     // delay();
+  sbit key2 = P3^3; //声明P3.3口 为key2                                                   }
+  sbit key3 = P3^4; //声明P3.4口 为key3                                                 }
+  sbit key4 = P3^5; //声明P3.5口 为key4                                               }
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (70/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  C-51 相对 ASM-51 的优点                                                              C-51 和 C 的区别
+  1. 对单片机的指令系统不要求了解，     1. 库函数不同：标准的C 语言定义的
+     仅要求对8051存贮器结构有初步了解；    库函数是按通用微型计算机来定义的，
+                            而C51 库函数是按51单片机定义的；
+  2. 寄存器分配、不同存贮器的寻址及
+        数据类型等细节可由编译器管理；                                                           2. 数据类型: 在C51 中还增加了几种针对
+                                                                                     51 单片机特有的数据类型；
+  3. 程序有规范的结构，可分成不同的函
+     数，这种方式可使程序结构化；                                                               3. 变量的存储模式不一样：C51 中变量
+                                                                                     的存储模式是与51 单片机的存储器
+  4. 具有将可变的选择与特殊操作组合在
+                                                                                     紧密相关；
+     一起的能力，改善了程序的可读性；
+                                                                                  4. 输入输出处理不一样：C51 是通过51
+  5. 提供的库包含许多标准子程序，具有
+     较强的数据处理能力；                                                                      串行口来完成的，输入输出指令执行
+                                                                                     前必须要对串行口进行初始化；
+  6. 由于具有方便的模块化编程技术，
+                                                                                  5. 函数：C51 中有专门的中断函数。
+     使已编好程序可容易地移植。
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (71/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  测验 Testing:
+  • 位定义指令BIT的作用是（ ）。                                                              • 语句int bdata ibase表示ibase（                                 ）。
+  • A. 用于定义字                                                                      • A. 是16位变量
+  • B. 用来定义汇编程序的起始地址                                                              • B. 可位寻址
+  • C. 用于定义某特定位的标识符                                                               • C. 不可位寻址
+  • D. 用于定义字节                                                                     • D. 是1位变量
+
+  • unsigned int类型变量的二进制位数为                                                       • MCS-51单片机指令系统中，同外部
+    （ ）。                                                                            程序存储器打交道的指令下列正确的是
+  • A. 8位                                                                         • A. MOV A，@A+DPTR
+  • B. 16位                                                                        • B. MOVC A，@A+DPTR
+  • C. 7位                                                                         • C. MOVX A，@A+DPTR
+  • D. 1位                                                                         • D. MOVC A，@A+DPTR
+                                                                                    和MOVX A，@A+DPTR都可以
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (72/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  测验 Testing:
+                                                                                  • 查表子程序的功能为：从首地址为2000H，
+  • 设（R0）=20H， （R1）=30H，                                                            长度为127的外部RAM数据表中，查找A的
+    （20H） =20H，（21H）=30H，                                                           ASCII码，将其地址存入4000H和4001H
+    （22H） =40H，（30H）=E0H，                                                           单元中。补充下列程序：
+    （31H） =50H，（32H）=60H。
+                                                                                         MOV R7, #127
+        CLR C                                                                            MOV B, ____
+        MOV R2, #3                                                                       MOV DPTR，____
+  LOOP: MOV A, @R0                                                                LOOP1：MOVX A, @DPTR
+        ADDC A, @R1                                                                      CJNE A, B, NOTA
+        MOV @R0, A                                                                       SJMP ISA
+        INC R0                                                                    NOTA: INC   DPTR
+        INC R1                                                                           DJNZ R7, LOOP1
+                                                                                         RET
+        DJNZ R2, LOOP
+                                                                                  ISA： MOVX 4000H, DPL
+        SJMP $
+                                                                                         MOVX 4001H, DPH
+  • 程序执行后，（20H）=                                   ；（R0）=                 。              RET
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (73/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  8051 Fetch-Decode-Execute Cycle (Video - 5’)
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (74/88)
+                                              Supplementary
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication   (75/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Keil C51程序设计中几种精确延时方法
+  1. 定时器精确延时（后续模块）                                                                3. 在C51中嵌套汇编程序段实现延时
+               void Delay10us( ) {                                                • 在C51中通过预处理指令#pragma asm和#pragma
+                  _NOP_( );                                                         endasm可以嵌套汇编语言语句。
+  2. 软件延时与时间计算
+                  _NOP_( );                                                          –   如：#pragma asm
+                  _NOP_( );                                                              …
+                  _NOP_( );                                                              汇编语言程序段
+                  _NOP_( );                                                              …
+                  _NOP_( );                                                              #pragma endasm
+               }
+  • Delay10us()函数中共用了6个_NOP_( )语句，每个语句执行时间为                                       4. 使用性能分析器计算延时时间
+    1 μs。主函数调用Delay10us()时，先执行一个LCALL指令 (2μs)，
+    然后执行6个_NOP_()语句 (6μs)，最后执行一个RET指令 (2μs)，
+    所以共需要10 μs。 可以把这一函数当作基本延时函数，嵌套调用实
+    现较长时间的延时；但需要注意，如在Delay40us()中直接调用4次
+    Delay10us()函数，得到的延时时间将是42 μs。这是因为执行
+    Delay40us()时，先执行了一次LCALL指令 (2μs)，然后开始执行
+    第一个Delay10us()，执行完最后一个Delay10us()时，直接返回到
+    主程序。依此类推，如果是两层嵌套调用，如在Delay80us()中两次
+    调用Delay40us()，则也要先执行一次LCALL指令（2 μs），然后执
+    行两次Delay40us()函数（84 μs），所以，实际延时时间为86 μs。
+    简言之，只有最内层的函数执行RET指令。
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (76/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example: 4x4 Keypad interfacing
+  • Keypad is used as an input device
+    to read the key pressed by user and to
+    process it.
+  • To read the key press, configure the rows as
+    outputs and the columns as inputs.
+  • Columns are read after applying signals to
+    the rows in order to determine whether or
+    not a key is pressed and if pressed, as well
+    as which key is pressed.
+     – If one of the column bits has a zero, this means that
+       a key press has occurred.
+     – For example, if C1:C4 = 1011, this means that a key in
+       the C2 column has been pressed.
+
+
+  • Also Check Proteus Examples:
+  • Two Calulator samples (A51) vs (C51)
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (77/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example code                                                 https://www.electronicwings.com/8051/4x4-keypad-interfacing-with-8051
+                                                                                         keyport = 0xFD;            /* check for pressed key in 2nd row */
+  #include<reg52.h>                                                                      colloc = (keyport & 0xF0);
+  #include<stdio.h>                                                                      if(colloc != 0xF0)
+  #include<string.h>                                                                       { rowloc = 1;        break;     }
+  #include "LCD_8_bit.h“                        /* 16x2 LCD header file*/                 keyport = 0xFB;          /* check for pressed key in 3rd row */
+  #define keyport P2                                                                       colloc = (keyport & 0xF0);
+  sbit RS = P3^5;                               /* RS(reg. select) for LCD16x2 */          if(colloc != 0xF0)
+  sbit RW = P3^6;                               /* RW(Read/write) for LCD16x2 */             { rowloc = 2;      break;     }
+  sbit ENABLE = P3^7;                           /* EN(Enable) pin for LCD16x2*/            keyport = 0xF7;         /* check for pressed key in 4th row */
+  unsigned char keypad[4][4] = { {'7','8','9','/'}, {'4','5','6','x'},                     colloc = (keyport & 0xF0);
+                                     {'1’, '2’, '3’, '-'}, {' ‘, '0’, '=‘, '+'} };         if(colloc != 0xF0)
+  unsigned char colloc, rowloc;                                                              { rowloc = 3;      break;     }
+  unsigned char key_detect()                                                             }                      /* while(1) done */
+  { keyport=0xF0;                               /*set port direction as input-output*/   if(colloc == 0xE0)
+    do{ keyport = 0xF0;         colloc = keyport;                                            { return(keypad[rowloc][0]);
+           colloc &= 0xF0;                      /* mask port for column read only */         } else if(colloc == 0xD0)
+       } while(colloc != 0xF0);                 /* read status of column */                  { return(keypad[rowloc][1]);
+    do{                                         /* 防抖动 */                                    } else if(colloc == 0xB0)
+           do{ delay(20);                       /* 20ms key debounce time */                 { return(keypad[rowloc][2]);
+                colloc = (keyport & 0xF0); /* read status of column */                       } else
+           } while(colloc == 0xF0);             /* check for any key press */                { return(keypad[rowloc][3]);
+           delay(1);           colloc = (keyport & 0xF0);                                    }
+       } while(colloc == 0xF0);                                                   }
+    while(1)                                                                      int main(void)
+         {                                      /* now check for rows */          {
+         keyport= 0xFE;                         /* check for pressed key in 1st row */LCD_Init();
+         colloc = (keyport & 0xF0);                                                   LCD_String_xy(1, 0, "Press a key");
+         if(colloc != 0xF0)                                                           while(1){
+             { rowloc = 0;     break;                                                   LCD_Command(0xc0);
+             }                                                                          LCD_Char(key_detect());           /* Display which key is pressed */
+                                                                                       }
+                                                                                  }
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                             (78/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  按键防抖
+  • 延时消除抖动：
+  • 延时 10~20ms 后再次读取按键状态；在实际的
+    系统中，一般是不建议这么样做的。为什么呢？
+  • 缺点：延时函数会占用大量时间；需要while循
+    环不断的扫描按键，对单片机运算资源的浪费。
+  • 使用定时器消抖
+  • 原理说明：1次按下+1次抬起构成一个按键动作，
+    同时检测到这两个动作，才完成一次按键操作。
+  • 按下时，将按键值存储为0；抬起时，将按键值
+    存储为1。在前一次按键值为0的前提下，检测当
+    前按键值为1，表示此次按键有效，否则无效。
+  • 缺点：会占用一个定时器
+  • 所以我们要学会释放内存，采用中断等方式，不
+    用延时；不让单片机做无用功。
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (79/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  按键防抖
+
+
+
+
+                                                                                                        按键在松手后有效,灵敏度高,
+                                                                                                         消耗资源少,运行效率高
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (80/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  LCD 16x2 Interfacing with 8051
+  • LCDs (Liquid Crystal Displays) are
+    used for displaying status or
+    parameters in embedded systems.
+  • LCD 16x2 is 16 pin device which has 8
+    data pins (D0-D7) and 3 control pins
+    (RS, RW, EN). The remaining 5 pins
+    are for supply and backlight for the
+    LCD.
+  • RS/EN control pins help configure
+    the LCD in command or data mode.
+  • RW/EN control pins help configure
+    read mode or write mode and also
+    when to read or write.
+     https://www.electronicwings.com/8051/lcd16x2-interfacing-in-8-bit-with-8051
+     http://10.15.25.5/EE114/Transducers/屏幕/LCD1602.zip
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (81/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Programming LCD16x2
+  • Initialize LCD16x2                                                            void LCD_Init (void)
+  1.    It is very easy to initialize LCD                                         /* LCD Initialize function */
+                                                                                  {
+  2.    Power ON LCD
+                                                                                     delay(20);
+  3.    Wait for 15ms, Power on initialization time for
+                                                                                            /* LCD Power ON Initialization time >15ms */
+        LCD16x2
+                                                                                     LCD_Command (0x38);
+  4.    Send 0x38 command                                                                   /* Initialization of 16X2 LCD in 8bit mode */
+        (initialize. 2 line, 5x8 matrix, 8-bit mode)
+                                                                                     LCD_Command (0x0C);
+  5.    Send any Display ON command                                                         /* Display ON Cursor OFF */
+        (0x0E, 0x0C)
+                                                                                     LCD_Command (0x06);
+  6.    Send 0x06 command                                                                   /* Auto Increment cursor */
+        (increment cursor)                                                           LCD_Command (0x01);
+                                                                                            /* Clear display */
+                                                                                     LCD_Command (0x80);
+                                                                                            /* Cursor at home position */
+                                                                                  }
+
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (82/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example1 code
+  #include<reg51.h>                                                                   void LCD_String(unsigned char *str) /* LCD send string function */
+  sfr lcd_data_port=0x90; /* P1 port as data port */                                  { int i;
+  sbit rs=P2^0;           /* Register select pin */                                       for(i=0;str[i]!=0;i++)             /* Send string till NULL */
+                                                                                            {   LCD_Char (str[i]);           /* Call LCD data write */
+  sbit rw=P2^1;           /* Read/Write pin */
+                                                                                            }
+  sbit en=P2^2;           /* Enable pin */
+                                                                                      }
+  void delay(unsigned int k) // delay function for ~ 1ms                              void LCD_String_xy (char row, char pos, char *str)
+  { int i,j;                                                                          /* Send string to LCD function */
+      for (i=0;i<k;i++)                                                               { if (row == 0)
+                                                                                            LCD_Command ((pos & 0x0F)|0x80);
+        for (j=0;j<112;j++);
+                                                                                                     /* Command of first row and required position < 16 */
+  }                                                                                         else if (row == 1)
+  void LCD_Command(unsigned char cmd)                  /* LCD cmd function */                  LCD_Command ((pos & 0x0F)|0xC0);
+  { lcd_data_port = cmd;                                                                             /* Command of Second row and required position < 16 */
+     rs=0;                    /* command reg. */                                            LCD_String(str);                 /* Call LCD string function */
+                                                                                      }
+     rw=0;                    /* Write operation */
+                                                                                      void LCD_Init()                        /* LCD Initialize function */
+     en=1;       delay(1);                                                            { delay(20);
+     en=0;       delay(5);                                                               LCD_Command(0x38);                  /*Initialization LCD in 8bit */
+  }                                                                                      LCD_Command(0x0C);                  /*Display ON Cursor OFF */
+                                                                                         LCD_Command(0x01);                  /*Auto Increment cursor */
+  void LCD_Char (unsigned char char_data)              /* LCD write function */
+                                                                                         LCD_Command(0x06);                  /*Clear display */
+  { lcd_data_port = char_data;                                                           LCD_Command(0x80);                  /*Cursor at home position */
+     rs=1;                    /* Data reg.*/                                          }
+     rw=0;                    /* Write operation*/                                    void main()
+     en=1;       delay(1);                                                            { LCD_Init();                          /* initialization of LCD */
+     en=0;       delay(5);                                                               LCD_String(“Welcome to Embedded System !");
+  }                                                                                                                          /* write string on 1st line of LCD */
+                                                                                         LCD_Command(0xC0);
+  https://www.electronicwings.com/8051/lcd16x2-interfacing-in-8-bit-with-8051            LCD_String("Hello World");          /*write string on 2nd line*/
+                                                                                         while(1);                           /* Infinite loop. */
+EE114Spring
+2024   Embedded
+              EE114System
+                      Embedded
+                           -> Lecture
+                                System3-4
+                                        -> 8051
+                                           Lecture
+                                                Assembly
+                                                   5 & 6 8051
+                                                          & C language
+                                                               Interrupt & Timer & Communication                                                              (83/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example2 code                                                                 Proteus 自带 Example:
+                                                                                8051 with LCD1602
+  #include "ioAT89C51.h"                                                            void write_command(uchar com)         // Write a command
+  #include "intrinsics.h"                                                            { check_busy();
+  #define DATA_BUS (P0)                             // Define P3 pins                  E = 0;       RS = 0;     RW = 0;
+  #define RS        (P2_bit.P2_0)                                                      DATA_BUS = com;
+  #define RW        (P2_bit.P2_1)                                                      E = 1;       __no_operation();
+  #define E         (P2_bit.P2_2)                                                      E = 0;       delay(1); }
+  typedef unsigned char uchar;                      // Define new types             void write_data(uchar data)           // Write Data
+  typedef unsigned int uint;                                                         { check_busy();
+                                                                                       E = 0;       RS = 1;     RW = 0;
+  void delay(uint j)                   // Delay                                        DATA_BUS = data;
+   { uchar i = 60;                                                                     E = 1;       __no_operation();
+     for(; j>0; j--)                                                                   E = 0;       delay(1); }
+      { while(--i);    i = 59;                                                      void string(uchar ad, uchar *s)       // Display a string
+        while(--i);    i = 60;                                                       { write_command(ad);
+      }                                                                                while(*s>0)
+  }                                                                                    { write_data(*s++);
+                                                                                         delay(100);
+  void check_busy(void)                // Test the Busy bit
+                                                                                       }
+   { do { DATA_BUS = 0xff;
+                                                                                     }
+       E = 0;     RS = 0;   RW = 1;
+                                                                                    void main(void)
+       E = 1;     __no_operation();
+                                                                                     { LCD_init();
+     } while(DATA_BUS & 0x80);
+     E = 0;               }                                                            while(1)
+                                                                                       { string(0x80,"Have a nice day!");
+  void LCD_init(void)                  // Initialize LCD controller                      string(0xC0," Proteus VSM");
+   { write_command(0x38);              // 8-bits, 2 lines, 7x5 dots                      delay(100);
+     write_command(0x0C);              // no cursor, no blink, enable display            write_command(0x01);
+     write_command(0x06);              // auto-increment on                              delay(100);
+     write_command(0x01);              // clear screen                                 }
+     delay(1);            }                                                          }
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                    (84/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Example3 code                             Another Example: LCD1602.c
+                                                     模块源文件
+                                                                                                                                                  对比
+                                                                                                                                                 coding
+  #ifndef LCD_CHAR_1602                         Many Macro Definiton              void LCD_SetDisplay(unsigned char DisplayMode)
+  #define LCD_CHAR_1602                                                           { LCD_Write(LCD_COMMAND, 0x08|DisplayMode);
+                                                                                                                                                  风格
+  #include <intrins.h>                                                            }
+  sbit LcdRs    = P2^0;              //Port Definitions                           #define LCD_AC_UP           0x02
+                                                                                  #define LCD_AC_DOWN 0x00                 // default
+  sbit LcdRw = P2^1;                                                              #define LCD_MOVE            0x01         // 画面可平移
+  sbit LcdEn    = P2^2;                                                           #define LCD_NO_MOVE 0x00                 // default
+  sfr DBPort = 0x80;    //P0=0x80, P1=0x90, P2=0xA0, P3=0xB0. 数据端口                void LCD_SetInput(unsigned char InputMode)            //设置输入模式
+                                                                                  { LCD_Write(LCD_COMMAND, 0x04|InputMode);
+  unsigned char LCD_Wait(void)                                                    }
+  { LcdRs=0; LcdRw=1;        _nop_();         LcdEn=1; _nop_();                   #define LCD_CURSOR          0x02
+     //while(DBPort&0x80);                                                        #define LCD_SCREEN          0x08
+     //Proteus仿真时屏蔽此语句，在调用GotoXY()时会死循环; 实际硬件时打开此语句                               #define LCD_LEFT            0x00
+     LcdEn=0; return DBPort;                                                      #define LCD_RIGHT           0x04
+                                                                                  void LCD_Move(unsigned char object, unsigned char direction) //移动光标或屏幕
+  }                                                                               { if(object==LCD_CURSOR)
+  //向LCD写入命令或数据                                                                       LCD_Write(LCD_COMMAND,0x10|direction);
+  #define LCD_COMMAND 0                     // Command                                if(object==LCD_SCREEN)
+  #define LCD_DATA           1              // Data                                   LCD_Write(LCD_COMMAND,0x18|direction);
+  #define LCD_CLEAR_SCREEN                  0x01       // 清屏                      }
+  #define LCD_HOMING                        0x02       // 光标返回原点                  void LCD_Initial()
+  void LCD_Write(bit style, unsigned char input)                                  { LcdEn=0;
+  { LcdEn=0; LcdRs=style; LcdRw=0;          _nop_();                                  LCD_Write(LCD_COMMAND,0x38);                      //8位数据端口,2行显示
+     DBPort=input;           _nop_();       //注意顺序                                    LCD_Write(LCD_COMMAND,0x38);
+                                                                                      LCD_SetDisplay(LCD_SHOW|LCD_NO_CURSOR); //开启, 无光标
+     LcdEn=1;                _nop_();       //注意顺序                                    LCD_Write(LCD_COMMAND,LCD_CLEAR_SCREEN);                //清屏
+     LcdEn=0;                _nop_();                                                 LCD_SetInput(LCD_AC_UP|LCD_NO_MOVE);              //AC递增, 画面不动
+     LCD_Wait();                                                                  }
+  }                                                                               void GotoXY(unsigned char x, unsigned char y)
+  //设置显示模式                                                                        { if(y==0) LCD_Write(LCD_COMMAND,0x80|x);
+  #define LCD_SHOW           0x04           //显示开                                     if(y==1) LCD_Write(LCD_COMMAND,0x80|(x-0x40));
+  #define LCD_HIDE           0x00           //显示关                                 }
+  #define LCD_CURSOR         0x02           //显示光标                                void Print(unsigned char *str)
+  #define LCD_NO_CURSOR 0x00                //无光标                                 { while(*str!='\0’)
+                                                                                      { LCD_Write(LCD_DATA,*str);         str++;        }
+  #define LCD_FLASH          0x01           //光标闪动                                }
+  #define LCD_NO_FLASH 0x00                 //光标不闪动                               void LCD_LoadChar(unsigned char user[8], unsigned char place)
+                                                                                  { unsigned char i;
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                        (85/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  LCD 128x64 Interfacing with 8051
+  带中文字库的128X64显示模块
+  • 与LCD1602非常类似，显示分辨率为128×64；                                                                    Check Proteus Examples
+  • 具有4位/8位并行、2线或3线串行多种接口方式，内部含有国标一级、
+    二级简体中文字库的点阵图形液晶显示模块；
+  • 操作指令简单、方便，可构成全中文人机交互图形界面。
+  注意事项：
+  ①欲在某一个位置显示中文字符时，应先设定显示字符位置，即先设定
+  显示地址，再写入中文字符编码。
+  ②显示ASCII字符过程与显示中文字符过程相同。不过在显示连续字符
+  时，只须设定一次显示地址，由模块自动对地址加1指向下一个字符位
+  置，否则，显示的字符中将会有一个空ASCII字符位置。
+  ③当字符编码为2字节时，应先写入高位字节，再写入低位字节。
+  ④接收指令前，必须先确认模块内部处于非忙状态，即读取BF需为“0”，
+  方可接受新的指令。如果在送出一个指令前不检查BF标志，则在前一个
+  指令和这个指令中间必须延迟一段较长的时间，即等待前一个指令确定
+  执行完成。指令执行的时间请参考指令表中的指令执行时间说明。
+  ⑤“RE”为基本指令集与扩充指令集的选择控制位。当变更“RE”后，指
+  令集将维持在最后的状态，除非再次变更“RE”位，否则使用相同指令
+  集时，无需每次均重设“RE”位.
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (86/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+  Interfacing C to Assembler
+  • There are several reasons to call an                                          • Five ways of interfacing C and
+    assembly routine from your C                                                    assembler
+    program.                                                                         – a51: calling c functions from assembly
+     – You have assembly code already written
+                                                                                     – c51: getting inline assembly to work
+       that you wish to use.
+                                                                                     – c51: calling assembly routines from c
+     – You need to improve the speed of a
+       particular function.                                                          – c51: inline assembly generates target out
+                                                                                       of range
+     – You want to manipulate SFRs or
+       memory-mapped I/O devices                                                     – c51: adding c functions to existing
+       directly from assembly.                                                         assembler code
+
+
+                                                                                               https://www.keil.com/support/
+
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (87/88)
+Progress: 8051 寻址方式 >> 汇编指令集 >> 数据&算术&逻辑 >> 跳转&位操作 >> Assembly Coding >> 汇编小结 >> C Programming >> C51 Memory & Data >> Examples >> 小结 >> Supplementary
+
+
+
+
+  • a51: calling c functions from assembly                                        • c51: getting inline assembly to work
+  • The easiest way to achieve this is to let the C compiler                      • The following example program, MAIN.C, demonstrates
+    generate the correct assembly code for you.                                     some simple inline assembly.
+  • Suppose you have a C function called 'foo' which takes a                             void main(void)
+    single unsigned char argument and returns an unsigned                                {
+    char value. In a new C file write a dummy function that                                test();
+    calls 'foo'. For example:                                                              #pragma asm
+                                                                                              JMP $ ; endless loop
+     #pragma src                                                                           #pragma endasm
+     extern unsigned char foo(unsigned char);                                            }
+     void dummy(void)
+     {                                                                            • To use #pragma ASM/ENDASM, you must set
+             unsigned char x,y;                                                     the Generate Assembler SRC File and Assemble SRC
+             x = 1;                                                                 File source file compile options in µVision by right-
+             y = foo(x);                                                            clicking your source file name in the Project Workspace
+     }                                                                              and selecting Options for File.
+                                                                                  • if there are no other C modules in your project, you
+  • #pragma SRC directs the C compiler to generate                                  must manually include the C51 Run-Time Library
+    assembly code when the file is compiled. The extension                          (C51S.LIB, C51C.LIB, or C51L.LIB).
+    of the assembly file will be 'src'.
+
+
+EE114Spring
+2024 Embedded
+            EE114
+                System
+                  Embedded
+                       -> Lecture
+                            System3-4
+                                    -> 8051
+                                       Lecture
+                                            Assembly
+                                               5 & 6 8051
+                                                      & C language
+                                                           Interrupt & Timer & Communication                                                  (88/88)
+

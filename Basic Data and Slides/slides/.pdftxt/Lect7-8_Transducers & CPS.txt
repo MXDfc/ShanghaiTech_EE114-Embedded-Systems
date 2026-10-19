@@ -1,0 +1,1993 @@
+                               EE114 Introduction to
+                                Embedded Systems
+                   Dr. Tao Wu         吴涛 研究员，博导
+                   wutao@shanghaitech.edu.cn
+                   Office: SIST Bldg 3-326
+                   CourseWeb: http://10.15.25.5/
+                   Website: http://small.shanghaitech.edu.cn
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+                                                                      Demo Task
+
+
+   • 理解传感器Sensor指标                                                                       • Example codes:
+   • 理解不同电机Motor的差异                                                                      • Programming strategy with
+                                                                                           various sensor & actuators
+   • 掌握常见传感器数字接口
+   • 掌握常见模拟信号处理电路与
+                                                                                         • DC Motor interfacing
+     ADC/DAC的使用
+                                                                                         • Stepper Motor interfacing
+   • 读懂并解释课件程序范例                                                                         • Servo Motor interfacing
+   • 芯片数据手册datasheet                                                                     • ADC/DAC Interfacing
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (2/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+    Lecture #7: Sensors and Actuators
+    • What you will learn:
+    a) The role of sensors and actuators in
+         an embedded system
+    b) The physical principle of some typical
+         sensors & actuators
+    c) The principle of
+         analogy-to-digital converter (ADC) &
+         digital-to-analogy converter (DAC)
+    d) Interfacing with sensors & actuators
+         for embedded systems
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (3/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   What is a sensor? An actuator?
+   • A sensor is a device that measures a physical quantity
+   → Input / “Read from physical world”
+   • An actuator is a device that modifies a physical quantity
+   → Output / “Write to physical world”
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (4/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Bridge between the Cyber and the Physical Systems (CPS)
+   • Sensors:                                                                             • Actuators:
+      – Temperature / Humidity                                                                – Motor / Solenoids
+      – Barometer                                                                             – Loudspeakers
+      – Magnetometers
+                                                                                              – LEDs, Lasers, Displays
+      – Accelerometers / Gyroscopes
+      – Gravity / Tilt                                                                        – Switches, Valves
+      – Strain gauge / Pressure                                                               – …
+      – Force Sensor / Load                                                               • Modeling Issues:
+      – Microphones / Vibration
+                                                                                              – Physical dynamics
+      – Fingerprint / Guesture
+      – Cameras / Optical                                                                     – Noise, Bias, Sampling
+      – Radar / Lidar                                                                         – …
+      – Chemical/Gas/Bio Sensors
+      – …
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (5/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Functional chips in Smart Phones                                                                                Enabled by MEMS
+                                                                                              (Micro-ElectroMechanical System 微机电系统)
+                                                                                                   & Microelectronics (半导体、光电)
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                             (6/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Various sensors                                                                   One of the most successful MEMS sensors
+                                                                                          • IMU = Inertial measurement unit
+                                                                                          • Example:
+                                                                                             • LSM9DS1: 3-axis accelerometer,
+                                                                                               3-axis gyroscope, 3-axis magnetometer
+                                                                                          • Applications:
+                                                                                                 • Navigation; Orientation
+                                                                                                 • Drop detection; Image stabilization
+                                                                                                 • Airbag systems; Gaming etc
+
+
+
+
+                                                                                 (Figures are from internet)
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                             (7/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Inertial Sensors : Spring-Mass-Damper System
+
+
+
+
+                                                               𝑑2𝑥   𝑑𝑥
+        Spring                   Damping                      𝑀 2 + 𝑏 + 𝑘𝑥 = 𝐹𝑒𝑥𝑡 = 𝑀𝑎
+          kx                       bv                          𝑑𝑡    𝑑𝑡
+                                                                                                           𝑘                              𝜔𝑟 𝑀
+                                  Inertial mass              Resonance frequency                 𝜔𝑟 =                  Quality factor 𝑄 =
+       a                 M                                                                                 𝑀                               𝑏
+                                     F=Ma
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                         (8/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   MEMS Gyroscope                                                                                     什么是科里奥利力？
+   • Conventional gyroscope
+      – The rotor will maintain its spin axis
+                                                                                                           𝑭 = 2𝑚𝒗 × 𝛀
+        direction regardless of the orientation of
+        the outer frame.
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (9/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   TDK/InvenSense ITG-3200 Gyroscope
+                       Inside TDK/InvenSense ITG-3200
+
+
+                                                                                                                                 MEMS + CMOS
+                                                                                                                                 Monolithic IC
+
+
+
+
+                                                                                                                                             Make it
+                                                                                                                                             Digital
+                                                                                                                                             Interface
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                          (10/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Other types of Sensor ICs
+                              Microphone                                                                             MEMS Mirrors
+                                                                                                                       Mirror
+                                                                                              Mirror
+                                                                                                                        +12
+                                                                                             -12 deg
+                                                                                                                        deg
+
+
+
+
+                                                                                               Hinge
+
+                                                                                                        Yoke CMOS Substrate
+
+
+
+
+                                                                                                 Electrostatic                   Piezoelectric
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                         (11/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   TOF 技术
+   • ToF: Time of Flight飞行时间，是一种
+     测距的方法，通过测量超声波/微波/光
+     等信号在发射器Tx和反射器Rx之间的
+     “飞行时间”来计算出两者之间距离。
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (12/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   TOF 传感器
+   • Ultrasonic Transceiver                                                              • Optical ranging and gesture sensors
+   • TDK PMUT - CH101 and CH201                                                          • ST VL6180X、VL53L0X、VL53L1X
+
+
+
+
+                                                                 超声ToF 相对于红外ToF 优势
+                                                                       功耗                       降低500倍
+                                                                    光敏感度              不受环境光或者阳光影响
+                                                                    检测物体               检测黑暗或透明的物体
+                                                                       噪声                       降低100倍
+                                                                      视场角                 5倍宽，近乎180度
+                                                                                                 https://zhuanlan.zhihu.com/p/382084428
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                  (13/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   超声波选型指南
+
+
+
+
+            https://wiki.dfrobot.com.cn/%E8%B6%85%E5%A3%B0%E6%B3%A2%E9%80%89%E5%9E%8B%E6%8C%87%E5%8D%97
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (14/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   超声波选型指南
+
+
+
+
+                                                                           超声波选型指南
+
+
+
+
+            https://wiki.dfrobot.com.cn/%E8%B6%85%E5%A3%B0%E6%B3%A2%E9%80%89%E5%9E%8B%E6%8C%87%E5%8D%97
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (15/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Nintendo Switch Joy-Con
+
+
+
+                                                                                           Broadcom BCM20734 Bluetooth 2.4 GHz
+                                                                                           Transceiver
+                                                                                           STMicroelectronics ST21NFCB NFC controller
+                                                                                           Macronix International MX25U4033E
+                                                                                           4Mb CMOS Flash
+                                                                                           STMicroelectronics STM32P411/F048
+                                                                                           32-bit microcontroller
+                                                                                           STMicroelectronics LSM6DS3H 6-DOF
+                                                                                           accelerometer/gyroscope
+                                                                                           Texas Instruments BQ24072 linear battery
+                                                                                           charger w/ power management
+                                                                                           Rohm BD27400GUL mono class-D audio amplifier
+
+                                            https://www.ifixit.com/Teardown/Nintendo+Switch+Teardown/78263
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                           (16/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications                                                                            模电知识 ！
+   • Calibration
+      – Relating measurements to the physical phenomenon
+   • Range
+      – Max. & Min. values for input or output
+   • Sensitivity
+      – Slope, dB/dA is linearized output/input
+   • Nonlinearity
+      – Measurements may not be proportional to physical
+        phenomenon
+      – Feedback can be used to keep operating point in the
+        linear region
+   • Sampling
+      – Aliasing, Missed events
+   • Noise
+      – Analog signal conditioning
+      – Filtering & latency
+   • Frequency response
+      – The bandwidth
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (17/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications
+   • ADXL330 accelerometer datasheet                                                     • Affine model with an operating range
+                                                                                           (𝐿, 𝐻)
+
+
+
+
+                                                                                                      The sensor will saturated when
+                                                                                                      the input is too small or too large.
+
+
+                                                                                         • Dynamic range (for digital sensors)
+
+                                                                                               𝐻−𝐿                   𝐻−𝐿
+                                                                                            𝐷=     or 𝐷𝑑𝐵 = 20 log10
+                                                                                                𝑝                     𝑝
+                                                                                                    𝑝: the smallest distinguishable
+                                                                                                    difference of a digital sensor
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                     (18/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications
+   • Nonlinearity                                                                        • Accurate
+                                                                                            – Average of sampled output is close to real
+                                                                                              value (AC errors and noise) - can’t
+                                                                                              calibrate this out
+                                                                                         • Precise
+                                                                                            – Sampled output is consistently tightly
+                                                                                              grouped with consistent offset from real
+                                                                                              value (DC errors)
+
+
+
+
+                                                                                               Precision      Accuracy              Precision &
+                                                                                               without        without               accuracy
+                                                                                               accuracy       precision
+                                                                                                   x = measurement               = real value
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                    (19/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications
+   • ADXL330 accelerometer datasheet                                                     • Sensitivity
+                                                                                         • Slope, dB/dA is linearized
+                                                                                           output/input
+                                                                                         • General form of output/input is the
+                                                                                           transfer function B(A)
+
+
+                                                                                                                Increasing A
+
+
+
+
+                                                                                                  Output B(A)
+                                                                                                                                 Hg Thermometer – mm/oC
+                                                                                                                                 Accelerometer – V/g
+                                                                                                                                 DC Motor – rpm/V
+
+                                                                                                                           Input A
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                         (20/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications
+   • ADXL330 accelerometer datasheet                                                     • The signal to noise ratio (SNR)
+                                                                                         • Sensor distortion function
+                                                                                                  𝑓 𝑥 𝑡 =𝑥 𝑡 +𝑛 𝑡
+                                                                                         • The RMS value of the noise
+                                                                                                                             1 𝑇      2
+                                                                                                       𝑁 = lim                න 𝑛 𝑡       𝑑𝜏
+                                                                                                                𝑇→∞         2𝑇 −𝑇
+                                                                                                                            𝑋
+                                                                                         • SNR in decibels 𝑆𝑁𝑅𝑑𝐵 = 20 log10
+                                                                                                                            𝑁
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                       (21/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensor specifications
+   • ADXL330 accelerometer datasheet                                                     • Bandwidth (BW) given as approx.
+                                                                                            – High minus low (fH – fL), or
+                                                                                            – 3dB rolloff, f-3dB , or
+                                                                                            – Resonant peak, fn
+                                                                                                        k                               1     Stiffness
+                                                                                                   wn =                     or    fn =
+                                                                                                        m                              2p      Mass
+
+
+
+
+                                                                                                      Response Amplitude
+                                                                                                                                        fn
+
+
+
+
+                                                                                                                                             f3dB
+                                                                                                                                        x
+                                                                                                                           fL                             fH
+
+                                                                                                                                 Frequency (Hz)
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                                   (22/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensors/Actuators for close-loop control system
+   • Classic control method                                                              • Actuators
+   • Interfacing with Sensors/Actuators                                                  • Solenoids 电磁铁
+                                                                                         • Permanent magnetic DC (PMDC)
+                                                                                           motor 有刷电机
+                                                                                         • Brushless DC motor 无刷电机
+                                                                                         • Stepper motor 步进电机
+                                                                                         • Servo motor 伺服电机/舵机
+
+
+
+
+                                                                                          (Figures are from internet)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (23/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Actuators – Solenoids 电磁铁
+   • Also called: electromagnetic linear actuator 线性马达
+   • Joycon vibration
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (24/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Actuators - Permanent magnetic DC (PMDC) motor
+   • Principle                                                                                • The motor curve
+
+             Brush to
+             change the
+             current
+             direction
+
+
+
+   • Driver – the H-bridge
+                                                                                              有刷电机
+
+
+                                                                                                                                      How to
+                                                                                                                                     change ?
+
+
+                                                                                              The speed of a DC motor is directly
+                                                                                              proportional to the applied input voltage
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                  (25/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Actuators – Brushless DC motor                                                                        直流无刷电机
+
+
+
+
+       无刷电机中使用电枢绕组作为定子，
+       使用钕铁硼的永磁材料作为转子，
+       以霍尔传感器取代碳刷换向器
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (26/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Pulse width modulation (PWM)
+   • Many 8051 derivatives & other MCUs
+     have hardware I2C, SPI, PWM
+     peripherals
+   • PWM is controlled by certain
+     registers or can be generated by
+     properly utilizing Timers
+
+
+
+
+                                                                                                 The duty cycle or on-time of these pulses
+                                                                                                 determines the average voltage,
+                                                                                                 which appears across motor terminals.
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                     (27/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   DC Motor Interfacing
+   • L293N H-bridge Motor Driver
+   • Max Current: 2A
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (28/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Actuators - Stepper motor                                                       步进电机是一种可以将脉冲信号转换
+                                                                                   为角位移或线位移的开环控制电机。
+   • Stepper motor
+                                                                              1. 直流无刷电机比步进电机的转速高。
+                                                                              2. 直流无刷电机与步进电机的驱动原理不同，
+                                                                                 直流无刷电机是靠霍尔元件定位来提供交变电源
+                                                                                 控制转动的。步进电机是靠单项脉冲电压直接驱
+                                                                                 动的，不需要霍尔元件定位，可以通过控制加给
+   • More poles                                                                  电机的脉冲个数，来精确定位旋转的角度。
+                                                                              3. 一般直流无刷电机用于控制精度要求不高的地方。
+                                                                                 步进电机就用于控制精度要求比较高的地方。
+
+                                                                                               1) 使用GPIO 延时模拟脉冲控制
+                                                                                               2) 使用GPIO 中断模拟脉冲控制
+                                                                                               3) 使用PWM 比较输出
+                                                                                               4) 使用PWM 控制匀速旋转
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (29/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Stepper Motor interfacing                                                              两个按键控制Stepper motor 正转和反转
+
+                                                                                          #include<reg51.h>
+                                                                                          unsigned char
+                                                                                          table[8]={0x02,0x06,0x04,0x0c,0x08,0x09,0x01,0x03};
+                                                                                          char k=0;
+
+                                                                                          void delay(void)
+                                                                                          {         unsigned int i,j;
+                                                                                                    for(i=0;i<=200;i++)
+                                                                                                       for(j=0;j<=255;j++) ;
+                                        high-voltage,
+                                        high-current                                      }
+                                        Darlington arrays
+                                                                                          void main(void)
+                                                                                          {     while(1)
+                                                                                                { switch( P0 & 0x03)
+                                                                                                    { case 0x01: P2=table[k]; delay(); k++; break;
+                                                                                                        case 0x02: P2=table[k]; delay(); k--; break;
+                                                                                                        default: break;
+                                                                                                    }
+                                                                                                    if(k>7) k=0;
+                                                                                                    else if(k<0) k=7;
+                                                                                                }
+                          ULN2003步进电机驱动                                                   }
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                       (30/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Servo motor                                  伺服电机/舵机
+   • Servo motors are generally an assembly of                                           • Generating PWM using 8051
+     four things:                                                                        • SG90 servo has practical duty cycle time for -
+      – a DC motor,                                                                        90° to +90 rotation that are different from
+      – a gearing set,                                                                     ideal.
+      – a control circuit                                                                • At ~0.54ms (2.7% duty cycle) we get shaft position
+                                                                                           at -90° of its rotation.
+      – a position-sensor (a potentiometer).
+                                                                                         • At ~1.4ms (7% duty cycle) we get shaft position
+   • The position of servo motors can be                                                   at 0° (neutral) of its rotation.
+     controlled more precisely than those of                                             • At ~2.4ms (12% duty cycle) we get shaft position
+     standard DC motors, and they usually have                                             at +90° of its rotation.
+     three wires (power, ground & control).
+
+
+
+
+                                                                  https://www.electronicwings.com/8051/servo-motor-interfacing-with-8051
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                      (31/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Servo motor Example code                                                            Generate 50Hz PWM to control Servo Motor
+                                                                                       in the angle between -90° to +90° rotation.
+   #define PWM_Period 0xB7FE                                                             /* Calc ON & OFF period from duty cycle */
+              /* loaded in timer for PWM period of 20ms*/                                void Set_DutyCycle_To(float duty_cycle)
+   sbit Servo_Motor_Pin = P2^0;                                                          { float period = 65535 - PWM_Period;
+   unsigned int ON_Period, OFF_Period, DutyCycle;                                          ON_Period = ((period/100.0) * duty_cycle);
+   void delay(unsigned int count)         /* delay of 1ms at ~11 MHz */                    OFF_Period = (period - ON_Period);
+   { int i,j;                                                                              ON_Period = 65535 - ON_Period;
+        for(i=0; i<count; i++)                                                             OFF_Period = 65535 - OFF_Period; }
+              for(j=0; j<112; j++); }
+   void Timer_init()                                                                     int main()
+   { TMOD = 0x01;                         /* Timer0 mode1 */                             { EA = 1;            /* Enable global interrupt */
+     TH0 = (PWM_Period >> 8);             /* 20ms*/                                        ET0 = 1;           /* Enable timer0 interrupt */
+     TL0 = PWM_Period;                                                                     Timer_init();
+     TR0 = 1;                                                                              while(1)
+   }                                                                                        { Set_DutyCycle_To(2.7);
+   void Timer0_ISR() interrupt 1                                                                    /* 0.54ms(2.7%) of 20ms(100%) period */
+   { Servo_Motor_Pin = !Servo_Motor_Pin;                                                      delay(1000);
+     if(Servo_Motor_Pin)                                                                      Set_DutyCycle_To(7);
+      { TH0 = (ON_Period >> 8);                                                                     /* 1.4ms(7%) of 20ms(100%) period */
+         TL0 = ON_Period;                                                                     delay(1000);
+      } else { TH0 = (OFF_Period >> 8);                                                       Set_DutyCycle_To(12);
+               TL0 = OFF_Period;                                                                    /* 2.4ms(12%) of 20ms(100%) period */
+            }                                                                                 delay(1000);
+   }                                                                                        }
+                                                                                         }
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                      (32/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+                                                     步进电机                                             有刷电机                          无刷电机
+                                         通过驱动电路按决定电枢绕组                                          通过电刷和换向器的                        通过用磁极位置传感器和半导
+            旋转方法                         各相（有两相、三相、五相）                                         滑动接触式整流机构，                        体开关代替电刷和换向器的功
+                                             的顺序励磁。                                              切换电枢电流。                            能来实现无刷。
+            驱动电路                                         需要                                              不需要                          需要
+                                               转矩比较大。                                          启动转矩大，转矩与电枢电流成正比。
+               转矩                           （特别是低速时的转矩）                                           （中～高速时的转矩比较大）
+                                            与输入脉冲频率成正比。                                            与电枢施加电压成正比。
+            旋转速度                                                                                 速度随着负载转矩的增加而下降
+                                             在低速范围有失步区
+                                                                                         受电刷和换向器整流机构限制，
+            高速旋转                      高速旋转有难度（需要放慢速度）
+                                                                                             最高可到几千rpm
+                                                                                                           最高可到几千～几万rpm
+                                          由轴承寿命决定。                                        受电刷和换向器磨损的限制。     由轴承寿命决定。
+            旋转寿命                            ~几万小时                                            几百～几千小时        几万～几十万小时
+                                          需要改变驱动电路                                         使引脚电压的极性相反       需要改变驱动电路
+       正转和反转方法                             励磁相的顺序                                              即可反转          励磁相的顺序
+                                      可进行旋转速度和位置（旋转量）
+                                                                                             恒速旋转需要速度控制（使用速度传感器的反馈控制）。
+             控制性                        由指令脉冲决定的开环控制
+                                                                                                由于转矩与电流成正比，因此转矩控制很容易
+                                         （但存在失步问题）
+                                                                                             容易：制造商和品种多，                         相对困难：主要是针对特定应
+       获取的难易程度                                   容易：品种比较多
+                                                                                                 选项多                                用的专用电机
+                                      如果包括驱动电路，则价格较贵。                                         相对便宜，无芯电机                            如果包括驱动电路，
+               价格                         比无刷电机便宜                                            因其磁铁升级而有点贵。                            则价格较贵。
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                   (33/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Interfacing sensors & actuators
+                                                                                         • If transducers IC has build-in
+                                                                                           interface driver, use the protocol, i.e.
+                                                                                           USART/I2C/SPI/CAN etc for
+                                                                                           communication
+                                                                                         • PWM is widely used for motor
+                                                                                           control
+                                                                                         • Otherwise, an analog circuit is
+                                                                                           usually required, internal or external
+                                                                                           ADC/DAC interface should be
+                                                                                           implemented
+                                                                                         • Need to know your application
+                                                                                           requirement
+
+                                                                                                                        (Figures are from internet)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                              (34/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensors with digital interface                                                             • I2C interface for IMU        Datasheet !
+                                                                                              • TX/RX for wireless
+                                                                                              • Data & control pins for LCD1602
+                                                                                                 • Connect LCD data pins to PORT2
+                                                                                                    sequentially.
+                                                                                                 • Connect LDC RS pin to P1.5,
+                                                                                                    RW pin to P1.6, and E to P1.7
+                                                                                              • RFID TX pin connects to the
+                                                                                                P3.0(RXD) of the microcontroller.
+
+
+
+
+                                                   https://www.electronicwings.com/8051/rfid-reader-em18-interface-with-8051
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                            (35/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Sensors with analog interface
+   • ADC = Analog-to-digital converter                                                        Analog-to-digital converter (ADC)
+   • EOC = end of conversion
+   • SAR = successive approximation register
+   • S/H = sample and hold circuit
+   • Vin = input voltage
+   • Vref = reference voltage
+
+
+
+
+                                                                                                                                 (Figures are from internet)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                             (36/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Digital-to-analog converter (DAC)
+   • DAC                                                                                 • The simplest form: R-2R ladder
+      – Resolution (based on bits)
+      – Conversion Accuracy
+      – FULL Scale Range
+      – Linearity
+      – Conversion Time
+   • Application
+      – Waveform generator
+      – Driver, reference
+   • Example
+      – DAC0832 (parallel) vs. TLC5615 (SPI)
+
+       Resolution for a 12bit DAC with 10V
+                                1         4095
+                      10 − 10  12 = 10       = 9.9976 (V)
+                               2          4096                                                                                   (Figures are from internet)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                             (37/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   8051 with ADC0809                                                  Old Fashion, but important logic sequence
+   • DAC0832                                               直通方式: WR1=WR2=0，数据可从输入端经两个寄存器直接进入D/A转换器。
+      – Single supply, +5V ~ +15V                          单缓冲方式: 两个寄存器之一始终处于直通，即WR1=0或WR2=0，另一个寄
+      – Ref voltage ±10V                                   存器处于受控状态。
+      – Current settling time: 1μs                         双缓冲方式: 两个寄存器均处于受控状态。这种工作方式适合于多模拟信号
+      – 8-bit input register                               同时输出的应用场合。
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (38/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Build-in ADC or DAC modules
+   • Nowadays, many MCUs (such as AT89C51, STC15) have build-in ADC or DAC
+     module, mostly 12~14 bit; OK for most general applications
+   • We will cover it at STM32 ADC/DAC modules
+   • Many ADC/DAC ICs come with digital interface (I2C/SPI)
+   Use precise resistors for high voltage ADC monitoring                                                 x & y joycon is analog input for ADC
+
+
+
+
+   Battery_Voltage=Get_Battery*(Vadc_range)*11/4096
+                     (12-bit ADC)
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                        (39/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Summary
+   • What is the difference among                                                        • Sensors & actuators act important
+     Sensitivity & Resolution &                                                            roles in building an embedded system
+     Nonlinearity ?                                                                      • Signal conditioning/processing is
+   • Full name of IMU, ADC, DAC, PWM                                                       critical
+
+   • Name some sensor examples using                                                     • Understand the basic principle of
+                                                                                           analog-to-digital conversion (ADC)
+     semiconductor or MEMS technology                                                      and digital-to-analog conversions
+   • What is the difference between                                                        (DAC)
+     Brush (PMDC) & Brushless DC motors                                                  • Understand the basic principle of
+   • What is the purpose of encoder in                                                     interfacing transducers with common
+     DC motors? And how to detect it?                                                      communication protocals
+   • What is a close-loop control system?                                                • Understand the operating principle
+                                                                                           of PWM controlled motor driver
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (40/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   传感器 与 AD/DA 小结
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (41/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   基于单片机的电子秤设计
+   • 关键词                                                                                 • 总体思路
+      – 电子秤，单片机，称重传感器，A/D转换，液
+                                                                                                                                 可扩展增加
+        晶显示器                                                                                                                     无线模块
+   • 设计任务：
+      – 设计一个基于单片机的小型电子秤，
+        可以在一定范围内称出物体的质量。
+
+   • 基本要求：
+      – 量程为 0~5kg 电子称，误差为1 ~2g。
+      – 带有超重报警器、蜂鸣器装置。
+      – 带有复位、上限设置功能。
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (42/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   系统设计
+   • 基于单片机的电子称系统主要分为六个部分：
+      – 第一部分：称重传感器。用来感应被测重力，输出微弱的毫伏级电压信号 (压力->电压)；后续通过
+        专用ADC芯片进行调理转换；选型比较后选用一款4线全桥称重传感器。
+      – 第二部分：24位A/D芯片HX711电路。用于对传感器信号进行调理转换。HX711 是海芯科技一款专
+        为高精度电子秤而设计的24 位A/D 转换器芯片，内置增益控制，精度高，性能稳定。
+        HX711芯片通过2线串行方式(I2C) 与单片机通信。
+      – 第三部分：单片机STC89C52为控制核心，实现电子秤基本功能 。
+      – 第四部分：按键输入。设置称重上限，控制等功能。
+      – 第五部分：电源系统。为单片机、HX711电路以及传感器供电。
+      – 第六部分：液晶显示。显示物体的重量，以及电子秤量程。
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (43/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   电路各组成部分                                                                                              HX711内部结构图
+        电源电路
+
+
+
+
+        单片机电路
+
+
+
+
+                                                                                                                                 LCD1602
+                                                                                   蜂鸣器电路                                         显示电路
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                   (44/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   实物与元器件清单                                                                        序号
+                                                                                     1      电阻
+                                                                                                    名称               原件规格
+                                                                                                                     2.2KΩ
+                                                                                                                                 数量
+                                                                                                                                 1     R1
+                                                                                                                                             元件编号
+
+                                                                                     2      电阻                       1KΩ         2     R2、R3
+                                                                                     3      电阻                       10KΩ        1     R4
+                                                                                     4      普通电容                     0.1μF       2     C2、C4
+                                                                                     5      普通电容                     100pF       2     C5、C7
+                                                                                     6      电解电容                     220μF       2     C1、C3
+                                                                                     7      电解电容                     10μF        1     C6
+                                                                                            开关                                   6     S1、S2、S3、
+                                                                                    8                                                  S4、S5、S6
+                                                                                    9       单片机                                  1     U1
+                                                                                   10       LCD显示器                               1     P10
+                                                                                   11       HX711                    ADC         1     P9
+
+                                      PCB图                                         12       LED灯                                 1     D1
+                                                                                   13       传感器                      5kg         1
+                                                                                            三端稳压集成                               1     P1
+                                                                                   14       电路LM7805
+                                                                                   15       蜂鸣器                                  1     LS1
+                                                                                   16       晶振                                   1     Y1
+                                                                                   17       三极管                                  1     Q1
+                                                                                   18       下载接口                                 1     P8
+                                                                                   19       传感器接口                                1     P9
+                                                                                   20       组排                                   1     P10
+                                                                                   21       DC9V电源接口                             1     P6
+
+                                  实物照片                                            https://wiki.dfrobot.com.cn/SKU_KIT0176_HX711%E9%87%8D%E9%87%8F%E4%BC%A
+                                                                                  0%E6%84%9F%E5%99%A8%E5%A5%97%E4%BB%B6
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                            (45/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   脉搏信号检测与分析电路设计
+   • 设计任务
+   • 脉搏信号检测与分析电路是通过采集人体脉搏跳动引起的一些生物信号，然后把生物
+     信号转化为物理信号，通过模数转换和微控制器将这些物理信号（脉搏跳动波形）显
+     示出来，从而方便人们通过波形信息分析人体血管弹性的生理变化。
+   • 电路设计的总体思路
+   • 设计中采用HK-2000B+脉搏传感器，该传感器集成力敏元件（PVDF压电膜）、灵敏
+     度温度补偿元件、感温元件。然后再经过电荷放大、电压放大的信号调理电路，可输
+     出反映脉搏跳动的电压信号。采样时间由定时器确定。
+   • 采用内部集成了模数转换的单片机和液晶显示模块LCD12864，将反映脉搏跳动的波
+     形显示出来。
+
+
+
+
+                                                                                                                   LCD 12864
+                脉    电   电
+   • 系统组成       搏    荷   压   单
+                                           传                  放               放                                电
+                                                              大               大                 片              路
+                                           感                                                    机
+                                           器                  电               电                                    显
+                                                              路               路                                    示
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (46/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   电路各组成部分
+                                                                         电源接口电路
+                                                    J1                                  VCC
+                                                                                                               +3.3v
+                                                                  VCC
+                                                             1
+                                                                  Gnd
+
+                                                                                                                                                                                                                                                        电荷放大电路作为压电式
+                                                             2
+
+                                                    Power_5v                                                                                                                  电荷放大电路
+                                                    J2
+
+                                                                                                                                                                                                                                                        传感器的输入电路，由一个
+                                                             1     +3.3v
+                                                             2     Gnd                                                                                                                                   C1
+                                                                                                 R11                  R1
+                                                                                                                      10k
+                                                    Power_3.3v                                   1k
+
+                                                    J4                                                                      +1.65v
+                                                                                                                                                                                                         100pF
+                                                                                                                                                                                                                                                        带反馈电容C1的高增益运算
+
+
+
+
+                                                                                             1
+                                                             1     output1
+                                                                                                                                                                                                  R4                R12
+                                                                                                                                                                                                                                                        放大器OPA2340构成。
+                                                             2      input2                             D1
+                                                                                                       LED            R2
+
+
+
+
+                                                                                             2
+                                                    TestPoint                                                         10k                                                                         500M              500M
+                                                    J5
+
+
+                                                    Output
+                                                             1
+                                                             2
+                                                                  output
+                                                                   Gnd
+                                                                                                                                                                                                                                                        由于运算放大器输入阻抗极
+                                                                                                                                                                                                                      U1:A
+                                                                                                                                                                                                                                                        高，放大器输出端几乎没有
+
+
+
+
+                                                                                                                                                                                                          4
+                                                                                                                                                                    R3                              2
+                                                                   传感器接口电路                                                                          Signal          10M
+                                                                                                                                                                                                    3
+                                                                                                                                                                                                                        1            output1
+                                                                                                                                                                                                                                                        分流，其输出电压为
+
+
+
+
+                                                                                                                                                                                                          8
+                                                                 PHONEJACK                       VCC
+                                                                                                                                                                                                                      OPA2340PA
+                                                                                                                                                                                                                                                                         KQ          Q
+                                                                                                                                                                                                                                                        UO = −                    −
+                                                                                          5
+
+                                                                                         4
+                                                                                                                                                                                              R5
+                                                                                         3
+
+                                                                                         2            signal
+                                                                                                                                                                                              10M         +3.3v
+                                                                                                                                                                                                                                                                    (1 + K ) * C1    C1
+                                                                                         1             GND
+                                                                 Input
+
+
+
+
+     采用运放OPA2340：
+                                                                                                                                                                                                                                                                  UC1701X(矽创)
+                                                                                                                                                        单片机及显示电路
+
+     类型：轨到轨单电源运放                                                                        电压放大电路                                                                                       U2                                                                 J6
+
+                                                                                                                                                                                                                                                                  128*64 LCD模块
+                                                                                                                                                                              19                                              39                    1
+                                                                                                                                                                                      XTAL1                       P0.0/AD0
+                                                                                                                                                                                                                              38                    2
+                                                                                                                                                                            X1                                    P0.1/AD1
+
+
+     电源：2.7 V 到 5 V
+                                                                                                                                                                                                                              37                    3
+                                                                                                               2M                                                                                                 P0.2/AD2
+                                                                                        R7                           RV1                                                    CRYSTAL
+                                                                                                                                                                              18
+                                                                                                                                                                                   XTAL2                          P0.3/AD3
+                                                                                                                                                                                                                              36                    4
+                                                                                                                                                                                                                              35                    5
+
+                                                                                                                                                                                                                                                                  引出12个引脚接口
+                                                                                                                    44%                                                                                           P0.4/AD4                     GND 6
+                                                                                        10k                                                                                                                                   34
+                                                                                                                                                               C3                                                 P0.5/AD5
+
+
+
+
+                                                                                                                                       VCC
+                                                                                                                                                                                                                                               VCC 7
+
+
+     转换速率：6 V/µs
+                                                                                                                                                                                                                              33
+                                                                                                                                                                                                                  P0.6/AD6                     P24 8
+                                                                                                                                                                                 9                                            32
+                                                                                                                                                                                      RST                         P0.7/AD7                     P23 9
+
+
+                                                                                                                                                                                                                                                                  8~12号引脚分别接
+                                                                                                                                                                                                                                   P20         P22 10
+                                                                                                                                                 BUTTON 10uF                                                       P2.0/A8
+                                                                                                                                                                                                                              21
+                                                                                                                                                                                                                                               P21 11
+                                                                                                                                                        R9                                                                    22   P21
+
+
+     带宽：5.5 MHz
+                                                                                                                                             1        2                                                            P2.1/A9                     P20 12
+                                                                                                                                                                                                                              23   P22
+                                                                                                               U1:B                                                           29
+                                                                                                                                                                                                                  P2.2/A10
+                                                                                                                                                                                                                              24   P23
+
+
+                                                                                                                                                                                                                                                                  单片机P2.4, P2.3,
+                                                                                                                                                              220
+                                                                                                       4
+
+
+
+
+                                                                                                                                                                                      PSEN                        P2.3/A11
+                                                     C2                  R6                                                                                  R10              30
+                                                                                                                                                                                      ALE                         P2.4/A12
+                                                                                                                                                                                                                              25   P24                  LD12864
+                                           input2                                                 6                                                                           31                                              26
+                                                                                                                                                                                      EA                          P2.5/A13
+                                                                                                                7             output                                                                                          27
+                                                                         10k                                                                                 5k1                                                  P2.6/A14
+                                                     47uF/25v                  +1.65V             5                                                                                                                           28
+
+
+                                                                                                                                                                                                                                                                  P2.2, P2.1, P2.0,
+                                                                                                                                                                                                                  P2.7/A15
+
+
+
+
+                R7 + RV 1
+                                                                                                                                                                                 1                                            10
+                                                                                                                                                                                      P1.0/T2                     P3.0/RXD
+                                                                                                       8
+
+
+
+
+                                                                                                                                                                                 2                                            11
+                                                                                                               OPA2340PA                                           output             P1.1/T2EX                   P3.1/TXD
+
+
+
+           AV =
+                                                                                                                                                                                 3                                            12
+                                                                                                                                                                                      P1.2                        P3.2/INT0
+
+
+                                                                                                                                                                                                                                                                  6号引脚接地，
+                                                                                                                                                                                 4                                            13
+                                                                                                                                                                                      P1.3                        P3.3/INT1
+                                                                                        R8                                                                                       5
+                                                                                                                                                                                      P1.4                          P3.4/T0
+                                                                                                                                                                                                                              14
+                                                                                        10k                                                                                      6                                            15
+                                                                                                                                                                                      P1.5                          P3.5/T1
+                                                                                                      +3.3v                                                                      7                                            16
+                                                                                                                                                                                      P1.6                         P3.6/WR
+
+
+                   R6                                                                                                                                                            8
+                                                                                                                                                                                      P1.7
+                                                                                                                                                                                     STC12C5A16S2
+                                                                                                                                                                                                                   P3.7/RD
+                                                                                                                                                                                                                              17
+
+
+                                                                                                                                                                                                                                                                  7号接电源。
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                                                                                                                                                        (47/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   单片机电路 & 布线 & 实物图
+   • 主控：STC12C5A60S2
+   • STC生产的单时钟/机器周期（1T）的
+     单片机，是高速/低功耗/超强抗干扰的
+     新一代8051单片机，指令代码完全兼容
+     传统8051，但速度快8~12倍。
+   • 内部集成了MAX810专用复位电路，
+     8路高速10位A/D转换。单片机内部完
+     成A/D转换，通过P1.0口将脉搏的模拟
+     电压信号转换为数字信号，单片机处理
+     后显示到 LCD12864 上。
+   • 由晶振电路和复位电路组成单片机的
+     最小系统。
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (48/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   WiFi Module 无线模块
+   • ESP8266 comes with capabilities of
+     2.4 GHz Wi-Fi (802.11 b/g/n,
+     WPA/WPA2),
+   • I² C & SPI protocol & 10-bit ADC
+   • I² S interfaces with DMA (Direct
+     Memory Access) , UART, and PWM.
+   • To communicate with the ESP8266
+     WiFi module, microcontroller needs
+     to use set of AT commands.
+                                                    其他无线模块/SoC
+   • Microcontroller communicates with              • nRF2401/nRF24E1 (8051 compatible)
+     ESP8266 WiFi module using UART                 • nRF51/52 (BT & Cortex)
+     having specified Baud rate.                    • STM32L/STM32WB (SoC)
+   • Please refer online resource for               • TLSR8359 / SX1281 LoRa
+     Interfacing          http://news.eeworld.com.cn/mcu/ic477280.html
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (49/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Bluetooth Module 蓝牙模块选型指南
+
+
+
+
+                     https://wiki.dfrobot.com.cn/DFRobot%E7%94%B5%E6%9C%BA%E9%A9%B1%E5%8A%A8%E5%8F%8A%E
+                     8%93%9D%E7%89%99%E6%A8%A1%E5%9D%97%E9%80%89%E5%9E%8B%E6%8C%87%E5%8D%97
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (50/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Smart Watch                                                                        https://github.com/SMotlaq/open-watch
+
+   • Hardware design                                                                      • Firmware programming
+   •   Processor: STM32F030C8 (ARM Cortex-M0)                                             •   RTC & Buzzer & OLED & Touch buttons
+   •   Heartbeat and pulse oximeter sensor: MAX30102                                      •   Bluetooth commands
+   •   Motion sensor: MPU6050                                                             •   Vibration waves
+   •   Display: 1.3" OLED 64*128 pixels                                                   •   Battery level indicator / Power saving
+   •   Vibration motor                                                                    •   MPU6050 (raw data, filter, motion detection)
+   •   Bluetooth: HC-05                                                                   •   PPG sensor
+   •   Touch driver: BS814-A                                                              • Android programming
+   •   Battery: 3.7v Li-Po & Battery charger: TP4056                                      •   Get Bluetooth data & UI/UX
+                                                                                          •   PPG data analysis ( Heartbeat, SpO2 )
+                                                                                          • PCB/Assembling/Testing
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                     (51/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Smart Watch solutions & ref designs
+
+
+
+
+                                                                                          https://www.nxp.com/applications/mobile/wearables/smart-watch
+
+
+
+
+   https://www.st.com/en/applications/wearable/smart-watches.html
+                                                                                             https://www.ti.com/solution/smartwatch?variantid=34352
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                        (52/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Q&A
+   • What sensors & actuators do we need to make a balance car ?
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (53/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+                                       嵌入式系统设计 -                                               我们刚上路 ！                           Video – 12’
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (54/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Lecture #8: Model based design for CPS
+
+
+                                                                                                                    Infrastructural
+                                                                                                                    core
+
+
+
+                                                             The Cloud!
+                                                                                                                             Sensory
+                                                                                                                             swarm
+
+
+
+
+                                                                                                                      Mobile
+                                                                                                                      access
+
+                                                                                                                            (Courtesy: J. Rabaey)
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                            (55/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Modeling, Design, Analysis
+    Modeling is the process of
+    gaining a deeper understanding
+    of a system through imitation.
+    Models express what a system does
+    or should do.
+    Design is the structured creation of artifacts.
+    It specifies how a system does what it does.
+    Analysis is the process of gaining a deeper
+    understanding of a system through dissection.
+    It specifies why a system does what it does
+    (or fails to do what a model says it should do).
+                                                                                                                                 (Lee & Seshia @ Berkeley)
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                                 (56/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Level of abstractions in embedded computing
+
+           Computation
+
+
+
+                                                    Control
+
+
+                                                                                   Physical
+                                                                                plant/process
+
+
+                                              Communication
+
+
+                                                                                                                Synchronous digital logic
+                                                                                                                is a deterministic model
+       Levels of abstraction for an
+   electronic computing system (H&H)
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                               (57/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Level of abstractions in embedded computing
+
+           Computation
+
+
+
+                                                    Control
+
+
+                                                                                   Physical
+                                                                                plant/process                Waterman, et al.,
+                                                                                                             The RISC-V Instruction
+                                                                                                             Set Manual, UCB/EECS-2011-62, 2011
+                                              Communication
+                                                                                                          Instruction Set Architectures
+                                                                                                                      (ISAs)
+                                                                                                             are deterministic models
+       Levels of abstraction for an
+   electronic computing system (H&H)
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                  (58/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Level of abstractions in embedded computing
+
+           Computation
+
+
+
+                                                    Control
+
+
+                                                                                   Physical
+                                                                                plant/process
+
+
+                                              Communication
+
+                                                                                                             Single-threaded imperative
+                                                                                                                 Software programs
+                                                                                                              are deterministic models
+       Levels of abstraction for an
+   electronic computing system (H&H)
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                            (59/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Level of abstractions in embedded computing
+
+           Computation
+
+
+
+                                                    Control
+
+
+                                                                                   Physical
+                                                                                plant/process
+
+
+                                              Communication
+
+
+
+
+       Levels of abstraction for an                                                                         Combinations of Deterministic Models
+   electronic computing system (H&H)                                                                               are Nondeterministic
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                    (60/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   A Model Need not be True to be Useful
+   • “Essentially,                                                                       • In science, the value of a model lies
+                                                                                           in how well its behavior matches that
+     all models are wrong,                                                                 of the physical system.
+     but some are useful.”                                                               • In engineering, the value of the
+                                                                                           physical system lies in how well its
+                                                                                           behavior matches that of the model.
+   • Empirical Model-Building and Response                                                             构建理论模型，认识物理世界
+     Surfaces.
+   • Box, G. E. P. and N. R. Draper, 1987:                                                             基于理论模型，构建新物理系统
+   • Wiley Series in Probability and Statistics,
+                                                                                         • For a model to be useful, it is
+                                                                                           necessary (but not sufficient) to
+                                                                                           be able to construct a faithful
+                                                                                           physical realization
+                        (Lee & Seshia @ Berkeley)
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (61/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   State space for Modeling the CPS
+   • Definition
+     – state of a system is its condition at a
+       particular point in time.
+     – the state affects how the system
+       reacts to inputs.
+     – The state is a summary of the past.
+     – It has an effect on the system’s
+       reaction to current or future inputs.
+   • The state space of the car counting
+     system
+               𝑆𝑡𝑎𝑡𝑒 = 0,1,2, … , 𝑀
+   • Discrete models with finite state spaces
+     are called
+     finite-state machines (FSMs)
+                                                                                                                                 (L&S)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (62/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Finite State Machines (FSM)
+   • or Finite State Automation (FSA)
+      – Models of behaviors of a system or object, with a limited number of defined conditions or
+        modes, where modes change with circumstance
+
+   • 4 main elements:
+      – States: define behavior and may produce actions
+      – State transitions: move from one state to another
+      – Rules (or conditions): must be met to allow a state transition
+      – Input events: externally or internally generated; may trigger rules and lead to state
+        transitions
+
+   • An initial state and a current state
+                              Good for representation and
+                              modeling sequences of behaviors
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (63/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Dynamics of a discrete system
+   • In physics, a dynamical system is                                                   • Reactions triggering
+     described as a "particle or ensemble                                                   – Event trigger (e.g., INT0)
+     of particles whose                                                                     – Time trigger (e.g., TF0 timer function)
+     state varies over time and
+     thus obeys differential equations
+     involving time derivatives (Wikipedia:
+     dynamical system).
+   • The dynamics of a discrete system
+     can be described as a sequence
+     of steps that we call reactions
+                                                                                                   Example: 8051 interrupts
+                                                                                                                                 (L&S)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (64/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   State Transitions
+   • Transition between states governs
+     the discrete dynamics of the FSM
+   • Guard: a predicate that evaluates to
+     true when the transition should be
+     taken
+   • Action: specifies the outputs on each
+     reaction
+   • Valid guards
+
+
+
+
+                                                                                                                                 (L&S)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (65/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Formal model
+   • Describing the same discrete dynamics                                                        Nondeterministic model
+     in mathematical notation                                                                     of pedestrians that arrive at a crosswalk
+
+   (States, Inputs, Outputs, update, initialState)
+
+   • States is a finite set of states;
+   • Inputs is a set of input valuations;
+   • Outputs is a set of output valuations;
+   • update : States × Inputs →
+     States × Outputs is an update function,
+     mapping a state and an input valuation to
+     a next state and an output valuation;
+   • initialState is the initial state.
+                                                                                                                                 (L&S)
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                  (66/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Finite state machine for embedded control
+   • We want to design a controller for safety belt
+      – If the seat is seated and the belt is not buckled within a set time, a buzzer
+        will sound until the belt is buckled → event driven
+      – Inputs: seat sensor, timer, belt sensor
+      – Output: buzzer, timer                                     no seat/-
+      – System: specialized computer         no seat/    idle
+        for reacting according to          buzzer off                seat/timer on
+        events sensed by the sensors                        no seat/-
+                                                                                   no belt and
+                                                                                   no timer/-
+                                                                            buzzer                                               seated
+                                                                                              Belt/buzzer on
+                                                                                                                       belt/-
+                                                                                  belt/
+                                                                             buzzer off                                    no belt/timer on
+                                                                                                         belted
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                      (67/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   C Code Structure & Implementation
+   • Current state is kept in a variable                                          • C Implementation
+   • State table is implemented as                                                #define IDLE                  0
+     a switch                                                                     #define SEATED                1
+                                                                                  #define BELTED                2
+      – Cases define states
+                                                                                  #define BUZZER                3
+      – States can test inputs and produce
+        outputs                                                                   switch (state)
+      – Switch is repeatedly evaluated by                                         {                                              // This is OK:
+                                                                                    case IDLE:                                   SomeFunction()
+        while-loop                                                                    if (seat)                                  { if(X_State == “X_IDLE”)
+                                                                                         { state = SEATED;                           {
+                                                                                                                                     next state for this function;
+                                                                                           timer_on = TRUE; }                        }
+                                                                                       break;                                    }
+                                                                                    case SEATED:
+                                                                                      if (belt)                                  // This is NOT ok:
+                                                                                            state = BELTED;                      SomeFunction()
+                                                                                         else if (timer)                         {
+                                                                                            state = BUZZER;                          while(X_State != “X_IDLE”);
+                                                                                      break;                                     }
+                                                                                  }
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                                    (68/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Practice
+   switch (state) {
+   case A:
+     if (in1==1) { x = a; state = B; }                                                                                           r=0/out2=1
+          else { x = b; state = D; }                                                                  in1=1/x=a
+      break;                                                                              A                                       B
+   case B:
+     if (r==0) { out2 = 1; state = B; }                                                                              r=1/out1=0
+                                                                                          in1=0/x=b
+         else { out1 = 0; state = C; }
+      break;
+   case C:
+                                                                                                          C                           D
+     if (s==0) { out1 = 0; state = C; }
+         else { out1 = 1; state = D; }                                                s=0/out1=0                       s=1/out1=1
+      break;
+   }
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                      (69/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM for 按键事件检测
+   • 1. 按键的状态
+   • 常用按键只有2个状态
+     释放（release）和按下（press）
+   • 2. 按键的动作
+   • 常用按键只有2个动作：按下和抬起
+   • 3. 按键的状态转换图
+   • 当按键被按下时候，它的状态为按下，当按键松
+     开时，它的状态为松开：
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (70/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM for 按键事件检测                                                                              事件检测
+
+   • 枚举变量：按键状态与事件
+                                                                                                                                 事件处理
+
+
+
+
+     状态初始化
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                (71/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   思考： 如何利用FSM实现下列功能？
+   Tetris 俄罗斯方块游戏                                                                         单片机多级菜单
+
+
+
+
+                                    全自动洗衣机面板
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (72/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM Examples
+   • Finite state machine for program modeling
+
+   • Finite state machine for circuit control
+
+   • Finite state machine for embedded control
+
+   • The traffic light example
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (73/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Finite state machine for program modeling
+   • Consider the Program
+         main()
+         {
+             i=5; j=6; k=0;
+             k=i+j;
+             if (k>0) i=0;
+                                                                               What is its “state” ?
+             else j=0;
+         }
+
+
+   • Can this program be modeled with a FSM?
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (74/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Initial State
+
+                                main()
+                                {                                                                                 Memory
+                                  i=5; j=6; k=0;
+                                  k=i+j;
+                                                                                                                          6      j
+                                  if (k>0) i=0;
+                                  else j=0;
+                                }                                                   CPU                                   5      i
+
+
+
+                                                                                                                           0         k
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (75/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   State 1
+
+                                main()
+                                {                                                                                 Memory
+                                  i=5; j=6; k=0;
+                                  k=i+j;
+                                                                                                                          6      j
+                                  if (k>0) i=0;
+                                  else j=0;
+                                }                                                   CPU                                   5      i
+
+
+
+                                                                                                                          11         k
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (76/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   State 2
+
+                                main()
+                                {                                                                                 Memory
+                                  i=5; j=6; k=0;
+                                  k=i+j;
+                                                                                                                          6      j
+                                  if (k>0) i=0;
+                                  else j=0;
+                                }                                                   CPU                                          i
+                                                                                                                          0
+
+
+
+                                                                                                                          11         k
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (77/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   State 3
+
+                                main()
+                                {                                                                                 Memory
+                                  i=5; j=6; k=0;
+                                  k=i+j;
+                                                                                                                          0      j
+                                  if (k>0) i=0;
+                                  else j=0;
+                                }                                                   CPU                                          i
+                                                                                                                          5
+
+
+
+                                                                                                                          11         k
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                 (78/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM Representing the Program
+                                                                                                                           Flow Chart
+
+
+                     k=i+j
+                                                  2                         k<=0                                                 k=i+j
+
+
+              1                                                                                                   yes                    no
+V
+
+
+
+
+                                         k>0                                         4                                           k>0
+
+
+
+                                                  3                                                       i=0                                 j=0
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                       (79/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Finite state machine for circuit control
+
+                                 Processor
+                                                          Register                               Memory
+                                              AX
+                                              BX                                                                             x
+                                                                …
+                                                                                                                             a
+                                                                                     data
+
+                                                                                                                            b
+                                                                                             01 0000001 1000010             MOV AX, a
+                               Controller                                                                                   ADD AX, b
+                                                                                             11 0000001 1000110
+                                                                                             01 1000011 0000001             MOV x, AX
+                                                               ALU                                        …
+                               clock
+
+                                                IR                      PC
+                                                                                          address           PC: program counter
+                                                                                                            IR: instruction register
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                (80/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Step 1: Fetch (MOV AX, a)
+
+                                                          Register                               Memory
+                                              AX
+                                              BX                                                                            x
+                                                                …
+                                                                                                                            a
+                                                                                    data
+
+                                                                                                                            b
+                                                                                             01 0000001 1000010             MOV AX, a
+                               Controller                                                                                   ADD AX, b
+                                                                                             11 0000001 1000110
+                                                                                             01 1000011 0000001             MOV x, AX
+                                                              ALU                                         …
+                               clock
+
+                                              IR                        PC
+                                  01 0000001 1000010                0000111              address
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                (81/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Step 2: Decode (MOV AX,a)
+
+                                                          Register                               Memory
+                                              AX
+                                              BX                                                                            x
+                                                                …
+                                                                                                                            a
+                                                                                    data
+
+                                                                                                                            b
+                                                                                             01 0000001 1000010             MOV AX, a
+                               Controller                                                                                   ADD AX, b
+                                                                                             11 0000001 1000110
+                                                                                             01 1000011 0000001             MOV x, AX
+                                                              ALU                                         …
+                               clock
+
+                                              IR                        PC
+                                  01 0000001 1000010                0000111              address
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                (82/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Step 3: Execute (MOV AX,a)
+
+                                                          Register                               Memory
+                                              AX       00000000 00000001
+                                              BX                                                                x
+                                                                …                            00000000 000000001 a
+                                                                                    data
+
+                                                                                                                            b
+                                                                                             01 0000001 1000010             MOV AX, a
+                               Controller                                                                                   ADD AX, b
+                                                                                             11 0000001 1000110
+                                                                                             01 1000011 0000001             MOV x, AX
+                                                              ALU                                         …
+                               clock
+
+                                              IR                        PC
+                                  01 0000001 1000010                0000111              address
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                (83/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   Finite State Machines for embedded control
+ STATE = “START”;                                            • A finite state machine is a
+ Void main(void)                   void startCode()             system where only a set
+                                   { // Some code here
+ {                                                              number of real, defined
+                                       STATE = “MIDDLE”;
+   do{                                                          states can exist.
+                                   }
+      if(STATE == “START”)
+      { startCode();                                         • A finite state, no matter
+                                   void middleCode()
+      } else if(STATE == “MIDDLE”) { // Some code here          WHERE it is, will ALWAYS
+      { middleCode();                  STATE = “END”;
+                                                                end up back at the beginning;
+      } else if(STATE == “END”)    }                            i.e. no matter where you are
+      { endCode();
+                                                                in the code, you will end up
+      } else {                     void endCode()               at the beginning and
+                                   { // Some code here          therefore can NEVER get
+         STATE = “START”;
+                                       STATE = “START”;         stuck in an infinite loop.
+      }
+                                   }
+   } while(1);                                         https://www.allaboutcircuits.com/technical-articles/
+ }                                                     finite-state-machines-microcontrollers/
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (84/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM implementation in MCU
+                                                                                         • Firstly, there are two finite state
+                                   sendI2CStartBit();
+                                                                                           machines! The first FSM is the main
+                                   while (I2CSTARTWAIT);
+                                                                                           code that loops around, calling the three
+                                                                                           main functions. The second finite state
+                                                                                           machine is the I2C handler that can be
+                                                                                           in a number of possible states, the most
+                                                                                           important state being the idle state.
+                                                                                         • The idle state is important because it
+                                                                                           will tell us that the I2C system is not
+                                                                                           doing anything
+                                                                                            — it is at that point we can ask it to
+                                                                                           send start bits, send a byte, receive a
+                                                                                           byte, or any other operations.
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                         (85/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM implementation in MCU                                                             Void i2cUpdate()
+                                                                                         { if(i2cState == “STARTBIT”)
+                                                                                                  { sendI2CStartBit();
+                                                                                                      i2cState = “CHECKSTART”;
+                                                                                                  }
+                                                                                             if(i2cState == “CHECKSTART”)
+                                                                                                  { if(I2CSTARTWAIT == 0)
+                                                                                                      { i2cState = “I2CIDLE”
+                                                                                                      }
+                                                                                                  }
+                                                                                             if(i2cState == “I2CIDLE”)
+                                                                                                  {
+                                                                                                  }
+                                                                                         }
+                                                                                         // get a I2C handler to send a start bit
+                                                                                         SomeFunction()
+                                                                                         { if(i2cState == “I2cIDLE”)
+                                                                                                  { i2cState = “STARTBIT”;
+                                                                                                  }
+                                                                                         }
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                            (86/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM implementation in MCU
+      How do we know when the I2C handler is done?
+                                                                                         // This is OK:
+      Probe the i2cState value but
+      DO NOT execute a while loop.                                                       SomeFunction()
+                                                                                         { if(i2cState == “I2CIDLE”)
+                                                                                                 {
+                                                                                                    next state for this function;
+                                                                                                 }
+                                                                                         }
+
+                                                                                         // This is NOT ok:
+                                                                                         SomeFunction()
+                                                                                         {
+                                                                                              while(i2cState != “I2CIDLE”);
+                                                                                         }
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                            (87/88)
+Progress: Sensors >> Datasheet & Spec. >> Actuators >> ADC/DAC >> System Design Examples >> Model based design >> FSM Examples
+
+
+   FSM implementation in MCU
+                                                                                         SomeFunction()
+   Void i2cUpdate()
+                                                                                         {  if(internalState == “STATE1”)
+   {     if(i2cState == “STARTBIT”)
+                                                                                             {    if(i2cState == “I2cIDLE”)
+                {    sendI2CStartBit();
+                                                                                                   { i2cState = “STARTBIT”;
+                     i2cState = “CHECKSTART”; }
+                                                                                                     internalState = “STATE2”;      }
+         if(i2cState == “CHECKSTART”)
+                {    if(I2CSTARTWAIT == 0)                                                      } else if(internalState == “STATE2”)
+                     {                                                                          {    if(i2cState == “I2cIDLE”)
+                         i2cState = “I2CIDLE” }                                                         { if(i2cError == 1)
+                }                                                                                      {     // Error handling code here
+         if(i2cState == “I2CIDLE”)                                                                     } else
+                {}                                                                                     {     // Send data, read data
+   }                                                                                                             or any old code
+                                                                                                            internalState = “STATE1”; }
+                                                                                                        }
+                                                                                                }
+                                                                                         }
+
+
+
+
+EE114 Embedded System -> Lecture 7 & 8 Transducers & CPS                                                                                   (88/88)
+

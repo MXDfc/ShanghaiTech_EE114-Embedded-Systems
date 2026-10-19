@@ -1,0 +1,1737 @@
+                             EE114: Introduction to
+                              Embedded Systems
+                Dr. Tao Wu       吴涛 研究员，博导
+                wutao@shanghaitech.edu.cn
+                Office: SIST Bldg 3-326
+                CourseWeb: http://10.15.25.5/
+                Website: http://small.shanghaitech.edu.cn
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+STM32微控制器及开发环境搭建
+
+          ◆ 了解STM32的性能参数，能够进行基本的器件选型；
+          ◆ 能够从ST官网上下载相应芯片的数据手册、用户手册
+                 等官方文档；
+
+          ◆ 理解和掌握STM32的三种开发方式，即
+            寄存器方式、标准外设库方式和HAL库方式；
+          ◆ 能够独立搭建STM32开发环境，掌握 keil 的调试方法。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (2/78)
+
+
+
+
+                                                                                   1
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍                                             ST公司微处理器系列产品
+
+
+
+
+                                                       主流
+
+
+                                                     超低功耗
+
+
+                                                          车用
+
+                                                     STM8主打低功耗，主要针对8位
+                                                     微控制器市场 – 对标传统 51系列
+EE114 Embedded System -> STM32 开发环境搭建                                              (3/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍
+                                                                STM32F2、STM32F4、
+                                                              STM32F7为高性能MCU
+
+                                                               STM32F4系列基于ARM
+                                                              Cortex-M4内核，主频高
+                                                              达180MHz，具有DSP和
+                                                              FPU等功能。
+
+                                                               STM32F1系列是ST公司
+                                                              主推的STM32系列MCU，
+                                                              基于ARM Cortex-M3内核，
+                                                              主频高达72MHz
+                           STM32系列MCU
+
+EE114 Embedded System -> STM32 开发环境搭建                                              (4/78)
+
+
+
+
+                                                                                            2
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍                                STM32F1产品系列
+
+
+
+
+           STM32F1系列MCU是ST针对工业、医疗和消费类市场的应用需求而
+          设计的低功耗、高性价比的产品，该系列从功能上又可分为5个子系列，
+          其引脚、外设和软件均相互兼容
+EE114 Embedded System -> STM32 开发环境搭建                                                                    (5/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+                                         STM32F1系列产品中，各个子系列按闪存容量的
+  1 STM32介绍                             大小又分为小容量、中容量、大容量产品。
+    STM32F103系列产品                                           低         中          高           超
+                                                            密         密          密           密
+                                                            度         度          度           度
+                                                            （         （          （           （
+                                                            LD
+
+
+
+
+                                                                                 HD
+                                                                      MD
+
+
+
+
+                                                                                             XL
+
+
+                                                            ）                    ）           ）
+                                                                      ）                      ：
+                                                            ：         ：          ：
+                                                            闪                    闪           闪
+                                                                      闪                      存
+                                                            存         存          存
+                                                            容                    容           容
+                                                                      容                      量
+                                                            量         量          量
+                                                            为                    为           为
+                                                                      为
+                                                                                             768KB~1MB
+                                                            16~32KB
+
+
+
+
+                                                                                 256~512KB
+                                                                      64~128KB
+
+
+
+
+          与启动文件startup_stm32f10x_xx.s 相关
+
+EE114 Embedded System -> STM32 开发环境搭建                                                                    (6/78)
+
+
+
+
+                                                                                                                  3
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   1 STM32介绍                                                                  以STM32F103ZET6为例说明芯片命名
+                                                                             规范，该芯片型号由七部分组成
+
+                                                                                        序
+                                                                                                  符号                      说明
+                                                                                        号
+                                                                                                              ARM Cortex-M3内核的32位
+                                                                                        1        STM32        微控制器
+                                                                                        2           F         芯片的系列
+                                                                                        3          103        增强型系列
+                                                                                        4           Z         芯片有144管脚
+                                                                                        5           E         512K字节的Flash
+                                                                                        6           T         采用LQFP封装
+                                                                                        7           6         工作温度范围为-40–+85℃
+
+
+                                  STM32芯片命名规范
+
+EE114 Embedded System -> STM32 开发环境搭建                                                                                                           (7/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   1 STM32介绍                                                     半导体芯片常见的封装方式
+
+ (Plastic) Dual In-line Package     Small Outline Package   Plastic Quad Flat Package       （Plastic）Ball Grid Array   Plastic J-Leaded Chip Carrie
+
+
+
+
+    DIP——（塑                         SOP——小外型                PQFP——塑料                         BGA——（塑料）                  PLCC——塑封
+    料）双列直插                          表面贴片封装                  方形扁平封装                          球栅阵列封装，                     方形引脚插入
+    式封装，适用                          ，广泛应用于                  ，管脚很细，                          Intel系列的                    式封装，外形
+    于中小规模集                          10-40个引脚的               一般应用于大                          80486和                      尺寸比DIP封装
+    成电路，引脚                          芯片                      规模或超大型                          Pentium等CPU                 小得多，必须
+    数一般不超过                                                  集成电路，引                          多采用这种封                      采用SMT（表
+    100个                                                    脚数一般在100                        装方式                         面贴装技术）
+                                                            个以上                                                         进行焊接
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                                                                           (8/78)
+
+
+
+
+                                                                                                                                                         4
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍
+
+                                  选型手册
+
+                                                  内容包括：产品的基本配置（如内置
+         用户选型                      数据手册           Flash和RAM的容量、外设模块的种类
+         参考资料                     （Datasheet）     和数量等）、引脚数量和分配、电气
+                                                  特性、封装信息和定购代码等
+
+
+                                     参考手册              对芯片每一个外设的功能进行
+                                 （Reference manual）    了详细说明，并对寄存器进行
+                                                       了详细描述
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (9/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍
+
+       STM32芯片数据手册中
+      对具体的引脚名称、引脚
+      类型、引脚复用功能及I/O
+      结构等进行了详细说明
+
+
+
+        STM32数据手册中有关
+      引脚的定义在Pinouts and
+      pin description部分
+
+
+                                                      STM32F103xx引脚定义
+EE114 Embedded System -> STM32 开发环境搭建                                     (10/78)
+
+
+
+
+                                                                                    5
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  1 STM32介绍                               STM32F103xx引脚功能说明
+
+                编号            功能                          说明
+                                        有 6 种封装型号：BGA144、BGA100、WLCSP64、LQFP64、
+                  1        引脚序号         LQFP100、LQFP144。其中用阿拉伯数字的表示是 LQFP 封装，英
+                                        文字母开头的表示 BGA 封装
+                  2        引脚名称         指复位状态下的引脚名称
+                                        S 表示电源引脚
+                  3        引脚类型         I 表示输入引脚
+                                        I/O 为输入/输出引脚
+                                        FT：表示兼容 5V
+                                        TTa：只支持 3.3V
+                  4        I/O 结构
+                                        B：表示 BOOT 引脚
+                                        RST：表示复位引脚，内部带有弱上拉
+                  5       主功能           每个引脚复位后的功能
+                  6      默认复用功能         指 I/O 的默认复用功能
+                                        I/O 引脚除了具有默认的复用功能之外，还可以通过重映射的方式
+                  7       重映射功能
+                                        将 I/O 引脚映射到其他的 I/O，增加 I/O 口功能的多样性和灵活性
+
+EE114 Embedded System -> STM32 开发环境搭建                                             (11/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  2 STM32微控制器开发模式
+
+                                        寄存器开发方式
+                                        需要熟悉大量底层寄存器及其操作
+
+
+                                        标准外设库开发方式
+                                         将底层寄存器的操作就行了统一封装，包括所有的标准器件
+                                        外设的驱动器，采用C语言实现，开发人员只需要熟悉并调用相
+                                        应的应用程序编程接口函数，即可实现对相关外设的驱动操作
+
+                                        HAL库开发方式
+                                        与STM32CubeMX软件（配置STM32代码的工具）配套使用的，
+                                        它把底层硬件相关的内容封装起来并及进行抽象，通过图形化的
+                                        操作方式自动生成相关外设的驱动代码，简单易用
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                             (12/78)
+
+
+
+
+                                                                                            6
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+     2.1 寄存器开发模式
+                                                              根据STM32定义好的寄存
+                                                             器，查阅官方用户手册对组
+                                                             成寄存器各bit位的操作说明，
+                                                             配置相应寄存器的各bit位，
+                                                             从而直接进行寄存器编程，
+                                                             完成相应功能。
+
+                                                             如：
+                                                              GPIOB->BSRR=0x0001；
+
+                                                               BSRR为GPIOB（端口B）
+                                                               的位设置/清除寄存器
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                               (13/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+     2.1 寄存器开发模式                                           将GPIOB端口的BS0设置为“1”，
+                                                           设置BS0为“1”，即设置对应
+                                                           的ODR0为“1”，即0x0001对应
+                                                           PB0引脚。
+
+
+
+
+         需要深入学习和掌握某个具体芯片，对开发人员的要求较高，学习过程较长
+
+EE114 Embedded System -> STM32 开发环境搭建                                               (14/78)
+
+
+
+
+                                                                                              7
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   2.2 标准外设库开发模式
+                                                                       使用标准外设库，
+                                STM32标准外设库                            开发者无需深入掌握
+                                  (固件函数库)                             底层硬件细节，就可
+                               简称固件库、标准库                              以轻松地应用每一个
+                                                                      外设。
+
+
+
+               程序            数据结构        宏         外设的驱动描述                        应用实例
+
+
+           微控制器所有外设的性能特征                                              中间API
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                          (15/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   2.2 标准外设库开发模式                                          CMSIS标准的软件架构图
+
+     为了解决不同芯片厂商生                         用户                         应 用 程 序 代 码
+
+   产的基于Cortex内核的微处理
+   器在软件上的兼容问题，                          实时操作
+                                         系统
+                                                            实时内核          中间件
+
+   ARM公司与众多芯片和软件
+   厂商共同制定了CMSIS标准
+                                                         内核外设函数           中间件函数     器件级外设函数
+   （Cortex Microcontroller              CMSIS
+                                                             外设寄存器和中断向量定义层
+   Software Interface Standard，
+   Cortex微控制器软件接口标                              Cortex
+                                                          SysTick      NVIC
+                                                                                调试/跟踪
+                                        微控制器              实时内核        嵌套向量              其他外设
+                                                                                 接口
+   准），意在将所有Cortex芯片                              CPU
+                                                          定时器         中断控制器
+
+   厂商产品的软件接口标准化。
+                                                    标准外设库的架构遵循CMSIS标准
+
+EE114 Embedded System -> STM32 开发环境搭建                                                          (16/78)
+
+
+
+
+                                                                                                         8
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   2.3 HAL库开发模式                          HAL（硬件抽象层）是位于内核与硬件电路
+                                        之间的接口层，其目的是将硬件抽象化。
+
+
+                     用户编写程序
+
+       文
+       件
+                        CMSIS驱动
+       构
+       架
+
+                         HAL驱动
+
+
+                                                        HAL库框架图
+EE114 Embedded System -> STM32 开发环境搭建                                                   (17/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   2.3 HAL库开发模式
+                                             void HAL_GPIO_WritePin(GPIO_TypeDef*
+      基于HAL库的开发方式，其实质                        GPIOx,uint16_t GPIO_Pin, GPIO_PinState
+                                             PinState)
+     是仍然是通过操作底层寄存器来实
+                                             {
+     现相应功能，只是将寄存器操作进                            if(PinState != GPIO_PIN_RESET)
+     行了封装，以函数形式提供给开发                            {
+     人员使用。                                           GPIOx->BSRR = GPIO_Pin;
+                                                  }
+                                               else
+       如HAL库的GPIO写操作函数                         {
+     HAL_GPIO_WritePin()                          GPIOx->BSRR = (uint32_t)GPIO_Pin << 16;
+                                               }
+                                             }
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                   (18/78)
+
+
+
+
+                                                                                                  9
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   2.3 HAL库开发模式                                                   HAL库开发模式需要用
+                                                                  到两个软件：
+                                                                  STM32CubeMX用于外
+       STM32CubeMX为图                      在图形化界面下对芯
+                                                                  设功能模块的参数配
+      形化初始化代码配置                          片引脚、时钟及相应外               置、生成相应编译器
+      工具/软件，基于HAL                        设做初始化配置并最终               的工程代码；编译器
+      库进行配置。                             生成C语言代码。                 用于应用程序的开发。
+
+
+
+
+                                           外设模块     生成工程                  Keil编写
+                 MCU选型
+                                           功能配置      代码                   应用程序
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                              (19/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3 开发平台的搭建
+
+
+                                        3.1 嵌入式开发环境
+
+                                        3.2 集成开发环境Keil
+
+                                        3.3 下载和安装packs包
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                              (20/78)
+
+
+
+
+                                                                                             10
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   3.1 嵌入式开发环境                                下载工具将宿主机和目标机连接起来。
+
+
+
+
+        宿主机：常指通用PC机，在通                              目标机：嵌入式系统运行的载体，
+        用PC机上安装软件开发工具                               如开发板，不能直接进行嵌入式系
+        （如keil ），进行代码编辑、                            统的开发，由宿主机将可执行二进
+        程序编译和链接，最后生成目                               制代码文件下载或烧写进目标机中，
+        标机运行所需的可执行文件。                               再由目标机执行的方式。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (21/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   3.1 嵌入式开发环境
+              嵌入式系统软件开发一般分为四个阶段：
+              代码编辑、程序编译、链接、调试和下载，每个阶段都需要不同的
+              开发工具来完成，这些开发工具都需要运行在宿主机上。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (22/78)
+
+
+
+
+                                                                                    11
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   3.1 嵌入式开发环境                            STM32常用的调试和下载工具——J-Link
+
+                                        ➢ J-Link是德国SEGGER公司推出的基于JTAG的仿
+                                          真器；
+                                        ➢ J-Link是一个通用的开发工具，配合IAR EWAR，
+                                          ADS，Keil，RealView等集成开发环境；
+                                        ➢ 支持所有ARM7/ARM9/ARM11、Cortex
+                                          M0/M1/M3/M4、Cortex A5/A8/A9等内核芯
+                                          片的仿真；
+                                        ➢ 与IAR、Keil等编译环境无缝连接。
+
+            在下载速度、效率、功能等方面具有良好的特性，是目前ARM开发中
+           最好最实用的JTAG仿真工具。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (23/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   3.1 嵌入式开发环境                             STM32常用的调试和下载工具
+                                                  ——ST-Link/V2和ISP下载器
+
+                                        ➢ ST-Link/V2是专门针对意法半导体STM8和
+                                          STM32系列芯片的仿真器；
+                                        ➢ 采用USB2.0接口进行SWIM/JTAG/SWD下载；
+                                        ➢ 下载速度快；
+                                        ➢ 支持全速运行、单步调试、断点调试等各
+                                          种调试方法，可查看IO状态，变量数据等。
+
+
+             ISP下载器是串口下载电路，通过上位机仅需一根USB线即可实现一键
+          ISP下载，缺点是只能烧写下载程序，不能进行在线仿真调试。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (24/78)
+
+
+
+
+                                                                                    12
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   3.1 嵌入式开发环境                          嵌入式集成开发环境
+                                          （Integrated Development Environment，IDE）
+
+
+                                                         将嵌入式系统开发的各个阶
+                                                        段所用到的软件开发工具如编
+                                                        辑器、编译器、链接器、调试
+                                                        和下载器等集成在一个软件中，
+                                                        形成一个集成化、可视化的综
+                                                        合开发工具供开发者使用。
+
+
+
+                针对ARM内核的主流集成开发环境主要有Keil MDK和IAR EWARM。
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                          (25/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.2 集成开发环境Keil MDK
+         MDK——Keil ARM Microcontroller Development Kit，简称MDK，也称作Keil MDK
+
+
+
+
+                                        Keil MDK组成框图
+
+EE114 Embedded System -> STM32 开发环境搭建                                          (26/78)
+
+
+
+
+                                                                                         13
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.2 集成开发环境Keil MDK
+
+         MDK当前版本是MDK 5.36+，使用keil uVision5 IDE集成开发环境
+
+    ◆ 包含所有基于ARM的微控
+      制器的嵌入式应用组件                                         Software Packs
+    ◆ 由MDK-Core和Arm编译器
+                                                          ◆ 在keil 5集成开发软件安装
+      两大部分组成                             keil uVision5
+                                                            好后，针对具体芯片使用
+    ◆ MDK-Core主 要 指 keil 5的             IDE集成开发环境
+                                                            相应设备开发包，安装相
+      软件安装exe文件
+                                                            应设备的驱动支持程序。
+              MDK Tools
+
+EE114 Embedded System -> STM32 开发环境搭建                                                 (27/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.2 集成开发环境Keil
+                                                     从Keil官网
+                                                     https://www.keil.com/download/
+                                                     下载最新的Keil软件
+
+
+                                                     在安装Keil软件时，其安装路径
+                                                     最好不要包含中文
+
+
+                                                     界面由菜单栏、快捷工具栏、工
+                                                     程工作空间和编译输出窗口组成。
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                 (28/78)
+
+
+
+
+                                                                                                14
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.3 下载和安装packs包                                 3      单击“ARM development tools”，
+                                                     进入ARM产品页面，找到“Public
+      1    打开Keil官网www.keil.com，在
+                                                     software Packs”
+          主页上找到“Products”一栏
+      2    找到“ARM development tools”
+          （以STM32F1系列为例）
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                            (29/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.3 下载和安装packs包                                5
+                                                        往下拉，找到“Keil”一栏
+
+  4    单击“Public software Packs”。可以
+      看到很多packs，找到你想要的下载。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                            (30/78)
+
+
+
+
+                                                                                           15
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.3 下载和安装packs包
+
+
+           6
+                在Keil里面找到
+            “STMicroelectronics STM32F1
+            Series Device Support”，即是
+            STM32F1xx系列pack，
+            Keil.STM32F1xx_DFP.2.2.0.pack，
+            单击即可下载。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (31/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  3.3 下载和安装packs包                                     8
+                                                       当出现如图所示界面，
+    7    双击运行安装，打开如图所示界面，                             表示packs芯片固件包安装
+        单击“Next”进行packs包的安装。                          成功，单击“Finish”完成。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (32/78)
+
+
+
+
+                                                                                    16
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+4 基于标准外设库开发平台搭建
+                                                标准外设库提供的库函数就是架设在寄存
+                 外设寄存器操作                       器与用户驱动层之间的代码，向下处理与寄
+                              封装               存器相关的操作，向上为用户提供操作寄存
+                                               器的接口。
+                        C函数
+                        C函数                               对驱动程序的结构、
+                         ……                  外设驱动         函数和参数名称等
+                                        组成          API   进行标准化
+                        C函数
+
+                覆盖外设所有功能
+                   使用标准外设库开发方式最大的优势在于开发者不用深入了解底
+                  层硬件细节，就可以灵活规范地使用每一个外设。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (33/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+       STM32标准外设库的版
+      本为v3.5.0，可以在ST的
+      官网上直接下载
+      也可以下载最新版v3.6.0
+
+   https://www.st.com/zh/
+   embedded-software/stm32-
+   standard-peripheral-libraries.html
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (34/78)
+
+
+
+
+                                                                                    17
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+      解压后的                                         _htmresc：该文件夹中存放的是ST
+                                                   的logo图片，对建立工程没有作用。
+    STM32F10x_StdPeriph_Lib_V3.5.0，
+    包含四个文件夹和一个帮助文档                                 Libraries：库函数的源文件，包含
+                                                   STM32的系统文件，如启动文件和
+                                                   大量的头文件。
+
+                                                   Project：包含ST官方所有例程和基
+                                                   于不同编译器的项目模板.
+
+                                                   Utilities：包含了相关评估板的示
+         使用手册和帮助文档                                 例程序和驱动函数
+
+EE114 Embedded System -> STM32 开发环境搭建                                             (35/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+                                                 由STM32F10x_StdPeriph_Examples和
+                                                 STM32F10x_StdPeriph_Template文件
+                                                 夹组成，包含
+                                                 ➢ ST官方所有例程
+                                                 ➢ 基于不同编译器的项目模板，如
+                                                   各个外设的例程（如ADC、CAN、
+                                                    DMA、IIC等）和几个不同编译器
+                                                    的工程模板（如MDK-ARM、
+                                                    EWARM等）
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                             (36/78)
+
+
+
+
+                                                                                            18
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构                                STM32F10x标准外设库文件分析
+
+           文件类型                   文件                             说明
+           启动文件         startup_stm32f10x_hd.s 汇编语言编写的启动文件，hd代表大容量芯片
+                                               内核文件，包含了内核寄存器的定义和内核外设的函数，
+                               core_cm3.c
+                                               Cortex-M3内核及其外设：NVIC，SysTick等
+           内核相关                core_cm3.h      把core_cm3.c中的寄存器封装成相应的函数
+                                  misc.c
+                                               用于中断管理，包含NVIC相关的函数定义和SysTick
+                                 misc.h
+                                               包含所有外设寄存器和结构体的定义、位定义、中断向量表、
+                              stm32f10x.h
+                                               存储空间的地址映射等
+                          system_stm32f10x.c   系统文件，函数SystemInit用于系统初始化和STM32系统时钟
+                          system_stm32f10x.h   配置
+           外设相关
+                            stm32f10x_ppp.h    外设驱动函数文件，包括相关外设的初始化配置和部分功能
+                            stm32f10x_ppp.c    应用函数，是编程功能实现的重要组成部分。
+                                               固件库配置文件，通过增加和删除所包含的外设头文件来选
+                           stm32f10x_conf.h
+                                               择固件库所使用的外设
+           应用程序                  main.c        主函数
+                             stm32f10x_it.c
+             中断                                存放用户编写的中断服务函数
+                             stm32f10x_it.h
+EE114 Embedded System -> STM32 开发环境搭建                                             (37/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+       1．core_cm3.c和core_cm3.h文件                    2．system_stm32f10x.c和
+       CMSIS的核心文件                                     system_stm32f10x.h文件
+       提供进入Cortex-M3内核的接口，                         DeviceSupport\ST\STM32F10x目录
+       由ARM公司提供，对所有基于
+       Cortex-M3内核的芯片都适用                          主要存放一些启动文件以及基础的
+                                                  寄存器和中断向量定义文件
+       core_cm3.c是内核通用源文件，主
+       要存放的是操作内核外设寄存器                                 主要功能是配置STM32的系统时
+       的函数                                           钟和总线时钟，其中最重要的函数
+                                                     是SystemInit()函数，是在系统启动
+       对应的头文件是core_cm3.h，对
+       core_cm3.c中的寄存器进行了映射                          时调用的初始化系统函数，用来设
+       封装。                                           置整个STM32的系统时钟。
+EE114 Embedded System -> STM32 开发环境搭建                                             (38/78)
+
+
+
+
+                                                                                            19
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+       2．system_stm32f10x.c和system_stm32f10x.h文件
+
+
+   通过变量SystemCoreClock可以获取
+   系统时钟，如果系统时钟为72MHz，
+   则SystemCoreClock=72000000，
+   SystemCoreClockUpdate()函数用于
+   改变系统时钟，让SystemCoreClock
+   变量更新。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                (39/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+       3．stm32f10x.h头文件
+
+          主要包含STM32F10x系列
+         微控制器外设寄存器的定义、
+         位定义、中断向量表以及存
+         储空间的映射等，内含许多
+         结构体和宏定义。
+
+                  其中，__IO是宏定义，代表volatile，定义在
+                  Libraries\CMSIS\CM3\CoreSupport\core_cm3.h文件中：
+                  #define __IO volatile /*!< defines 'read / write' permissions */
+
+EE114 Embedded System -> STM32 开发环境搭建                                                (40/78)
+
+
+
+
+                                                                                               20
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构                             4．启动文件startup_stm32f10x_xx.s
+
+           启动文件的作用除了对堆栈等初始化，对中断向量表以及对应的中断
+        处理函数的定义外，还要负责芯片上电后引导程序进入main函数，芯片
+        上电复位后会首先运行一段汇编程序，在进入main函数之前调用
+        SystemInit()函数初始化系统时钟。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                      (41/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+       4．启动文件startup_stm32f10x_xx.s
+
+           在startup\arm文件夹下，有8个以
+         startup打头的.s文件，用于针对不同
+         容量的STM32芯片选择不同的启动文
+         件，这里的容量是指片内Flash的大小。
+
+
+        startup_stm32f10x_hd.s：适用于大容量的STM32，Flash容量大于等于256K。
+        startup_stm32f10x_md.s：适用于中等容量的STM32，Flash容量64K~256K之间。
+        startup_stm32f10x_ld.s：适用于小容量的STM32，Flash容量小于32K。
+
+EE114 Embedded System -> STM32 开发环境搭建                                      (42/78)
+
+
+
+
+                                                                                     21
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+                                                 6．misc.c和misc.h
+      5．stm32f10x_xxx.c
+      和stm32f10x_xxx.h                            misc.c和misc.h提供了外设对
+         xxx代表不同的外设，包含了                          内核的中断向量控制器NIVC的
+        相关外设的初始化配置和部分                            访问函数，在配置中断时，必
+        功能应用函数。                                  须把这个文件添加进工程。
+
+    7．stm32f10x_it.c和stm32f10x_it.h              8 ．stm32f10x_conf.h
+
+         用于编写中断服务函数，相                             用于配置是否使用某外设的头文件，
+        应的中断服务函数接口已在启                            利用这个头文件可以方便地增加和删
+        动文件中定义。                                  除外设的驱动函数。
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (43/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构                                标准外设库遵从的命名规则
+
+             1                                     2    源程序文件和头文件的命名
+                   PPP表示任一外设缩写
+                                                       都以“stm32f10x_”作为开头
+
+                                                   3    常量仅被应用于一个文件
+                                                       的，定义于该文件中；被应用
+                                                       于多个文件的，在对应头文件
+                                                       中定义，所有常量用大写英文
+                                                       字母命名
+
+                                                   4    寄存器作为常量处理，用大
+                                                       写英文字母命名，一般与缩写
+                                                       规范一致
+EE114 Embedded System -> STM32 开发环境搭建                                       (44/78)
+
+
+
+
+                                                                                      22
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构                                     5    外设函数的命名以该外设的
+                                                             缩写加下划线为开头
+                    函数命名                           功能                           举例
+                                        根据PPP_InitTypeDef中指定的参数，初始
+        名为PPP_Init的函数                                                TIM_Init
+                                        化外设PPP
+
+        名为PPP_DeInit的函数                 复位外设PPP的所有寄存器至缺省值            TIM_DeInit
+
+        名为PPP_Cmd的函数                    使能或者失能外设PPP                  SPI_Cmd
+
+        名为PPP_ITConfig的函数               使能或者失能来自外设PPP的中断源            RCC_ITConfig
+
+        名为PPP_DMAConfig的函数              使能或者失能外设PPP的DMA接口            TIM1_DMAConfig
+
+        名为PPP_GetFlagStatus的函数          检查外设PPP某标志位被设置与否             I2C_GetFlagStatus
+
+        名为PPP_ClearFlag的函数              清除外设PPP标志位                   I2C_ClearFlag
+
+        名为PPP_GetITStatus的函数            判断来自外设PPP的中断发生与否             I2C_GetITStatus
+
+        名为PPP_ClearITPendingBit的函数      清除外设PPP中断待处理标志位              I2C_ClearITPendingBit。
+
+EE114 Embedded System -> STM32 开发环境搭建                                                         (45/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.1 STM32标准外设库文件结构
+
+        STM32标准外设库结构
+       是符合CMSIS标准的软件架
+       构，其整体框架结构包括：
+           内核启动文件
+           中断响应文件
+           硬件地址映射文件
+           标准外设库函数
+           用户程序
+
+                                                        STM32标准外设库框架结构图
+EE114 Embedded System -> STM32 开发环境搭建                                                         (46/78)
+
+
+
+
+                                                                                                        23
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                 步骤1：打开keil 5软件新建一个工程
+
+   1）新建一个文件夹MyTemplates（文件夹的                       3）在出现的提示框中，输入工程文
+   名字随意定义，但最好是英文的）。                                件名MyProject，创建一个新的工程，
+   2）打开keil 5软件，在菜单栏Project中单击                     单击保存，
+   “New uVision Project”，选择本地新建的
+   MyTemplates文件夹
+
+
+
+
+                                  新建一个工程文件                          输入工程名
+EE114 Embedded System -> STM32 开发环境搭建                                       (47/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                 步骤1：打开keil 5软件新建一个工程
+
+    4）在新出现的界面中选择MCU芯片                             5）出现添加库文件界面，这里
+    型号，这里选择STM32F103ZE （需要                        直接关掉或单击“OK”，后面可以通
+    安装之前的device pack），单击“OK”                      过手动方式添加相应的库文件
+
+
+
+
+                                                                  添加库文件界面
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (48/78)
+
+
+
+
+                                                                                      24
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                       步骤2：
+                                                          复制标准外设库文件到相应文件夹中
+                                         用来存放main函数和中断程序。复制
+                               User      stm32f10x_conf.h、stm32f10x_it.c、
+                                         stm32f10x_it.h和main.c放在User文件夹下
+
+                                         存放用户自己编写的硬件驱动文件，比如LED.c、
+ 在MyTemplates                  BSP
+                                         LED.h等
+ 文件夹下新建四
+                                         存放系统文件、启动文件等，从标准外设库中
+ 个文件夹                                    复制core_cm3.c、core_cm3.h、
+                               Systems   startup_stm32f10x_hd.s、system_stm32f10x.c四
+                                         个文件存放进去
+
+                                         存放STM32标准外设库的src和inc两个文件，这
+                               FWLib     两个文件包含了芯片上的所有驱动。从标准外
+                                         设库中直接把src和inc两个文件夹复制过去即可
+
+EE114 Embedded System -> STM32 开发环境搭建                                                 (49/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                         步骤3：新建一个main.c源文件
+
+
+
+
+         单击keil 5编译器的新建
+        文件按钮，新建一个文件，
+        命名为main.c，然后保存
+        到user文件夹，以后只要
+        是自己新建的.c文件和.h
+        文件都放在这个文件夹下。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                 (50/78)
+
+
+
+
+                                                                                                25
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                   步骤4：把内核、启动文件、外设
+                                                      等相关的库文件添加进Keil工程
+      右键单击左边的工程                           在弹出的界面中，更改工程名和源文件组名，分
+                                        别双击“Target1”和“source groups”即可更改其
+     “Target1”，选择
+                                        名字，其中Project Targets为工程目标的名字，根据
+     “Manage Project Items”             项目名称定义一个有意义的名称，Groups为项目组
+                                        名称，更改或添加工程模板里的USER、BSP、FWLib、
+                                        CORE等
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (51/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                   步骤4：把内核、启动文件、外设
+                                                      等相关的库文件添加进Keil工程
+    然后单击“Add Files”，添加新文件到                     依次将FWLib、USER中的文件添加进工程。
+    源文件组。如添加之前新建的main.c                        结构如图所示，单击“OK”完成添加。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (52/78)
+
+
+
+
+                                                                                    26
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                         步骤4：把内核、启动文件、外设
+                                                            等相关的库文件添加进Keil工程
+
+             添加完成后的FWLib、CORE、BSP 文件组的结构
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                           (53/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                        步骤5：配置Keil MDK
+
+    单击“options for target”，在“Target”                       在“Output”选项页中勾选“Create
+    选项页中设置晶振为8MHz，并勾选
+    “Use MicroLIB”（使用Micro库）                             HEX File”，生成HEX文件
+
+
+
+
+                                        设置晶振，勾选
+                                        “Use MicroLIB”
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                           (54/78)
+
+
+
+
+                                                                                          27
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板
+
+   步骤6：在工程设置窗口的
+   “C/C++”选项页的“Define”
+   框中输入两个宏
+
+   目的：为了屏蔽编译器的默认
+   搜索路径，转而使用添加到工
+   程中的STM32F10x标准外设库，
+   即使用STM32F10x标准外设库
+   进行STM32的开发
+
+
+                                                               添加宏
+EE114 Embedded System -> STM32 开发环境搭建                                     (55/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板
+步骤7：在工程设置窗口的“C/C++”选项                                   将CORE中的头文件添加
+页的“Include Paths”中，将工程头文件.h
+添加进搜索路径中                                               进工程搜索路径
+
+
+
+
+                                   添加搜索路径
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (56/78)
+
+
+
+
+                                                                                    28
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板
+                 将FWLib中的头文件                     将CORE、FWLib、USER、BSP等头文件
+                 添加进工程搜索路径                       都添加进工程搜索路径后的结构如图
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (57/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板
+
+
+
+        步骤8：编写main.c代
+        码，点击编译按钮，如
+        果结果为“0 Error(s)”，
+        则新建工程完成
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (58/78)
+
+
+
+
+                                                                                    29
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                    步骤9：调试和下载
+
+
+     采用ST-Link可以进行代码
+     的在线仿真、烧写程序等，
+     需要安装ST-Link驱动。
+     驱动安装完毕后，连接开
+     发板，在“Debug”选项卡
+     中选择“ST-Link Debugger”
+
+
+     可选择其他对应仿真工具；
+     带串口芯片的可以通过串
+     口下载软件烧录程序。
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (59/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                    步骤9：调试和下载
+
+
+
+
+       单击Settings按钮，在
+      弹出的界面中勾选中
+      “Reset and Run”，选择
+      “Erase Full Chip”，每
+      次烧写都将擦除掉芯片
+      上已有的内容
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (60/78)
+
+
+
+
+                                                                                    30
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  4.2 基于标准外设库新建工程模板                                   带CH340或者CP210x串口模块的
+                                                      可以使用串口下载程序
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (61/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5 基于HAL库开发平台的搭建
+
+
+                                        5.1 Java运行环境JRE安装
+
+                                         5.2 安装STM32CubeMX软件
+
+                                         5.3 STM32CubeF1库文件结构
+
+                                        5.4 STM32CubeMX生成的工程架构解析
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (62/78)
+
+
+
+
+                                                                                      31
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+      5.1 Java运行环境JRE安装
+
+
+                 STM32CubeMX软件是基于Java环境运行的，需要先安装
+              JRE（Java Run Time Environment），可通过Java官网下载。
+              用户可根据操作系统选择64位的还是32位的，如图所示。
+                 注意： 需要 JRE 而不是 Java SE Development Kit
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (63/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+    5.2 安装STM32CubeMX软件
+                                                    安装相应的STM32Cube软件固件包，
+   STM32CubeMX软件可从ST官网下载，                         通过STM32CubeMX的“Help”菜单栏，
+  当前版本是6.x.x。安装STM32CubeMX成功                      找到“Manage embedded software
+  后，打开软件，显示如图所示界面。                                packages”，如图所示。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                     (64/78)
+
+
+
+
+                                                                                    32
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+    5.2 安装STM32CubeMX软件                           查看STM32CubeF1库的文件结构，在
+                                                “Help” → “Updater Settings”菜单栏
+                                                下的“Repository Folder”可查看到下载
+      选择进行在线下载STM32CubeFx库，                     HAL库存放的位置，这个位置可以更改。
+     这里选择STM32CubeF1下载。
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (65/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  5.3 STM32CubeF1库文件结构
+
+   Documentation文件夹包含了一个PDF格
+  式的STM32CubeF1用户说明手册，对F1的
+  固件库包进行了介绍和使用说明
+
+    Middlewares文件夹
+  包含ST和Third_Party两个子文件夹：
+  ST文件夹下存放STM32相关的一些文件；
+  Third_Party文件夹为第三方中间件
+
+   Projects文件夹：ST官方推出的基于官
+  方开发板的可以直接编译的工程实例
+
+   Utilities文件夹：一些实用的其他功能函
+  数库
+                                                      STM32CubeF1库的文件结构图
+EE114 Embedded System -> STM32 开发环境搭建                                       (66/78)
+
+
+
+
+                                                                                      33
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+  5.3 STM32CubeF1库文件结构
+
+                                        板级支持包，包含ST公司针对官方开发板开发的
+                            BSP         外设驱动包
+
+
+          Drivers                       存放符合CMSIS标准的软件抽象层相关的文件，在
+                            CMSIS       device文件夹中包含了STM32的启动文件以及链接文
+          文件夹                           件
+
+                                                   包含所有的STM32F1xx系列HAL库外设
+                                                   的源文件和头文件，即底层硬件抽象
+                            STM32F1xx_HAL_Driver   层的API声明和定义，将复杂的寄存器
+                                                   操作进行封装成统一的外设接口函数
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (67/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+      利用STM32CubeMX生成一个MDK-Keil 工程
+                     步骤1：打开STM32CubeMX软件，新建一个Project工程
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (68/78)
+
+
+
+
+                                                                                      34
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+ 5.4  STM32CubeMX 工程架构解析
+  5.4STM32CubeMX生成的工程架构解析
+   步骤2：选择MCU。本实例采用                               步骤3：配置RCC，选择高速外部时钟
+   STM32F103ZET6                                 HSE为“Crystal/Ceramic Resonator”
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                              (69/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+                                                步骤5：设置工程相关参数，
+    步骤4：配置时钟树
+                                                如工程名称、工程存放位置
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                              (70/78)
+
+
+
+
+                                                                                             35
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+
+     步骤6：单击“GENERATE CODE”生成工程代码
+
+
+
+
+                                  使用MDK-Keil v5打开
+                                  工程后，先进行编译。
+                                  在Keil v5左侧显示
+                                  Project工程目录架构
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (71/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+    STM32CubeMX生成的工程架构分析
+
+                                                Application/MDK-ARM
+
+                                        四
+                                             Drivers/STM32F1xx_HAL_Driver
+                                        个
+                                        模            Drivers/CMSIS
+                                        块
+                                                    Application/User
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                       (72/78)
+
+
+
+
+                                                                                      36
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析                                        Drivers文件夹
+
+
+                 STM32F1xx_HAL_Driver                    CMSIS
+     存放的是STM32F1系列HAL库的头文                                放置的是ARM提供的芯片内核相
+                                   件和源文件                 关的文件，还有一个Device用于存
+                                                         放ST的STM32F1xx的系统文件
+
+
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                         (73/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+    Inc和Src存放工程所用到的头文件、源文件                               Src文件夹对应的ARM-Keil v5中
+                                                         的Application/User工程组
+
+
+
+
+   ➢ stm32f1xx_hal_conf.h头文件为STM32的HAL
+     库的工程模块配置文件，内部包含了
+     STM32的所有模块，项目开发时注释掉工
+     程不用的功能模块，在编译时就不会产生
+     相应代码
+   ➢ stm32f1xx_it.c和stm32f1xx_it.h是中断处理
+       的相关文件
+
+EE114 Embedded System -> STM32 开发环境搭建                                         (74/78)
+
+
+
+
+                                                                                        37
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+   5.4 STM32CubeMX 工程架构解析
+    MDK-ARM是编译器ARM-Keil v5                               MDK-ARM文件夹对应的ARM-
+    所产生的文件                                               Keil v5中的Application/MDK-
+                                                         ARM工程组
+
+
+
+
+      test文件夹下是keil v5在编译过程中
+     产生的中间文件，如后缀为.o和.d的文件
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                (75/78)
+
+
+
+
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+         小结
+
+                                             3                  4               5
+           1                        2
+
+                                                                          基于HAL库开
+                           STM32微控制     开发平台的            基于标准外            发平台的搭建
+     STM32
+                           器开发模式        搭建               设库开发平            ➢ JAVA运行环境
+     介绍                                                  台搭建
+                           ➢ 寄存器开发      ➢ 嵌入式开                              JRE安装
+                             模式           发环境            ➢ STM32标准        ➢ 安装
+                                                                            STM32CubeMX
+                           ➢ 标准外设库      ➢ 集成开发             外设库文件
+                                                                          ➢ STM32CubeF1
+                             开发模式         环境Keil           结构               库文件结构
+                           ➢ HAL库开发       MDK            ➢ 基于标准外          ➢ STM32CubeMX
+                             模式         ➢ 下载和安             设库新建工            生成的工程架
+                                          装packs包          程模板              构解析
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                (76/78)
+
+
+
+
+                                                                                               38
+Progress: STM32介绍 >> STM32开发模式 >> 开发平台搭建 >> 标准外设库开发平台 >> HAL库开发平台 >> 小结
+
+
+         扩展
+
+      VS Code 环境                                 Micropython
+      • https://www.jianshu.com/p/821e6e521ac5   • https://micropython.org/
+      • VSCode + Keil Assistant 插件               • https://docs.01studio.cc/pyboard/quickref.
+      • 代码提示、搜索功能强大，开发更快捷、                         html
+        高效。可以快捷加入git项目版本管理。                      • 对F4，H7等系列支持较好
+      • 添加项目文件，库文件等，需要切换到
+                                                 • 易于上手，和python库衔接较好；
+        Keil 管理。
+                                                 • 类似Arduino，mBed，主流外设资料做了
+      • VSCode+PlatformIO IDE插件
+      • PlatformIO优势是根据开发板框架快速构                    封装；还处于早起开发阶段，外设资源
+                                                   的支持还不完全（比如CAN等）
+        建项目，可以把更多的时间和精力投放
+        到产品和项目需求上来。                              • Thonny Python IDE 等开发环境较为友好
+      • 对51，ESP32，Arduino等支持的更好。                 • 其他插件和开发环境欢迎自行探索！
+
+
+EE114 Embedded System -> STM32 开发环境搭建                                                           (77/78)
+
+
+
+
+          STM32
+
+
+
+
+                                        The                 End!
+
+
+                                                                                                (78/78)
+
+
+
+
+                                                                                                          39
+

@@ -1,0 +1,825 @@
+                              EE114: Introduction to
+                               Embedded Systems
+                 Dr. Tao Wu   吴涛 研究员，博导
+                 wutao@shanghaitech.edu.cn
+                 Office: SIST Bldg 3-326
+                 CourseWeb: http://10.15.25.5/
+                 Website: http://small.shanghaitech.edu.cn
+
+
+EE114 Embedded System
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Lecture #1: Introduction and admin info
+   What you will learn:
+         a) What are embedded systems
+         – Definition
+         – Their past, present, and future
+
+         b) Classic 8051 & STM32 platform
+
+         c) What is the relation to
+         – Internet of things (IoT)
+         – Cyber physical system (CPS)
+
+         d) What is the role of EE114 in the EE curriculum
+
+         e) Course administrations on lecture, lab, grading
+            policy, etc.
+
+         f) Experience sharing on the related subject
+
+                                                                                                            (Figures are from internet)
+
+EE114 Embedded System                                                                                                                     (2/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   What are embedded systems?
+   • From the users’ point of view                                                        • From engineers’ viewpoint
+                                                                                              – An embedded system is a computer system
+                                                                                                with a dedicated function within a larger
+                                                                                                mechanical or electrical system, often with
+                                                                                                real-time computing constraints
+                                                                                              – It is embedded as part of a complete device
+                                                                                                often including hardware and mechanical parts.
+
+                                                                                                                              1.Telephone decoupling electronics
+                                                                                                                              2.Multicolour LED (network status)
+                                                                                                                              3.Single colour LED (USB status)
+                                                                                                                              4.Main processor, a TNETD7300GDU
+                                                                                                                              5.JTAG (Joint Test Action Group) test
+                                                                                                                              and programming port
+                                                                                                                              6.RAM, a single 8 MB chip
+                                                                                                                              7.Flash memory, obscured by sticker
+                                                                                                                              8.Power supply regulator
+                                                                                                                              9.Main power supply fuse
+                                                                                                                              10.Power connector
+                                                                                                                              11.Reset button
+                                                                                                                              12.Quartz crystal
+                                                                                                                              13.Ethernet port
+                                                                                                                              14.Ethernet transformer,
+                                                                                                                              15.KS8721B Ethernet transceiver
+                                                                                                                              16.USB port
+                                                                                                                              17.Telephone (RJ11) port
+                                                                                                                              18.Telephone connector fuses
+                                                                                                (Figures are from internet)
+EE114 Embedded System                                                                                                                                (3/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Embedded systems examples
+   【案例分析一：智能家居】
+   • 在居住功能基础上，融入门禁系统、远程控制、
+     移动终端控制以及家居环境智能检测和监测等
+                                                                                                  传感 + 物联 + 算法 + OS
+     技术手段，实现家居系统的自动化、智能化。
+   • 微控制器主要承担两个任务：                                                                           温湿度传感器
+                                                                                                                          安防报警装置
+   1. 接收指令，控制家居系统中的各电器设备；
+                                                                                              感光传感器
+   2. 采集传感器数据并进行处理。
+                                                                                                                 微控制器     RS232串口
+                                                                                              人体传感器
+
+                                                                                                                          GPRS模块
+                                                                                              烟雾传感器
+
+
+
+                                                                                                             家电控制系统
+
+
+                                                                                              空调            电视      洗衣机     空气净化器
+
+
+EE114 Embedded System                                                                                                               (4/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Embedded systems examples
+   【案例分析二：智能手环】
+   • 智能手环一般由微控制器、蓝牙模块、Wi-Fi
+     电路、OLED显示屏、心率传感器、加速度传感
+     器、锂电池等模块组成，实现显示时间、监测
+     睡眠、运动等功能。
+                                                                                                            传感 + 物联 + 算法 + OS
+        智能手环系统框图
+                                         蓝牙无线网络
+                                                                                                              A           H
+                          智能手环                             智能手机
+                                                                                                 OLED屏幕;自定义表盘; 信息通知功能;日常健康;
+                           蓝牙模块                                                                  指南针功能， GPS定位系统，NFC卡支持
+                  按键                  语音
+                                                     蓝牙模块
+                                                                   摄像头
+                                                                                                 血氧传感器，      心脏研究APP等；
+                  电路                  模块                                                         久坐\深呼吸提醒功能； 续航时间增强；
+                  GPS                                               GPRS
+                           微控制器
+                  模块                 OLED
+                                     显示屏
+                  微型
+                                                     Wi-Fi模块
+                  摄像头                                              扬声器
+
+
+                          Wi-Fi模块
+
+
+
+                                         Wi-Fi无线网络
+                                          （局域网）
+
+EE114 Embedded System                                                                                                           (5/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Embedded systems examples
+   【案例分析三：四旋翼无人机】                                                                         • 微控制器是控制系统的核心，负责飞行过程中的
+                                                                                            导航、通信、控制等核心任务，根据各传感器模
+   • 无人机因体型小、结构简单、控制灵活、
+                                                                                            块采集的飞行姿态和空间位置，计算相关的运动
+     造价低廉，常用于航拍、环境监测、农情监测、
+                                                                                            参数，将控制信号发送给机载执行机构改变无人
+     地形勘测、灾后环境监测、电力巡线、森林火情
+                                                                                            机位置和速度，保持飞行姿态稳定。
+     监测和植物保护等领域。
+                                                                                                                    PPM解码器      遥控器接收机
+
+
+                传感 + 物联 + 算法 + OS                                                                      电机2
+                                                                                                                   蜂鸣器
+
+
+
+                                                                                                                                           遥控器
+                                                                                                  电机3
+                                                                                                            电调
+
+                                                                                                                                GPS +磁罗盘
+                                                                                                                    自驾仪（飞控）
+                                                                                             电机4
+                                                                                                                                           云台
+                                                                                                                         数传发射
+                                                                                                      电机1
+                                                                                                                                  移动地面站
+         大疆无人机                                                                                                    安全开关                       摄像机
+                                                                                                                 电量报警器
+                         开源平台 参考 ： https://ardupilot.org/                                             锂电池                       数传接收
+
+
+EE114 Embedded System                                                                                                                            (6/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Embedded systems examples
+   【案例分析四：智能马桶】                                                                           • for Research !!!
+                                                                                                  https://www.nature.com/articles/s41551-020-0534-9
+   • 基本功能：加热、保温、杀菌、除臭、烘干；
+   • 未来功能：通过物联网、大数据和人工智能可以
+     对排泄物进行化验分析，并将分析结果实时传送
+     给医生，及时发现病情。
+
+
+
+
+EE114 Embedded System                                                                                                                                 (7/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Embedded systems examples
+   【案例分析五：精准医疗】                                                                           【案例分析六：Play for Fun! 】
+
+
+
+
+            https://www.nature.com/articles/s41378-019-0127-5                                       https://www.science.org/doi/10.1126/sciadv.abe5257
+EE114 Embedded System                                                                                                                                    (8/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   What are embedded systems ?
+   • Special purpose computer built                                                       • What is the difference between a
+     to serve a specific purpose or                                                         microcontroller and a microprocessor?
+     a particular function                                                                • The main difference between μProcessors
+                                                                                            and μControllers is the presence of
+   • General PC are sometimes                                                               Peripherals. Microprocessors are basically
+      – an “overkill”                                                                       electronic devices that execute our code.
+                                                                                          • What are peripherals?
+      – Expensive
+                                                                                          • Peripherals are devices that aid the
+      – Cannot do everything                                                                microprocessor to accomplish a given job. In
+                                                                                            other words, they serve as accessories to
+   • Embedded systems are classified
+                                                                                            the microprocessor.
+      – Subsystems – part of a larger system                                              • on-chip peripherals if they are located inside
+      – Standalone systems                                                                  the SoC.
+                                                                                          • off-chip peripherals if they are located
+      – Networked systems                                                                   outside the SoC but on the same PCB.
+                                                      https://embeddedinventor.com/what-is-an-embedded-system/
+EE114 Embedded System                                                                                                               (9/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   What makes the system to be embedded?
+   • Small size (physical reason)
+      – Microcontroller (MCU):
+         ▪ Called “single-chip microcontrollers” （单片机）
+         ▪ In modern terminology, called System on Chip (SoC)
+      – Single-board microcontroller: built onto
+        a single printed circuit board (PCB)                   The die from an Intel 8742,                  The Raspberry Pi is a low cost,
+                                                               an 8-bit MCU running at 12                                                     基于RK356x或
+         ▪   Single-board computers were made as demonstration MHz, with 128 bytes RAM,                     single-board computer used to
+                                                                                                            teach computer science.           者其他RISC-V
+             or development systems                            2048 bytes EPROM, and I/O.                                                     芯片的国产替代
+   • Low power consumption
+     (technical reason)
+         ▪ The x86 computers are usually used as general
+           purpose PC due to high power consumption
+         ▪ ARM wins almost all mobile market
+
+   • Low cost (economic reason)
+   • Realtime (Multitasking ≠ concurrency)
+                                                                                                               (Figures are from internet)
+
+EE114 Embedded System                                                                                                                             (10/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Computer History
+
+
+
+                                                                             世界上第一台
+                                                                            “冯诺依曼体系
+                                                                            结构”的计算机
+                                                                                                            4004，
+                                        1946                                                                Total 2300 transistors
+                                       ENIAC
+                                                                                 1949
+           冯·诺依曼体系：
+           采⽤⼆进制、程序存储、顺序执⾏
+                                                                                                                     1971
+                                                                                                                  First 4-bit
+                                                                                                                     MCU
+
+
+                                                                                           EDVAC
+EE114 Embedded System                                                                                                                (11/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Selected milestones of embedded systems
+   • 1971                                                                                  • 1984
+
+      – Intel releases first microprocessor, the                                               – Electronics:
+                                                                                                 Xilinx co-founds FPGA (field programmable
+        4004, a 4-bit central processing unit. See
+                                                                                                 gate array).
+        Computer History Museum's timeline on
+        microprocessors.                                                                   • 1988
+   • 1980                                                                                      – First Embedded
+                                                                                                 Systems Programming
+      – Intel introduces 8051 (Harvard                                                           magazine issue
+        architecture, single chip microcontroller).                                              comes out in November.
+
+   • 1980                                                                                  • 1989
+                                                                                               – First Embedded Systems Conference is held at
+      – Hunter&Ready (James Ready and Colin
+                                                                                                 the Sir Francis Drake hotel in San Francisco.
+        Hunter's company) release first
+        commercial operating system
+        for embedded systems,
+        VRTX (Versatile Real-Time Executive).                                                 (http://www.embedded.com/design/prototyping-and-
+                                                                                              development/4007514/Milestones-in-embedded-systems-design)
+
+
+EE114 Embedded System                                                                                                                                      (12/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   8051 (Intel MCS-51)                                                                                      Two key architectures
+   • An internally Harvard architecture,                                                       Harvard                         哈佛结构
+     complex instruction set computing                                                         Architecture
+     (CISC) instruction set, single chip
+     microcontroller (µC) series developed
+     by Intel in 1980 for use in embedded                                                      Use two separate
+     systems                                                                                   memory spaces for
+                                                                                               program and data
+   • Current vendors of MCS-51
+     compatible processors include more
+     than 20 independent manufacturers                                                      Von Neumann
+                                                                                            Architecture
+                                                                                            冯诺依曼结构
+
+                                                                                            Use single
+                                                                                            memory space
+
+                                                           https://www.elprocus.com/difference-
+                                                           between-avr-arm-8051-and-pic-microcontroller/
+EE114 Embedded System                                                                                                               (13/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   PIC & AVR microcontrollers
+   • Peripheral Interface Controller (PIC) is                                              • AVR microcontroller was developed in
+     microcontroller developed by Microchip                                                  the year of 1996 by Atmel Corporation.
+   • PIC microcontroller is fast and simple to                                             • AVR names from its developers and
+     implement program when we contrast                                                      stands for Alf-Egil Bogen Vegard Wollan
+     other microcontrollers like 8051                                                        RISC (reduced instruction set computer)
+   • The ease of programming and simple to                                                   microcontroller, also known as
+     interfacing with other peripherals PIC                                                  Advanced Virtual RISC.
+     become successful microcontroller                                                         – TinyAVR
+                                                                                               – MegaAVR
+                                                                                               – XmegaAVR
+
+
+
+
+                                                           https://www.elprocus.com/difference-
+                                                           between-avr-arm-8051-and-pic-microcontroller/
+EE114 Embedded System                                                                                                          (14/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   ARM Processor
+   • An ARM processor is also one of a family of
+     CPUs based on the RISC architecture
+     developed by Advanced RISC Machines
+     (ARM).
+   • ARM processors are widely used in customer
+     electronic devices such as smart phones,
+     tablets, wearables, and other mobile devices.
+   • Because of their reduced instruction set,
+     they need fewer transistors, which enable a
+     smaller die size of the integrated circuitry.
+   • The ARM processors, smaller size reduced
+     difficulty and lower power expenditure
+     makes them suitable for increasingly
+     miniaturized devices.
+
+
+                                                           https://www.elprocus.com/difference-
+                                                           between-avr-arm-8051-and-pic-microcontroller/
+EE114 Embedded System                                                                                       (15/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Others embedded platforms
+   • MSP430                                                                                • Arduino
+      – a mixed-signal microcontroller family from                                             – a computer hardware and software
+        Texas Instruments. Built around a 16-bit                                                 company, project, and user community
+        CPU, the MSP430 is designed for low cost
+                                                                                               – distributed as open-source hardware and
+        and, specifically, low power consumption
+                                                                                                 software
+        embedded applications.
+
+                                                      Can be powered by
+                                                      small solar, vibration,
+                                                      or thermoelectric
+                                                      micro-generators
+
+
+
+
+EE114 Embedded System                                                                                                               (16/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Others embedded platforms
+   • Raspberry Pi                                                                          • Micro:bit
+      – a series of small single-board computers                                               – An open source hardware ARM-based
+        developed in the United Kingdom by the                                                   embedded system designed by the BBC
+        Raspberry Pi Foundation to promote the                                                   for use in computer education in the UK.
+        teaching of basic computer science in                                              • 掌控板
+        schools and in developing countries.                                                   – 基于国产ESP32芯片，外设较丰富
+
+
+
+
+                                                                                                            (Figures are from internet)
+EE114 Embedded System                                                                                                                     (17/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Comparison
+   • 树莓派
+     实用★★★★★（这货就是台PC主机了，并且可以多种方式操纵GPIO）
+     入门★★★☆☆（需要基础的Linux知识，以及基础的电子或编程知识）
+     价格★★★★☆（绝对价格是这几个里面最高的，但毕竟已经是PC了）
+     扩展★★★★★（市面上不少Arduino模块也能和树莓派兼容）
+     社区★★★★★（不解释了）
+   • Arduino
+     实用★★★★★（参考其原理并在自制最小系统基础上实现自己的想法会更爽）
+     入门★★★★☆（基础的电子知识和C 编程知识）
+     价格★★★☆☆（正版偏贵。有些寨板非常便宜用下来也没太大问题）
+     扩展★★★★☆（唯一的问题是在极端情况下，片内内存容量会是硬伤）
+     社区★★★★★（不解释了）
+
+   • Micro:bit (nRF52) vs 掌控板（国产ESP32）
+      实用★★★☆☆ （适合教学场景；5x5 LED点阵或者OLED；多种传感器集成！）
+      入门★★★★★ （适合零基础。主打Python，几乎是插上数据线到电脑就能开工）
+      价格★★★☆☆ （综合考虑，性价比一般）
+      扩展★★☆☆☆ （金手指式的接口设计，只靠杜邦线是搞不定的。扩展槽不便宜）
+      社区★★★☆☆ （相对比较小众）
+
+
+                      基于知乎 https://www.zhihu.com/question/313943563
+
+EE114 Embedded System                                                                                       (18/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Lid a Led（点灯）in different languages
+   • Arduino：                                                                                               • STM32:
+                                                                                                            #include "stm32f10x.h"
+                                                                                                            #include "led.h"
+
+                                                                                                            /* 函数名：Delay
+                                                                                                            功能描述：不精确延时，延时时间为 Count/72000 ms */
+                                                                                                            void Delay(__IO u32 nCount)
+                                                                                                            {       for( ; nCount !=0; nCount--);
+                                                                                                            }
+                                                                                                            int main(void)
+   • Mbed:                                       • Micropython:                                             {       LED_Init(); // LED 初始化
+   #include “mbed.h”                                                                                                while(1)
+   DigitalOut led1(PB_5);                                                                                            { GPIO_SetBits(GPIOA, GPIO_Pin_8);
+                                                                                                                         // PA8置为1，LED灭
+   int main()                                                                                                          Delay(72000*500);          //延迟500ms
+   {                                                                                                                   GPIO_ResetBits(GPIOA, GPIO_Pin_8);
+       while (true)                                                                                                      // PA8置为0，LED亮
+       {
+                                                                                                                       Delay(72000*500);          //延迟500ms
+           led1 = ! led1;                                                                                       //板级函数 BSP_LED_On(0); Delay_ms(500);
+           wait(0.5);                                                                                           //板级函数 BSP_LED_Off(0); Delay_ms(500);
+       }                                                                                                             }
+   }                                                                                                        }
+
+EE114 Embedded System                                                                                                                               (19/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   MicroPython
+
+
+
+
+EE114 Embedded System                                                                                       (20/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Arduino vs. STM32
+   • Arduino更倾向于创意，它弱化了具体                                                                  • 对于有计算或控制要求的，STM32是更
+     的硬件的操作，它的函数和语法都非常                                                                       好选择。STM32如果买开发板的话就要
+     简单，而且非常“傻瓜化”。                                                                           从硬件底层学起，掌握的各种细节。
+   • 大部分Arduino的主控是AVR单片机，                                                                 • STM32更注重工程实际，事实上很多
+     Arduino的优势还是代码封装性高，                                                                     简单的仪器，如温控仪，电机控制器，
+     所需语句少，降低软件的开发难度。                                                                        游戏手柄、有线键盘鼠标等外设，食堂
+                                                                                             里刷卡的pos机等等其实都是基于单片机。
+   • Arduino上手比较容易，只要懂一点点
+     硬件和C++就能开发。                                                                           • STM32主要是给专业开发人员做产品用
+     Arduino大多数功能都有做好了的库，                                                                    的，需要一定的专业知识，但同时编写
+     所以使用起来很简单，但是对于稍微复                                                                       代码实现功能也相对复杂。
+     杂点的功能可控性较差。                                                                             进阶到ARM高端芯片容易上手！
+
+
+
+
+EE114 Embedded System                                                                                        (21/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Arduino vs. STM32
+   • Arduino有很多个版本：Arduino UNO R3的控制器
+     是AVR单片机，性能上和STM32不在一个水平上，                                                                              总结
+     该款在运算上和宏晶STC12系列差不多；           • 如果你对编程语言了解不深，建议上手Arduino；
+     Arduino MEGA 2560 和STM32F1系列不相上下，如果C功底薄弱上来就搞STM32你会很快有放弃
+     但是功耗大，同款STM32F1ZET6则仅有微热。
+                                      的念头；
+   • 学习容易程度：Arduino相对于STM32容易很多。
+                                    • 如果只是为了就业而学习，果断STM32类单片机；
+   • 编程思想：Arduino面向对象的类C++、类Java为主，   如果只是为了好玩而学习，本身非电子类专业，
+     它的语言基于C但是又有些四不像；而STM32则以正
+                                      建议Arduino；如果编程功底好，建议STM32；
+     统的C语言为主要开发语言。
+                                      然后看看Arduino开源社区，触类旁通。
+   • 获得的知识：Arduino弱于STM32，因为封装了很多
+     底层操作。除非自己尝试编写Arduino配套模块的库，
+                                    • 如果有能力，两者都接触接触，一般一周不到
+     否则还只是停留在基础的编程上。                  Arduino的基本特性你就掌握了，以后有需要的话，
+                                      可以很自如地移植Arduino到STM32等平台上。
+   • 开源程度上：用STM32做出来想开源就开源，不想
+     开源可以什么都不公布。                    • Arduino是一般电子爱好者和DIY的选择，
+   • 可拓展性：Arduino与STM32相当，大部分引脚都可     而STM32往往用于实际产品的研发制造。
+     以引出来，Arduino模块化更强，易于上手。        • 根据自己的项目类型和需求选择适合自己的才最
+   • 成本：实现相同功能，Arduino成本高于STM32。      重要。通常：最少的钱做最多的事！
+
+
+EE114 Embedded System                                                                                            (22/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   嵌入式(计算机)系统结构                                                                             硬件是基础：
+                                                                  环境
+                                                                                            嵌入式处理器(或嵌入式微处理器、微控制器、
+                                                                                            MCU、DSP 、SoC 、FPGA)、多样的存储介质、
+                                                                                            复位电路、时钟电路、总线控制、丰富I/O接口等；
+                                                                                            软件是灵魂：
+                                                                                            小规模嵌入式系统资源少、任务单一、管理简单，
+                                                                                            可不使用嵌入式操作系统；
+                                                                                            复杂的嵌入式系统的内存管理、I/O管理、任务调
+                                                                                            度等均较复杂，需要一个特殊系统软件进行管理，
+                                                                                            同时对应用软件屏蔽底层硬件特征；
+
+
+
+
+EE114 Embedded System                                                                                                 (23/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   嵌入式系统的知识体系
+   • 嵌入式系统的应用范围可以粗略分为两大类：电子系统的智能化(工业 控制、现代农业、家用电器、汽车电子、
+     测控系统、数据采集等)，计算机应用的延伸(MP3、手机、通信、网络、计算机外围设备等)。要完成一个以MCU
+     为核心的嵌入式系统应用产品设计，需要硬件、软件及行业领域相关知识。
+   • 硬件主要有MCU的硬件最小系统、输入／输出外围电路、人机接口 设计。软件设计有固化软件的设计，也可能
+     含PC机软件的设计。行业知识需要通过协作、交流与总结获得。
+   • 概括地说，学习以MCU为核心的嵌入式系统，需要以下软硬件基础知识与实践训练：
+     ①硬件最小系统 (电源、晶振、复位、写入调试接口)；
+     ②通用I／O (开关量输入／输出，涉及各种二值量检测与控制)；
+     ③模／数转换 (各种传感器信号的采集与处理，如红外、温度、光敏、超声波、方向/惯性等)；
+     ④数／模转换 (对模拟量设备利用数字进行控制)；
+     ⑤通信 (串行通信接口USART、串行外设接口/总线 SPI、I2C、CAN、USB、以太网、ZigBee技术等)；
+     ⑥显示 (LED、LCD、OLED、LVGL库等)；
+     ⑦控制 (控制各种设备，包括PWM等控制技术)；
+     ⑧数据处理 (图形、图像、语音、视频等的处理或识别)；
+     ⑨具体项目应用驱动的综合实践。
+   • 实践训练涉及硬件基础、软件基础及相关领域知识。嵌入式编程应用、操作系统、开发环境等均是达到这些目的
+     的工具。有些初学者，容易把工具的使用与所要达到的真正目的相混淆。例如，花了很长时间的嵌入式操作系统
+     移植或者单个模块练习，而不进行实际嵌入式系统的开发，到最后也做不好一个嵌入式小产品，偏离了学习目标。
+
+EE114 Embedded System                                                                                       (24/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   如何学习嵌入式 / 单片机 (Video – 10’)
+   • How to learn Embedded System
+
+
+
+
+EE114 Embedded System                                                                                       (25/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   如何学习嵌入式 / 单片机 ？
+   • 硬件系统学习：                                                                               • 软件系统学习：
+   • 第一步：EDA教程+硬件基础，EDA为主线，硬件基                                                             • 第一步：单片机C语言基础，核心是规范编程，掌握
+     础辅助看懂原理图，初步掌握PCB设计。                                                                     结构体/固件库编程，模块化思想，指针运用。了解
+     电路+数电+模电 的基础要具备~                                                                        汇编等编程语言与硬件之间的关联！周期1~3个月。
+   • 第二步：系统学习实战项目的硬件设计，可以先选择                                                               • 第二步：单片机实战软件编程可以先8051/STC15上
+     难度稍小的8051/STC15实战，也可以直接进行难度                                                             手，再STM32物联网/小车等平台，
+     稍大的STM32从模块到系统进行实践。                                                                   • 结合其他知识体系（PID控制算法、更复杂的信号和
+   • 了解GPIO、LED、按键、蜂鸣器、电机外设；通过                                                               图像处理方法、 IoT物联网知识与应用等）进行实践；
+     UART / IIC/ SPI等协议去玩MPU6050，OLED，                                                       同时了解CubeMX提高开发效率。周期3~4个月左右。
+     HC05蓝牙，超声等模块。周期大概3~4个月左右。                                                             • 学习完上面教程，基本可以自行掌握软件编程了；
+   • 学习完上面教程，基本可以自行设计硬件了，算是快                                                                 日后结合HAL、Mbed、Micropython 和
+     速入门，结合高阶硬件不断实践（物联网， ESP32，                                                              RTOS/Linux 等高阶语言实践，不断提高，
+     CAM/OpenMV，RISC-V、FPGA）和软件不断提高！                                                         Good luck!
+   • 延伸：                                                                                   • 延伸：
+   • 1、通过电源、通信、控制、传感器等专题系统学习                                                               • 1、通过C#等上位机专题课程，快速学习上位机开发，
+     特定产品或者方向；                                                                               方便产品测试和对接；
+   • 2、通过硬件进阶专题课程系统学习原理图，更高效                                                               • 2、通过FreeRTOS实时操作系统学习多任务管理。
+     了解产品设计。
+EE114 Embedded System                                                                                                (26/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Skills Set Development
+ • Basics of electronics                                                                                            • Basics of Software
+ • Basics of digital & analog                                                                                       • Basics of C language
+
+
+ • Microcontrollers                                                                                                 • Assembly language
+ • Memory & GPIO                                                                                                    • C Programming using
+ • Interrupt & Timer                                                                                                  Register/StdLib/HAL
+
+ • USART/I2C/SPI/CAN etc                                                                                            • PID Control
+
+ • DMA/Wifi/BLE                                                                                                     • Project Practice
+                                                                                                                          • Signal Processing
+ • Transducers
+                                                                                                                          • Algorithm
+ • PCB design                                                                                                             • RTOS
+ • HW & SW co-debug                                                                                                       • etc
+
+
+                                                                                                            (Figures are from internet)
+
+EE114 Embedded System                                                                                                                     (27/36)
+EE114 Embedded System
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   EE114/P position in the EE curriculum
+                Introduction to Information Science
+     SI100                                                        信息科学技术导论
+                and Technology
+     CS100      Introduction to Programming                       计算机编程
+    EE111/L     Electric Circuits & Lab                           电路基础/实验
+    EE150/L     Signals and Systems & Lab                         信号与系统/实验
+     CS101      Algorithms and Data Structures                    算法与数据结构
+     EE115A     Analog Circuits                                   模拟电路
+     EE115B     Digital Circuits                                  数字电路
+    EE130/P     Electromagnetics & Project                        电磁学/设计
+    EE160/P     Introduction to Control & Project                 控制原理/课程设计
+     EE120      Fundamentals of Semiconductor Devices             半导体器件基础
+     EE140      Introduction to Communication Systems             通信原理
+   EE114/P Introduction to Embedded Systems                       嵌入式系统/设计                                  AI 算法
+    EE113/P     Digital Integrated Circuit Design & Project       数字集成电路I/设计                                程序设计 (C++, Python, …)
+     EE112      Analog Integrated Circuits                        模拟集成电路I
+                                                                                                            计算机体系结构，
+     EE116      FPGA-based Hardware System Design                 FPGA硬件系统设计
+                                                                                                            电路基础，
+     CS110      Computer Architecture I                           计算机体系结构I*
+                                                                                                            嵌入式系统， FPGA
+     CS131      Compilers                                         编译原理*
+     CS183      Introduction to Robotics                          机器人学导论                                    数字（集成）电路
+     EE101      Medical Imaging                                   医学影像学                                     模拟（集成）电路
+     EE171      Power Electronics                                 电力电子                                      半导体器件
+   EE224B/J     Intro. to MEMS & Lab                              微纳机电系统基础
+                                                                                                            微纳传感器 MEMS
+     EE230      Microwave Engineering                             微波工程
+                                                                                                            光电器件
+
+EE114 Embedded System                                                                                                  (29/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   EE114 Achievements
+                                                                                                            Smart Vehicle 智能小车
+                                                                                                                   曹瑞翔，王一玮
+
+
+
+
+                                                                                                            More videos on BiliBili
+
+
+EE114 Embedded System                                                                                                                 (30/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Summary                                                                                           Take-Home Message
+   • The key difference between                                                            • Embedded Systems are everywhere !
+     general-purpose and embedded systems
+                                                                                           • Many different types of Microcontrollers
+      – Concurrency and control over timing
+        → real-time constraints                                                              are available.
+      – Handling the dynamics of both                                                      • Electronics & C programming language are
+        physical actor and computing system                                                  essential to learn Microcontroller based
+   • How to master the embedded system?                                                      embedded system.
+      – Technical insight: Solid hands-on engineering
+        experience on both hardware and software
+      – Theoretical insight: Systematic knowledge on
+                                                                                           • As an EE/CS background student, master it !
+        different related subjects towards holistic                                           – Take EE114 !
+        modeling, design, and analysis
+      – The technology will change !!!                                                        – Get some toys and play with them !
+      – Curiosity and Critical thinking are two most                                          – Get prepared for a flood of knowledge
+        important characters adapting yourself
+        towards the the changing future!
+                                                                                                & skill sets …
+
+
+EE114 Embedded System                                                                                                                (31/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   课程安排                                              理论部分 48学时
+                                                         +
+                                                                                                            强基础，重应用，求创新！
+
+   • Course homepage:                                实验部分 48学时                             • Software (虚拟机/云桌面 ready ! )
+      – https://ecourse.shanghaitech.edu.cn                                                • Necessary
+   • Prerequisites:
+                                                                                               – Keil C51 IDE (for 8051 coding)
+      – Programming in C language
+      – Analog & digital electronics are preferred                                             – Keil MDK IDE (for STM32 coding)
+                                                                             目标                – Proteus Design Suite
+                                                                         理解MCU                   (for software simulation with MCUs)
+                                                                         架构，汇编
+                                                                         和基础模块！ • Selective
+                                                                                               – VS code, Python, C#, etc
+                                                                          模块化、
+                                                                                               – STM32CUBEMX, STM32CUBEIDE
+                                                                         固件库编程
+                                                                         模块到系统                 – Altium Designer 、嘉立创 (for PCB design)
+
+                                                                          进阶模块                 – Matlab Simulink – Stateflow/PID
+                                                                          应用贯通                   (for state machine & system modeling)
+
+EE114 Embedded System                                                                                                                  (32/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   课程考核                                              理论部分 48学时
+                                                         +                                             强基础，重应用，求创新！
+                                                     实验部分 48学时
+
+
+                                 Grading                                                                    50% 免”修”政策 ！
+                    分项                                      比例
+                                                                                           • 完成一个电赛国奖或者科研等级项目
+             作业 HW*5                                        25%
+                                                                                           • 前2周内提出申请 和 项目Proposal
+          翻转课堂 Task                                         25%                               – 与HW同步汇报（PPT+视频)
+                                                                                              – 期末公开演示与答辩
+               实验 Lab                                       25%                               – 项目建议与科研或应用相关
+                                                                                              – 提供部分开发板和发票报销
+           Quiz/Project                                     25%
+                                                                                           • 可以替代50%或者
+                 Bonus                                   5~20%                               作为额外bonus
+
+EE114 Embedded System                                                                                                      (33/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+                                                         Recommended MOOCs
+   • Reference MOOC for the                                                                • Reference MOOC for the
+     8051-based systems                                                                      ARM-based systems
+
+
+
+        https://www.icourse163.org/                                      https://next.xuetangx.com/
+         course/NJTU-1001729006                                          course/THU08091000246/
+                                                                                                                  https://embedfire.com
+          单片机原理与应用 戴胜华 等                                                            清华大学 曾鸣 等                https://www.bilibili.com/video/BV
+                                                                                                                     1Xs411g7Aj?p=18
+
+
+
+
+                                                                                                                 https://www.yuanzige.com/
+                                                                                                            https://www.bilibili.com/video/BV1Lx4
+                                                                                                                        11Z7Qa?p=15
+
+EE114 Embedded System                                                                                                                     (34/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Interesting Topics
+   • 嘉立创 https://www.jlc.com/                                                              • 清华卓大 https://blog.csdn.net/zhuoqingjoking97298
+   • 立创平台 https://oshwhub.com/                                                             • DF创客 https://mc.dfrobot.com.cn/
+   • ST中文论坛 https://shequ.stmicroelectronics.cn/ • 自平衡单车 SparkFun Adafruit
+                                                                                               ···
+
+
+
+
+EE114 Embedded System                                                                                                                   (35/36)
+Progress: What are embedded systems ? >> Microcontroller platforms >> How to learn ? >> Logistics & Admin
+
+
+   Challenge yourself ？
+   • Join some research driven task                                         • 2017年题目清单                         • 2023年题目清单
+                                                                            •   A-微电网模拟系统                       •   A-单相逆变器并联运行系统
+                                                                                                                    B-同轴电缆长度与终端负载检测装管
+   • Competitions                                                           •
+                                                                            •
+                                                                                B-滚球控制系统
+                                                                                C-四旋翼自主飞行器探测跟踪系统
+                                                                                                                •
+                                                                                                                •   C-电感电容测量装管
+                                                                                                                •   D-信号调制方式识别与参数估计装置
+      – 电子设计竞赛 国赛奇数年9月                                                      •   E-自适应滤波器
+                                                                                                                •   E-运动目标控制与自动追综系统
+                                                                            •   F-调幅信号处理实验电路                    •   F-基干声传播的智能定位系统
+         ▪ 仪器类、通信类、测控类、电源类、信号处理
+                                                                            •   H-远程幅频特性测试装置                    •   G-空公协同智能消防系统
+         ▪ 控制类、飞行器、高频及通信类、其他                                                •   I-可见光室内定位装置                     •   H-信号分离装管
+         ▪ 偶数年有其他专题赛或者邀请赛                                                   •   K-单相用电器分析监测装置                   •   I-气垫悬浮车
+         ▪ 大学生电子设计竞赛nuedc                                                                                       •   J-线路故障检测系统
+                                                                            • 2019年题目清单                         •   K-辨音识键奉乐系统
+         ▪ 大学生电子设计竞赛培训网 (nuedc-training.com.cn)
+                                                                            •   A-电动小车动态无线充电系统                  • 2025年题目清单
+      – 智能车、物联网等竞赛                                                          •   B-巡线机器人                         •   A-能量回馈的变流器负载试验装置
+                                                                            •   C-线路负载及故障检测装置                   •   B-单相有源电力滤波实验装置
+         ▪ 首页-智能车官网 (smartcar.zone)
+                                                                            •   D-简易电路特性测试仪                     •   C-基干单目视觉的目标物测量装置
+         ▪ 全国大学生物联网设计竞赛 (iot.sjtu.edu.cn)                                                                       •   D-简易以太网双绞线测试仪
+                                                                            •   E-基于互联网的信号传输系统
+         ▪ 嵌入式芯片与系统设计竞赛首页 (socchina.net)                                                                        •   E-简易自行瞄准装置
+                                                                            •   F-纸张计数显示装置
+                                                                                                                •   F-简易自动接收机
+      – 其他本学期报名的竞赛 Contest                                                  •   G-双路语音同传的无线收发系统                 •   G-电路模型探究装置
+                                                                            •   H-模拟电磁曲射炮                       •   H-野生动物巡查系统
+      – 可作为EE114P实践课程项目                                                     •   I-LED线阵显示装置                     •   I-非接触式控制盘
+                                                                            •   K-简易多功能液体容器                     •   J-超声信标定位系统
+                                                                                                                •   K-自动避障小车
+                                                                                                       历年试题链接
+EE114 Embedded System                                                                                                            (36/36)
+

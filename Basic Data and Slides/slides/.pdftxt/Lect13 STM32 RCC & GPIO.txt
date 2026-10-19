@@ -1,0 +1,2197 @@
+             EE114: Introduction to
+              Embedded Systems
+Dr. Tao Wu   吴涛     研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+               Demo Task
+
+       • 掌握并独立讲解STM32F1RCC硬件框图和GPIO工作模式
+       • 编程实现LED灯闪烁
+              – 基于标准外设库（固件库）
+              – 基于固件库BSP模块化（宏定义）
+              – （进阶）基于HAL库
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (2/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+STM32 RCC & GPIO 模块
+                  ◆ 了解和理解RCC复位和时钟控制；
+                  ◆ 理解STM32微控制器GPIO的内部结构、
+                    工作模式和使用特性；
+                  ◆ 理解STM32微控制器GPIO输入输出模式；
+                  ◆ 熟悉STM32微控制器GPIO相关的
+                    标准外设库函数和HAL库函数；
+                  ◆ 掌握基于标准外设库实现LED灯闪烁的方法；
+                  ◆ 了解基于HAL库实现LED灯闪烁的方法。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (3/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+STM32 RCC & GPIO 模块
+
+                                1. STM32F1系列的时钟系统
+
+                                2. STM32的GPIO工作原理
+
+                                3. GPIO模块的标准外设库接口函数及应用
+
+                                4. GPIO模块的HAL库接口函数及应用
+                                                                                                  HAL库内容
+                                5. 编程思想之模块化编程                                                     都作为补充
+                                                                                                  介绍性知识
+                                                                                                  不做要求！
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (4/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+     STM32系统结构                                                   STM32F10x微控制器功能结构图
+
+               STM32F10x系列是ST
+        公司基于ARM Cortex-M3
+        内核设计的32位精简指
+        令集微控制器，最高工
+        作频率为72MHz。
+
+
+                还记得有哪些
+               总线、时钟源 ？
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (5/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+     STM32总线结构                                                             STM32F10x芯片系统结构
+
+   ➢ AHB：Advanced High-speed Bus，
+     先进高速总线。
+   ➢ APB：Advanced Peripheral Bus，
+     先进外设总线。
+   ➢ FLASH：闪存。
+   ➢ FSMC：Flexible Static Memory
+     Controller，静态存储控制器，
+     用于连接外部存储器。
+   ➢ RCC：Reset and Clock Control，
+     复位与时钟控制器。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (6/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+     STM32总线结构                                                             STM32F10x芯片系统结构
+   ➢ ICode总线：32位的AHB总线，
+     将Cortex-M3内核的指令总线
+     与闪存FLASH接口相连接，指
+     令预取在此总线上完成。
+   ➢ DCode总线：32位的AHB总线，
+     将Cortex-M3内核的DCode总
+     线与闪存存储器的数据接口
+     相连接，用于常量加载和调
+     试访问。
+   ➢ System总线：32位的AHB总线，
+     连接Cortex-M3内核的系统总
+     线到总线矩阵。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (7/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+                                                                      STM32F1 Reference Manual Clock Tree
+    STM32F1 时钟系统
+  ➢ 由于 STM32 的外设时钟复杂，
+    因此需要有一套完整的时钟系统
+    来进行时钟管理，这就是
+    STM32的时钟系统。
+  ➢ STM32 的时钟系统由 RCC
+    (Reset & Clock Control, 复位与时
+    钟控制器）产生，用来为系统和
+    各种外设提供所需的时钟频率，
+    以确定各外设的工作速度。
+  ➢ 时钟源 HSI, HSE, LSI, LSE, PLL
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                  (8/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32F1 时钟系统                                                                                      PLL
+                                                                                                      • Phase Locked
+                                                                                      LSE
+     STM32有5个时钟源                                                                                        Loop，锁相环，
+                                                                                                        保证外部输入
+                                                                                      • Low Speed
+                                                            LSI                         External，低速     时钟信号与内
+                                                            • Low Speed                 外部时钟，通          部振荡信号同
+                                  HSE                         Internal，低速               过OSC32_IN和      步（频率和相
+                                                              内部时钟，由                    OSC32_OUT引      位相同），以
+                                  • High Speed
+      HSI                           External，高速               内部RC振荡器                   脚外接频率为          保证输出频率
+                                    外部时钟，可                    产生，频率约                    32.768kHz的晶     的稳定。另一
+      • High Speed
+                                    外接一个外部                    40kHz，主要为                 振，主要为RTC        方面，也可用
+        Internal，高速
+                                    时钟源，或者                    独立看门狗                     （Real-Time      于倍频HSI或
+        内部时钟，由
+                                    通过OSC_IN和                 （IWDG）和自                  Clock）提供低       HSE。
+        内部8MHz的RC
+        振荡器生成，                      OSC_OUT引脚                 动唤醒单元提                    速高精度的时
+        可作为系统时                      外接晶振，频                    供时钟。                      钟源。
+        钟或2分频后作                     率范围为4～
+        为PLL输入；特                    16MHz，通常
+        点：时钟频率                      使用8MHz。
+        精度差，不稳                      特点：精度高，
+        定。                          稳定。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                            (9/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32F1 时钟系统
+    ➢ HSE 高速外部时钟（通常8MHz）
+     ▪ RCC_CR 寄存器位16：HSEON控制
+    ➢ HSI 高速内部时钟（内部固定8M)
+     ▪ RCC_CR 寄存器位0：HSION控制
+    ➢ PLLCLK 锁相环时钟 优选
+     ▪ PLL时钟来源：PLLSRC (HSE, HIS/2)
+     ▪ CFGR：PLLSRC, PLLXTPRE, PLLMUL
+     ▪ 通常最大72M; 源为HSI/2时64M                             ? 2bit
+    ➢ SYSCLK 系统时钟 (CFGR：SW[1:0])
+     ▪ 通常配置SYSCLK=PLLCLK=72M
+    ➢ HCLK 时钟 (CFGR：HPRE[3:0])
+     ▪ AHB高速总线时钟，72M
+    ➢ PCLK1 时钟 (CFGR：PPRE1[2:0])
+     ▪ APB1低速总线时钟，最高36M
+    ➢ PCLK2 时钟 (CFGR：PPRE2[2:0])
+     ▪ APB2高速总线时钟，最高72M
+                                                                                                  STM32F1时钟系统
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                            (10/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32F1 时钟系统
+                   系统时钟经AHB预分频器分频，产生各种外设所需要的时钟
+              频率，AHB分频器输出的时钟供五大模块使用：
+
+                      AHB总线、内核、                             通过8分频后
+                                                                                            直接作为Cortex的
+                      内存和DMA使用的                             用作Cortex的
+                                                                                            空闲运行时钟FCLK
+                         HCLK时钟                            系统定时器时钟
+
+
+
+
+                                         供给APB1分频器                           供给APB2分频器
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                      (11/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32F1 时钟系统                                                     7 个步骤对应的设置系统时钟库函数
+                                                                              PCLK2 = HCLK = SYSCLK=PLLCLK = 72M
+                                    该函数截取自固件库文件                               PCLK1=HCLK/2 = 36M
+                                     system_stm32f10x.c
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                               (12/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32 RCC 练习
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (13/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    STM32F1 时钟系统
+
+
+
+
+        其他时钟                                                            扩展了解
+        A. USB 时钟；B. Cortex 系统时钟；                                       STM32CubeMX RCC 图形化配置方法，
+        C. RTC 时钟、独立看门狗时钟；                                              操作方便，看懂相应的 HAL 库函数
+        D. MCO时钟输出                                                      与编程方式
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (14/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+    工程源码解析
+ 5.4.2 HAL库GPIO应用实例——源码分析                                                                         main.c
+           /***系统时钟配置，对应于STM32CubeMX软件中的系统时钟操作*/
+      void SystemClock_Config(void)
+      {
+              /*OSC外部晶振初始化结构体变量，用于打开HSE，设置PLL等 */
+        RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+             /*SYSCLK初始化结构体变量，用于选择sysclk的时钟源、设置AHB预分频系数*/
+        RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+            /* 给RCC_OscInitStruct的成员赋值，用于选择系统时钟源，设置PLL、PLLMul的值等 */
+        RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;       //HSE为外部晶振
+      8MHz
+        RCC_OscInitStruct.HSEState = RCC_HSE_ON;                 //打开HSE
+        RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1; //设置HSE预分频系数为1
+        RCC_OscInitStruct.HSIState = RCC_HSI_ON;        //打开HSI（高速内部时钟，HSI=8MHz）
+        RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;             //打开PLL
+        RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;     //PLL的输入时钟选择为HSE
+        RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9; //设置PLLMul为9，倍频到72MHz
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (15/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+      工程源码解析                                                                                      main.c
+              /***调用HAL_RCC_OscConfig()函数对系统时钟进行初始化配置， 通过if语句判断是否成功，
+                  如果初始化配置不成功，则由Error_Handler()进行处理*/
+       if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+         {    Error_Handler();//出错处理函数 }
+             /*给RCC_ClkInitStruct的成员赋值，用于选择SYSCLK的时钟源， 设置AHB、APB1、APB2的时钟，
+              此代码对应于STM32CubeMX软件中的Clock Configuration配置的系统时钟操作 */
+        RCC_ClkInitStruct.ClockType =
+       RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+               /*将 SYSCLK的时钟源选为PLLCLK */
+         RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+               /* 将AHB Prescaler的分频值设为 1，AHB时钟频率=72MHz*/
+         RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+               /* 将APB1 Prescaler的分频值设为2，APB2时钟频率=PCLK1 = 36 MHz*/
+         RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+               /*将APB2 Prescaler的分频值设为1，APB2时钟频率=PCLK2 = 72MHz */
+         RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+               /*判断SYSCLK时钟初始化配置是否成功， 如果初始化配置不成功，则由Error_Handler()进行处理*/
+       if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+         { Error_Handler(); }
+       }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (16/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+   2 STM32的GPIO工作原理
+
+
+                                                 2.1 GPIO引脚
+
+                                                 2.2 GPIO内部结构
+
+                                                 2.3 GPIO工作模式
+
+                                                 2.4 GPIO输出速度
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (17/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.1 STM32F103概述
+                                                                 GPIO端口内部是由一个个寄存器组成，
+                  MCU
+                                                           一个引脚对应一个寄存器或多个引脚对
+                                        引脚         外设
+             1 0 ... 0 01        ...
+                                                           应一个多位的寄存器，改变寄存器中的
+               寄存器                      引脚         外设
+                                  ...                      数据就可以改变外设的工作方式。
+                                  ...   引脚         外设                                                              +3.3V
+             1 1 ... 0 00
+                                        引脚         外设
+               寄存器
+                                                                                                  MCU
+                                                                                                                        LED
+
+                 与51单片机相比，STM32拥有更多的                                                               00
+                                                                                                  寄存器
+
+
+
+
+                                                                                                             ...
+             I/O引脚，其驱动能力更强，控制方式                                                                                    引脚
+                                                                                              1 1 ... 0 00   ...
+             更多更灵活，功能也更强大。                                                                      寄存器                引脚
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                       (18/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.1 STM32F103引脚图                                                   STM32代表ARM Cortex-M内核的32位微控制器
+                                                                    1、’F’那一位指的是产品类型。
+                                                                    2、’103’那位指的是产品子系列，101= 基本型，
+                                                                     102 = USB型，103 = 增强型，105或107 = 互联型;
+                                                                    3、’V’那位指的是引脚数目，T=36脚，C=48脚，
+                                                                     R=64脚，V=100脚，Z = 144脚 。
+                                                                    4、’E’那位指的是FLASH的大小，4=16K，
+                                                                     6=32K(RAM=10K)，8=64K(RAM=20K)，
+                                                                     B=128K(RAM=20K)，C=256K(RAM=48K)，
+                                                                     D=384K(RAM=64K)，E=512K(RAM=64K)，
+                                                                     F=768K(RAM=96K)，G=1024K(RAM=96K)。
+                                                                    5、’T’那位指的是封装方式，H=BGA，T=LQFP，
+                                                                     U=VFQFPN，Y=WLCSP64。
+                                                                    6、’6’那位指的是温度范围，6=-40~85摄氏度，7=-
+                      STM32F103RCT6                                  40~105摄氏度。
+                                                                     综上，STM32F103VET6这款芯片为：100引脚 、
+                                                                     512KFlash、64kSRAM、LQFP 封装、32位内核；
+                                                                     STM32F103RCT6：64引脚、256KFlash/48kSRAM。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                (19/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.1 STM32F103引脚图                                                STM32F103ZET6一共有144个引脚，这些
+                                                              引脚共分为六大类：
+                                                              ➢ 电源引脚：VDD、VSS、VREF+、VREF-、
+                                                                         VDDA、VSSA、VBAT；
+                                                              ➢ 晶振引脚：PC14、PC15和
+                                                                         OSC_IN、OSC_OUT
+                                                              ➢ 复位引脚：NRST；
+                                                              ➢ BOOT引脚：BOOT0、BOOT1；
+                                                              ➢ 程序下载引脚：PA13/PA14/PA15/PB3/PB4
+                                                              ➢ GPIO引脚：共有7组GPIO，分别为：
+                  STM32F103ZET6                                  PA组：PA0~PA15； PB组：PB0~ PB15；
+                                                                 PC组：PC0~ PC15； PD组：PD0~ PD15；
+                                                                 PE组：PE0~PE15； PF组：PF0~PF15；
+                                                                 PG组：PG0~PG15；
+                          大多数引脚还通过复用技术兼具其他专用功能。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (20/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.2 GPIO内部结构                                     STM32F103系列微控制器GPIO端口的基本结构
+
+
+
+
+                                                                                                  左侧连MCU内部
+
+                                                                                                  中间部分为GPIO
+                                                                                                  引脚的基本电路
+
+                                                                                                  右侧为MCU引出
+                                                                                                  的I/O外设引脚
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                    (21/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                  每 组 GPIO 端 口 (Px) 都 由 7 个 寄 存 器 组 成 ，
+ 2.2 GPIO内部结构                                     负责控制该端口的16个引脚Px0 ~ Px15。
+                                                  具体定义参考 Reference Manual - GPIO Registers
+                                                                                  置位/复位寄
+                   配置寄存器                                数据寄存器                                     复位寄存器       锁定寄存器
+                                                                                    存器
+                    （32位）                                （32位）                                     （16位）       （32位）
+                                                                                   （32位）
+
+
+
+
+          GPIOx_CRL          GPIOx_CRH          GPIOx_IDR       GPIOx_ODR         GPIOx_BSRR      GPIOx_BRR   GPIOx_LCKR
+
+
+
+
+  Port configuration register low                             CNFy[1:0]:
+  (GPIOx_CRL) (x=A..G)
+  Port configuration register high                                                                MODEy[1:0]:
+  (GPIOx_CRH) (x=A..G)
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                   (22/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                  每 组 GPIO 端 口 (Px) 都 由 7 个 寄 存 器 组 成 ，
+ 2.2 GPIO内部结构                                     负责控制该端口的16个引脚Px0 ~ Px15。
+                                                  具体定义参考 Reference Manual - GPIO Registers
+                                                                                  置位/复位寄
+                   配置寄存器                                数据寄存器                                     复位寄存器       锁定寄存器
+                                                                                    存器
+                    （32位）                                （32位）                                     （16位）       （32位）
+                                                                                   （32位）
+
+
+
+
+          GPIOx_CRL          GPIOx_CRH          GPIOx_IDR       GPIOx_ODR         GPIOx_BSRR      GPIOx_BRR   GPIOx_LCKR
+
+
+
+                                                                      Port bit set/reset register (GPIOx_BSRR)
+    Port input data register (GPIOx_IDR)
+                                                                      Port bit reset register (GPIOx_BRR)
+    Port output data register (GPIOx_ODR)
+                                                                      Port configuration lock register (GPIOx_LCKR)
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                   (23/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.3 GPIO工作模式                                                                                 推挽输出
+                                                                                              开漏输出
+                                               4种输出模式
+                                                                                           复用推挽输出
+                                                                                            复用开漏输出
+              工作模式
+                                                                                              上拉输入
+                                                                                              下拉输入
+                                               4种输入模式
+                                                                                              模拟输入
+                                                                                              浮空输入
+                                                                                                     每一种模式
+                                                                                                     意味着一种
+                                                                                                     寄存器控制
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (24/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 推挽输出模式（Push-Pull，PP）                                                              推挽结构一般指两个MOS管受
+                                                   VDD         VDD                互补信号的控制，按互补对称的
+                                                       P-MOS                      方式连接，任意时刻总是一个三
+             输出数据寄存器                   输出
+                                       控制
+                                                                      IO引脚
+                                                                                  极管导通，另一个截止。
+              复用功能输出
+
+                                                   VSS          VSS
+                                                                                     推挽模式下，I/O引脚输出
+                                                   VDD         VDD                   高电平时，P-MOS导通
+              输出数据寄存器                  输出
+
+               复用功能输出
+                                       控制
+                                                       N-MOS
+                                                                      IO引脚            推挽模式下，I/O引脚输出
+                                                               VSS
+                                                                                      低电平时，N-MOS导通
+                                                   VSS
+
+
+
+              使用推挽输出模式的目的：增大输出电流，即增加输出引脚的
+             驱动能力，提高电路的负载能力和提高开关的速度。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (25/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+开漏输出模式（Open-Drain，OD）
+
+
+                   漏极开路（OD）输出与                                                                    利用外部
+                                                                                开漏输出
+            集电极开路输出十分相似，                                                                          电路的驱动
+                                                                                能够方便
+                                                                                                  能力，减少
+            即只有下拉MOS管没有上拉                                                        的实现
+                                                                                                  芯片内部的
+                                                                                “逻辑与”
+            MOS管，MOS管的漏极直接                                                                         驱动
+
+            与I/O引脚相连，不与电源连                                                              无上拉电阻时，
+            接，处于悬空状态（为高阻                                                               只能输出低电平，
+                                                                                       若需高电平，要
+            态），称之为漏极开路。                                                                 外接上拉电阻
+
+                                                                                开漏输出模式的应用场合
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                      (26/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+复用功能输出模式（Alternate Function，AF）
+
+                STM32F103ZE系列微控制器有
+        144个引脚，其中的GPIO引脚除了                                                                当I/O引脚作为
+        作为通用输入/输出引脚使用外，还                                                                 复用功能时，可
+                                                                                         选择复用推挽输
+        可以作为片上外设（如串口、ADC、                                                                出模式或复用开
+        IIC等）的引脚，即可以作为多个外                                                                漏输出模式，在
+        设引脚使用，称为复用I/O端口                                                                  选择复用开漏输
+                                                                                         出模式时，需外
+        AFIO（Alternate Function I/O），
+                                                                                          接上拉电阻。
+        但一个引脚某一时刻只能使用复用
+        功能中的一个。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                 (27/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 输入模式
+           上拉输入模式                              上拉输入模式，引脚内部有个上拉电阻，通过开关连接
+           (Input Pull-up)                     到电源VDD，当I/O无输入信号时，默认输入高电平。
+           下拉输入模式            下拉输入模式和上拉输入模式正好相反，当I/O引脚无输
+           (Input Pull-down) 入信号时，默认输入低电平。
+           浮空输入模式                              浮空输入模式下引脚内部既不接上拉电阻也不连接
+           (IN_FLOATING)                       下拉电阻，直接经施密特触发器输入I/O引脚的信号。
+
+                                                                              开                   VDD
+                                    读                   输入数据
+                                                        寄存器           TTL施密特
+                                                                       触发器
+                                   写      置位/复位
+                                           寄存器          输出                   输入驱动
+                                                        数据                                              IO引脚
+                                                        寄存
+                                                读/写
+                                                         器
+                                                                                                  VSS
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                           (28/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 模拟输入模式
+
+
+      模拟输入模式
+      (GPIO_Mode_AIN )
+
+
+
+
+                     模拟输入模式下(GPIO_Mode_AIN)，施密特
+             触发器关闭，既不接上拉电阻也不连接下拉电阻，
+             引脚信号连接到芯片内部的片上外设，其典型应用
+             是A/D模拟输入，对外部信号进行采集。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (29/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 2.4 GPIO输出速度
+
+                     输出速度并不是输出信
+                     号的速度，而是指I/O
+                     口驱动电路的响应速度。
+                                                   实际开发中，需要结合系
+                                                   统实际情况选择合适的响
+                                                   应速度，以确保信号的稳
+                                                    定性和降低功耗等。
+
+              一般常用的外设如LED、蜂鸣器等建议采用2MHz的输出速度，
+            而用作IIC、SPI等复用功能的输出引脚时，则尽量选择高响应速
+            度如10MHz或50MHz。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (30/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+  3 GPIO模块的标准外设库接口函数及应用
+
+
+
+                                       3.1 GPIO标准外设库接口函数
+
+                                       3.2 GPIO标准外设库应用实例
+
+                                       3.3 基于标准外设库开发的一般流程
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (31/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.1 GPIO标准外设库接口函数                                                                学习如何查阅
+                                                                                  看懂各种函数库
+            类型                        函数原型                                                功能描述
+                          GPIO_Init()                          根据GPIO初始化结构参数初始化GPIOx外设寄存器
+         初始化及             GPIO_DeInit()                        将GPIOx外设寄存器恢复为默认复位值
+         复位函数             GPIO_StructInit()                    GPIO结构体初始化
+                          GPIO_AFIODeInit()                    取消所有的复用功能
+                          GPIO_Write()                         置位或复位选定的GPIO数据端口
+                          GPIO_WriteBit()                      置位或复位选定的GPIO端口引脚
+                          GPIO_SetBits()                       置位选定的GPIO端口引脚
+         引脚功能             GPIO_ResetBits()                     复位选定的GPIO端口引脚
+         操作函数             GPIO_ReadInputData()                 读取选定的GPIO输入端口数据
+                          GPIO_ReadInputDataBit()              读取选定的GPIO输入端口引脚数据
+                          GPIO_ReadOutputDataBit()             读取选定的GPIO输出端口数据
+                          GPIO_ReadOutputData()                读取选定的GPIO输出端口引脚数据
+         外部中断             GPIO_EXTILineConfig();               外设端口作为中断线号输入
+         处理函数             GPIO_EventOutputConfig()             事件输出
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (32/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.1 GPIO标准外设库接口函数
+
+
+            GPIO的标准外设库
+       接口函数的源码在源
+       文件stm32f10x_gpio.c
+       中，其对应的头文件
+       stm32f10x_gpio.h声
+       明了GPIO所有的库函
+       数，共18种。
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (33/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.1 GPIO标准外设库接口函数
+
+
+                                                                                         如果想要查看具体的函数
+                                                                                         定义实现，可在keil 5工
+                                                                                         程中将光标放在想要查看
+                                                                                         的函数上，然后右键选择
+                                                                                         “Go To Definition of…”，
+                                                                                         即可跳转到相应函数的函
+                                                                                         数体中
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                        (34/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.1 GPIO标准外设库接口函数                                                                   有疑问时要会阅读
+                                                                                     函数说明和查阅相
+                                                                                       关Manual
+                                                                              GPIO_Init()函数用于初始化GPIO，
+                                                                              有两个输入参数：
+                                                                              ➢第一个参数用于指定GPIO的
+                                                                              具体端口x（x=A,B,C,D,E）
+                                                                              ➢第二个参数根据
+                                                                              GPIO_InitStruct结构体变量中指
+                                                                              定的参数初始化GPIO，
+                                                                              GPIO_InitStruct是指向
+                        GPIO_Init()函数源码                                       GPIO_InitTypeDef结构体的指针。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (35/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.1 GPIO标准外设库接口函数
+                                                                              GPIO_InitTypeDef
+                                                                              结构体定义在stm32f10x_gpio.h
+                                                                                GPIO_InitTypeDef
+                                                                                                           取值范围
+                                                                                   结构体成员
+                                                                                                   GPIO_Pin_0 ~ GPIO_Pin_15
+                                                                                      GPIO_Pin     GPIO_Pin_All
+                                                                                                   GPIO_Speed_10MHz
+                                                                                    GPIO_Speed     GPIO_Speed_2MHz
+                                                                                                   GPIO_Speed_50MHz
+                                                                                                   GPIO_Mode_AIN
+         GPIO的配置参数                                                                                 GPIO_Mode_IN_FLOATING
+                                                                                                   GPIO_Mode_IPD
+         如具体的GPIO引脚、输出响应速度、                                                          GPIO_Mode
+                                                                                                   GPIO_Mode_IPU
+                                                                                                   GPIO_Mode_Out_OD
+         GPIO引脚的工作模式等。                                                                             GPIO_Mode_Out_PP
+                                                                                                   GPIO_Mode_AF_OD
+                                                                                                   GPIO_Mode_AF_PP
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                 (36/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.2 GPIO标准外设库应用实例
+
+                                                                         硬件
+           功能                                                            设计
+                         采用基于标准外设                                               STM32F103
+
+                 库设计方式，利用单                                                                                     LED
+                                                                                                                     +3.3V
+                                                                                                         R1
+                 个GPIO引脚输出高低                                                                      PB5   470Ω
+
+                 电平控制发光二极管，
+                 并按一定时间间隔改
+                 变I/O口电平，实现灯                                          改变限流电阻R1的值可改变发光
+                                                                     二极管的亮度，一般选用400 ～1K
+                 光闪烁效果。
+                                                                     电阻。
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                         (37/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.2 GPIO标准外设库应用实例
+
+
+                                                                                            主流程图由两部分构成：
+                                                                                         ➢ 初始化函数部分；
+                                                                                         ➢ 一个无限循环功能部分。
+
+                                                                                           代码实现
+                                                                                                  led.h头文件
+                                                                                                  led.c 源文件
+                                                                                                  main.c主函数文件
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                        (38/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.2 GPIO标准外设库应用实例                                                     led.c 源文件 用于GPIO端口
+                                                       #include "led.h"        初始化操作，即硬件
+led.h头文件                                               void LED_Init(void)     驱动程序的编写。
+      用于存放led.c文件 {
+                    GPIO_InitTypeDef GPIO_InitStructure;
+   的管脚定义、全局变量            //定义一个GPIO_InitTypeDef类型的结构体变量
+   声明和函数声明等内容。 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,
+                                                       ENABLE);        //开启GPIOB的时钟
+     #ifndef __LED_H                                     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+     #define __LED_H                                           //选择要使用的I/O引脚，此处选择PB5引脚
+                                                         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+     #include "stm32f10x.h"                                   //设置引脚输出模式为推挽输出
+      //函数声明                                             GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+                                                             //设置引脚的输出速度为50MHz
+     void LED_Init(void);
+                                                         GPIO_Init(GPIOB,&GPIO_InitStructure);
+                                                             //调用初始化库函数初始化GPIOB端口
+     #endif                                            }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                 (39/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.2 GPIO标准外设库应用实例                                                               main.c文件的代码
+                                                           int main(void)
+   #include "stm32f10x.h"
+                                                           {
+   #include "led.h"                                            LED_Init();
+   /*函数名：Delay
+                                                               while(1)
+   *功能描述：不精确的延时，
+                                                               { GPIO_SetBits(GPIOB,GPIO_Pin_5);
+   延时时间= nCount/72000，单位为ms，                                        //调用GPIO_SetBits函数，将PB5置为高电平，熄灭LED
+   72MHz为STM32主频
+                                                                    Delay(720000);
+   *输入参数：nCount
+                                                                    //调用延迟函数，延迟10ms
+   *输出参数：无
+   */
+                                                                    GPIO_ResetBits(GPIOB,GPIO_Pin_5);
+                                                                     //调用GPIO_ReSetBits函数，将PB5置为低电平，点亮LED
+   void Delay(__IO u32 nCount)                                      Delay(720000);
+   {                                                                //调用延迟函数，延迟10ms
+      for(;nCount !=0;nCount--);                                }
+   }                                                       }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                    (40/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.2 GPIO标准外设库应用实例
+  代码完成后，单击
+  Keil中的编译按钮
+  进行编译；
+
+     若提示程序有错误，
+     则需认真检查一下代
+     码，找出错误所在，
+     直到编译无错误；
+
+         如果提示无错误，就可
+         以通过调试和下载工具，
+         将编译好的可执行文件
+         下载到芯片中，查看并
+         验证实验结果。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (41/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 3.3 基于标准外设库开发的一般流程
+
+                                                                              开启相应
+                                                                              外设时钟                开启相应外设时钟
+                                                                                确定
+                                                                              功能引脚                配置外设功能参数，
+                                                                               初始化                调用初始化函数，
+                                                                              外设硬件                初始化外设相关的
+                                                                                                  参数
+                                                                              应用功能
+                                                                                实现
+                                                                              若有中断                使能相应的外设
+                                                                              编写中断
+                                                                              服务函数
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                    (42/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+  5 编程思想之模块化编程
+    ◆拓展1：通过已有的库函数实现更为复杂的功能函数，
+     通过对函数的进一步封装，来简化函数调用。
+     例：通过HAL库的WritePin函数和ReadPin函数，实现TogglePin（I/O状态翻转）功能函数
+    void BSP_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+    {
+        HAL_GPIO_WritePin(GPIOx, GPIO_Pin, (GPIO_PinState)((1-GPIO_ReadPin(GPIOx,GPIO_Pin))));
+        HAL_Delay(h);
+    }                                                   int main(void)
+                                                        { ……
+                                                          MX_GPIO_Init(); // I/O引脚硬件驱动配置初始化
+                                                          while (1)
+                在主函数中通过                                    {     //将PE5引脚状态每隔100ms进行翻转
+                右侧代码，实现                                       BSP_GPIO_TogglePin(GPIOE, GPIO_PIN_5, 100);
+                函数调用。                                      }
+                                                        }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                 (43/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+  5 编程思想之模块化编程                                                                            应用程序层
+                                                                          通过调用BSP和HAL，实现系统功能
+◆拓展2：模块化编程 ——                                                                     BSP（功能模块层）
+ BSP板级驱动函数设计                                                           • 通过调用HAL，实现项目中所用外设
+            BSP：Board Support                                            功能模块，如OLED屏、GSM模块等；
+          Packages，板级支持包。                                              • 隐藏具体的外设模块操作细节；
+                                                                       • 为上层提供调用接口。
+       BSP就是一个介于操作系统和底                                                            HAL（硬件抽象层）
+  层硬件之间的软件层次，包括了系  • 对片内硬件资源（如GPIO、中断、
+  统中大部分与硬件相关的软件模块，   定时器、ADC等）的通用配置；
+                   • 隐藏具体的寄存器操作细节；
+  在功能上包含两部分：系统初始化  • 为上层提供调用接口。
+  以及与硬件相关的设备驱动。                                                     BSP板级驱动函数是在HAL库或者固件
+                                                                    库的基础上进行的再次抽象和封装。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (44/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 5编程思想之模块化编程
+    编程思想之模块化编程
+5.4.3 HALv库函数拓展                                               #ifndef __LED_H__
+                                                              #define __LED_H__
+                                                              #include “stm32f1xx_hal.h”
+◆拓展2：模块化编程 ——                                                 //采用宏定义，将指示灯LED0连接的引脚和
+ BSP板级驱动函数设计                                                  端口分别定义一个别名
+                                                              #define led0_port GPIOC
+        模块化的板级驱动函数编                                           #define led0_pin GPIO_PIN_3
+       程设计以.c源文件和.h头文件                                        //采用宏定义 LED1 引脚和端口
+                                                              #define led1_port GPIOE
+       的形式实现：                                                 #define led1_pin GPIO_PIN_5
+       .h头文件则用于声明，                                            //采用宏定义 LED2 引脚和端口 在固件库和
+       .c源文件中的功能函数用于                                          #define led2_port GPIOB        HAL库使用时
+                                                              #define led2_pin GPIO_PIN_5     注意大小写
+       隔离和封装底层具体硬件的                                           //声明函数
+       宏定义及枚举类型、结构体                                           void BSP_LED_On(uint16_t number);
+       类型等数据类型的定义。                                            void BSP_LED_Off(uint16_t number);
+                                                              #endif
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (45/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 5 编程思想之模块化编程
+5.4.3 HALv库函数拓展                                                        ◆拓展2：模块化编程——
+                                                                        BSP板级驱动函数设计
+                                                              #include "stm32f1xx_hal.h"
+   .c源文件是具体业务逻辑实                                              #include "led.h"
+                                                              void BSP_LED_On (uint16_t led_number)
+  现，即功能函数实现，包含一                                               { //指示灯亮函数，GPIO引脚为低电平时有效
+                                                                 switch(led_number)
+  个或多个具体的功能函数。                                                   { case 0:
+                                                                    HAL_GPIO_WritePin(led0_port, led0_pin, GPIO_PIN_RESET);
+    在led.c文件中设计一个                                                   break;
+                                                                    case 1:
+  BSP_LED_On(uint16_t led_number)                                   HAL_GPIO_WritePin(led1_port, led1_pin, GPIO_PIN_RESET);
+  和BSP_LED_Off(uint16_t led_number)                                 break;
+                                                                    case 2:
+  函数，其中形参led_number为                                                HAL_GPIO_WritePin(led2_port, led2_pin, GPIO_PIN_RESET);
+                                                                    break;
+  目标板上具体对应某个设备指                                                     default:
+                                                                    break;
+  示灯编号，取值为0、1或2。                                                  }
+                                                              }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                (46/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+   5 编程思想之多按键状态                                                     2种宏定义 & 4种处理状态
+                                                                    #define LED_2(n)
+  #define KEY0      HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_10)            (n?HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET):
+  #define KEY1      HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_9)             HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET))
+  #define KEY2      HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_8)             #define LED_2_TogglePin HAL_GPIO_TogglePin(led2_port, led2_pin)
+  #define WK_UP     HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)
+                                                                    /* @brief           按键处理函数
+  #define KEY0_PRES             1                                    * @remark          注意此函数有响应优先级,KEY0>KEY1>KEY2>WK_UP!!
+  #define KEY1_PRES             2                                    * @param mode                    0:不支持连续按, 1:支持连续按
+  #define KEY2_PRES             3                                    * @return u8 返回按键值
+  #define WKUP_PRES             4                                    * 0:没有按键按下, 1:KEY0按下, 2:KEY1按下, 3:KEY2按下, 4:WK_UP按下
+                                                                     */
+   while(1)
+                                                                    u8 KEY_Scan(u8 mode)
+    { key = KEY_Scan(0);        //按键扫描，不支持连续按
+                                                                    { static u8 key_up = 1;           //按键松开标志
+        switch(key)
+                                                                       if(mode == 1) key_up = 1;      //支持连按
+        {
+                                                                       if(key_up && (KEY0 == 0 || KEY1 == 0 || KEY2 == 0 || WK_UP == 1))
+          case WKUP_PRES:       //控制蜂鸣器状态翻转
+                                                                       {
+             BEEP_TogglePin;
+                                                                          delay_ms(10);
+             LED_2_TogglePin;          break;                             key_up = 0;
+          case KEY2_PRES:       //控制LED_B红灯状态翻转                           if(KEY0 == 0)               return KEY0_PRES;
+             LED_B_TogglePin;          break;                               else if(KEY1 == 0)        return KEY1_PRES;
+          case KEY1_PRES:       //控制LED_G绿灯状态翻转                             else if(KEY2 == 0)        return KEY2_PRES;
+             LED_G_TogglePin;          break;                               else if(WK_UP == 1)       return WKUP_PRES;
+          case KEY0_PRES:       //控制LED_R蓝灯状态翻转                        }
+             LED_R_TogglePin;          break;                          else if(KEY0 == 1 && KEY1 == 1 && KEY2 == 1 && WK_UP == 0)key_up = 1;
+          default:              break;                                 return 0; //无按键按下
+        }                                                           }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                                   (47/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                           GPIO模块的
+      小结                                                   标准外设库
+                                                           接口函数及
+                                                           应用
+                                                                                                  编程思想
+      STM32 RCC &                                          • 接口函数                                 之模块化
+       GPIO 概述                                             • 应用实例                                  编程
+
+
+
+                                STM32的GPIO                                         GPIO模块
+                                工作原理                                               的HAL库
+                                • GPIO引脚                                           接口函数
+                                                                                   及应用
+                                • GPIO内部结构
+                                • GPIO工作模式                                         • 接口函数
+                                • GPIO输出速度                                         • 应用实例
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (48/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+              AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (49/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+     工程素质和技能归纳
+       •    了解STM32 系列单片机的引脚定义和分布，掌握其时钟系统结构和配置方法。
+       •    为什么ARM RCC 时钟这么复杂
+              –    嵌入式系统处理器将时钟分开，有供中央处理单元使用的，也有供外设接口使用的
+              –    灵活配置，降低功耗
+       •    掌握STM32单片机GPIO端口的配置流程和方法
+              –    浮空输入：In_Floating                                           - 开漏输出：OUT-OD
+              –    带上拉输入：IPU(In Push-Up)                                      - 推挽输出：OUT-PP
+              –    带下拉输入：IPD(In Push-Down)                                    - 复用功能的推挽输出：AF-PP
+              –    模拟输入：AIN(Analog In)                                        - 复用功能的开漏输出：AF-OD
+       •    理解数字电路中的开漏输出与推挽输出，推挽输出模式一般应用在输出电平
+            为0和3.3V而且需要高速切换开关状态的场合；开漏输出模式一般应用在I2C、
+            SMBUS通信等需要 线与功能 的总线电路中。
+       •    拓展阅读《STM32库开发实战指南—基于F103指南者》第6~14章，能看懂
+            寄存器编程和掌握固件库编程
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (50/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+                    Q&A
+
+       •    SYSCLK和SYSTICK有什么区别？                                        •    下列工作模式的应用场合
+       •    SYSCLK 的来源有哪些？                                              •    GPIO_InitStructure.GPIO_Mode =
+       •    APB1 和 APB2 外设分别有哪些？                                             GPIO_Mode_Out_OD
+                                                                             GPIO_Mode_Out_PP
+                                                                             GPIO_Mode_AF_PP
+       •    TIM1/TIM2，ADC1/ADC2，DAC，
+            USART1/2，分别在哪个Bus？       •                                       GPIO_InitStructure.GPIO_Speed =
+                                                                             GPIO_Speed_50MHz 是IO口输出的
+       •    是不是所有GPIO都在APB2？
+                                                                             最大速度吗？
+       •    如果GPIO和外设（如TIMx）不在
+            同一个时钟bus，该如何开启？
+                                     •                                       假设最小系统只有一个按键，如何
+                                                                             实现多种不同的状态？
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (51/100)
+STM32
+
+
+
+
+        The   End!
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4 GPIO模块的HAL库接口函数及应用                                                                             扩展内容
+
+
+
+                                          4.1 GPIO的HAL库接口函数
+
+                                          4.2 GPIO的HAL库应用实例
+
+                                           4.3 基于HAL库开发的一般流程
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (53/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数
+
+
+                                                                                                  GPIO的HAL库接口
+                                                                                           函数的源码在源文件
+                                                                                           stm32f1xx_hal_gpio.c
+                                                                                           中，其对应的头文件
+                                                                                           stm32f1xx_hal_gpio.h
+                                                                                           声明了GPIO所有的库
+                                                                                           函数，共8种。
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                              (54/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数                                                               对比标准外设库接口函数
+
+               类型                            函数原型                                            功能描述
+           初始化及                 HAL_GPIO_Init()                           GPIO初始化函数
+           复位函数                 HAL_GPIO_DeInit()                         复位选定的端口引脚到初始状态
+                                HAL_GPIO_ReadPin()                        读取选定的端口引脚的电平状态
+                                HAL_GPIO_WritePin()                       设置选定的端口引脚输出高电平或低电平
+
+           引脚功能                 HAL_GPIO_TogglePin()                      设置选定端口引脚的电平状态翻转
+                                                                          当端口引脚电平状态改变时保持锁定时的
+           操作函数                 HAL_GPIO_LockPin()
+                                                                          值
+                                HAL_GPIO_EXTI_IRQHandler()                外部中断处理函数
+                                HAL_GPIO_EXTI_Callback()                  中断回调函数
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                (55/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数                                                                 引脚功能操作函数
+  源码解析：                                                GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx,
+                                                       uint16_t GPIO_Pin)
+         读取输入数据寄存器                                     {
+      IDR的值与指定引脚进行                                       GPIO_PinState bitstatus;
+      按位与操作，结果若不   if ((GPIOx->IDR & GPIO_Pin) != (uint32_t)GPIO_PIN_RESET)
+      为0，则返回高电平；结  {
+      果若为0，则返回低电平。      bitstatus = GPIO_PIN_SET;
+                         }
+       GPIOx为引脚的端口号， else
+      取值为GPIOA~GPIOG，表 {
+      示指向GPIO结构体的指          bitstatus = GPIO_PIN_RESET;
+                         }
+      针，用于访问端口引脚         return bitstatus;
+      的寄存器。            }
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                   (56/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数                                                               引脚号              引脚定义寄存器地址
+                                                                              GPIO_PIN_0          ((uint16_t) 0x0001
+                                                                              GPIO_PIN_1          (uint16_t) 0x0002
+       GPIO_Pin为常量                                                            GPIO_PIN_2          0x0004
+                                                                              GPIO_PIN_3          0x0008
+       GPIO_Pin_0表示0x0001；                                                    GPIO_PIN_4          0x0010
+                                                                              GPIO_PIN_5          0x0020
+       GPIO_Pin_15表示0x8000。
+                                                                              GPIO_PIN_6          0x0040
+                                                                              GPIO_PIN_7          0x0080
+             GPIO_PinState表示引脚电平                                              GPIO_PIN_8          0x0100
+            状态，为枚举变量，                                                         GPIO_PIN_9          0x0200
+                  typedef enum
+                                                                              GPIO_PIN_10         0x0400
+                  {
+                    GPIO_PIN_RESET = 0u,                                      GPIO_PIN_11         0x0800
+                    GPIO_PIN_SET                                              GPIO_PIN_12         0x1000
+                  } GPIO_PinState;                                            GPIO_PIN_13         0x2000
+             取值范围为GPIO_PIN_SET =1                                             GPIO_PIN_14         0x4000
+            或者GPIO_PIN_RESET = 0。                                             GPIO_PIN_15         0x8000
+                                                                              GPIO_PIN_All        0xFFFF
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                               (57/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数
+                                                                                                  源码解析
+     函数源码                                                                       将指定引脚的电平状态写入置位
+    void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx,                              /复位寄存器BSRR中，该寄存器为32
+    uint16_t GPIO_Pin, GPIO_PinState PinState)                               位，其中高16位控制端口16个引脚
+    {
+                                                                             （0~15）输出低电平，低16位控制端
+      if (PinState != GPIO_PIN_RESET)
+      {                                                                      口16个引脚输出高电平。若设置的引
+        GPIOx->BSRR = GPIO_Pin;                                              脚电平状态不等于低电平，则将该引
+      }
+      else                                                                   脚设置的状态位写入BSRR寄存器对
+      {                                                                      应的低16位，否则，将该GPIO_Pin左
+        GPIOx->BSRR = (uint32_t)GPIO_Pin << 16U;
+      }
+                                                                             移16位写入BSRR寄存器对应的高16
+    }                                                                        位中。
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (58/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数                                                            置位/复位寄存器 GPIOx_BSRR
+
+                                                                                    ◆ 对 GPIOx_BSRR 的 低 16 位 的
+                                                                                    某位置“1”，则对应的I/O端
+                                                                                    口引脚输出高电平“1”；
+                                                                                    ◆ 对 GPIOx_BSRR 的 低 16 位 的
+                                                                                    某位置“0”，则对应的I/O端
+                                                                                    口引脚状态不变；
+                                                                                    ◆ 对 GPIOx_BSRR 的 高 16 位 的
+                                                                                    某位置“1”，则对应的I/O端
+                                                                                    口引脚输出低电平“0”；
+                                                                                    ◆ 对 GPIOx_BSRR 的 高 16 位 的
+    GPIOx_BSRR寄存器的高16位称为清除                                                          某位置“0”，则对应的I/O端
+   寄存器，低16位称为置位寄存器。                                                                 口引脚状态不变；
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (59/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数
+
+   源码解析：                                                                              函数源码
+        读出输出数据寄存器ODR的值                                           void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx,
+      与指定引脚进行按位与操作，结                                             uint16_t GPIO_Pin)
+                                                                 {
+      果若为真，表明原来为高电平，                                                  if ((GPIOx->ODR & GPIO_Pin) != 0x00u)
+      则写入BRR寄存器（BRR寄存器                                                {
+                                                                            GPIOx->BRR = (uint32_t)GPIO_Pin;
+      写入“1”有效，写入“0”不影响                                                }
+      ODR的状态）；                                                        else
+        若结果为假，表明原来为低                                                  {
+                                                                            GPIOx->BSRR = (uint32_t)GPIO_Pin;
+      电平，则控制BSRR寄存器低16位                                               }
+      部分做置位（置“1”）操作。                                             }
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (60/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数
+                                                                            端口位清除寄存器GPIOx_BRR
+       数据输出寄存器GPIOx_ODR
+
+
+
+
+                                                                       端口位清除寄存器GPIOx_BRR可以对端口数据
+                                                                     输出寄存器GPIOx_ODR中的每位 进行复位操作，
+                                                                     即GPIOx_BRR 只能改变引脚状态为低电平。
+                                                                     ◆对GPIOx_BRR的低16位的某位置“1”，则对应
+  GPIOx_ODR数据输出寄存器的高16位为                                             的I/O端口 引脚置输出低电平“0”；
+  保留位，没有用到；低16位对应I/O端口
+                                                                     ◆对GPIOx_BRR的低16位的某位置“0”，则对应
+  相应的引脚，可进行置位或复位操作。
+                                                                     的I/O端口 引脚状态不变。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (61/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.1 GPIO的HAL库接口函数
+
+       举例
+              将PB5置为低电平，
+                                                              方法一
+          即将GPIOB_ODR寄存器   操作GPIOx_ODR寄存器
+          的第5位ODR5置“0”     GPIOB->ODR = 0xFFeF (1111 1111 1101 1111)
+          （注：寄存器的位数为 0x0020
+                         位   15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
+                             1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1
+          0~15），则可以有三种
+                         方法二            操作GPIOx_BSRR寄存器
+          方式实现：
+                                                                      GPIOB->BSRR = 0x00200000
+                                                                      (0000 0000 0010 0000 0000 0000 0000 0000)
+         方法三
+                    操作GPIOx_BRR寄存器
+             GPIOB->BRR = 0x0020 (0000 0000 0010 0000)
+                              位       15    14   13    12   11   10   9   8   7   6   5    4      3   2   1   0
+                            0x0020    0     0    0     0     0   0    0   0   0   0   1    0      0   0   0   0
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                              (62/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 4.2 GPIO的HAL库应用实例
+
+                                                                         硬件
+                                                                         设计
+           功能
+                         采用基于HAL库设计
+                                                                                  STM32F103                         +3.3V
+                 方式，利用两个GPIO引                                                                           R1   LED1
+
+                 脚输出高低电平控制发                                                                       PB5
+                                                                                                        R2   LED2
+                 光二极管，并按一定时
+                                                                                                  PE5
+                 间间隔改变IO口电平，
+                 实现灯光闪烁效果。
+                                                                 当引脚输出为低电平时，LED灯亮，
+                                                               当引脚输出为高电平时，LED灯灭。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                    (63/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ 5.4.2 应用实例——基于HAL库实现LED闪烁
+ 4.2 GPIO的HAL库应用实例
+
+
+          基于HAL库的软件设计流程如图所示：
+                  ➢ 建立STM32CubeMX工程；
+                  ➢ 进行功能参数配置；
+                  ➢ 生成工程代码;
+                  ➢ 修改代码完成应用程序设计;
+                  ➢ 下载到开发板测试。
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (64/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——新建STM32CubeMX工程，选择设计采用的MCU
+
+
+      在目录下新建一个文件夹，用来存放
+   STM32CubeMX工程。所建工程文件名
+   必须是英文名称，且必须是英文路径。
+
+
+      打开STM32CubeMX软件
+
+      在主界面中通过单击“New Project”下“ACCESS TO MCU SELECTOR”
+ 按钮或通过菜单栏中的“File”→“New Project”新建一个工程
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (65/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——新建STM32CubeMX工程，选择设计采用的MCU
+
+      ➢ 选择所用MCU对应的内核，选
+        择“ARM Cortex-M3”；
+      ➢ 在“Series”选项中选择对应
+        的系列，如“SMT32F1”；
+      ➢ 在右侧“MCUs/MPUs List”中
+        找到该系列下所使用的微控制
+        器芯片型号
+      ➢ 选中并单击对应芯片型号，在
+        “MCUs/MPUs List”上方会显
+          示该芯片对应的基本信息。
+                                                                 也可以通过在搜索栏内直接输入芯片
+                                                                 型号采用搜索的方式来快速完成。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (66/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——STM32CubeMX功能参数配置                                                             在“Categories”栏目中的
+                                                                                    “System Core”中，找到
+ 在New Project窗口完成MCU的相关设置                                                           “RCC”选项
+后，双击所选择的具体芯片，进入
+STM32CubeMX的主界面，完成以下过程：
+
+
+     RCC和                                       GPIO引脚
+    时钟配置                                        参数配置
+
+
+                                                                               时钟信号选择HSE作为系统的外部
+                           MCU                                               时钟源，HSE选择“Crystal/Ceramic
+                          引脚选择                                               Resonator”（晶振/陶瓷谐振器）
+                                                                               LSE选择“Disable”
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                    (67/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——STM32CubeMX功能参数配置
+                              在左侧“Categories”栏目中的
+  点开“Clock Configuration”选项栏， “System Core”中，找到“GPIO”
+  进行系统时钟配置                    选项，右侧“Pinout view”芯片引
+                              脚图中选中PE5、PB5引脚，设置为
+                              GPIO_Output选项。
+
+
+
+
+ ➢ 采用HSE外部晶振，频率为8MHz，通过PLL
+   的9倍频，使得系统时钟SYSCLK为72MHz；
+ ➢ APB2时钟与HCLK相同，所以不需要分频；
+ ➢ HCLK经2分频得到APB1的时钟频率为
+   PCLK1=36MHz。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (68/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——STM32CubeMX功能参数配置（GPIO引脚参数配置）
+
+
+
+                                                                                         选择好引脚后，在左侧
+                                                                                    “Configuration”栏目下显
+                                                                                    示所选择的引脚，单击，
+                                                                                    对应显示该引脚的参数设
+                                                                                    置表，设置相应参数，如
+                                                                                    输出电平、模式、用户标
+                                                                                    签等。
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                 (69/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——生成工程代码
+
+           点击STM32CubeMX的
+       主界面中的“Project
+       Manager”菜单，在弹出
+       的页面中单击“Project”
+       项，输入项目名称
+       “Demo_GPIO”，选择
+       存放路径。
+               用户可以自己定义，
+              项目名称一般应反映项
+              目内容，便于管理
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (70/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——生成工程代码
+
+
+     ➢ 点击“Code Generator”选项
+     ➢ 在“STM32Cube MCU
+       packages and embedded
+       software packs”栏内选择第
+       二个单选项“Copy only the
+       necessary library files”，仅
+       拷贝必须的库文件；
+     ➢ 在“Generated files”栏内复
+       选第1、3、4选项
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (71/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——生成工程代码
+                                                                                       单击右上角“GENERATE CODE”
+                                                                                       按钮，即可生成对应工程代码。
+
+
+
+                                                                                       成功后弹出Code Generation窗
+                                                                                       口，提示代码生成成功，用户
+                                                                                       可以根据下一步需要选择打开
+                                                                                       文件夹、打开项目或关闭。
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (72/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——编写应用程序                                                                           使用STM32CubeMX生成
+    本实例的用户应用程序代码写在/* USER CODE                                                    的工程，其用户功能代码即
+    BEGIN 3 */ 和 /* USER CODE END 3 */ 之间：                                        应用程序代码的编写有位置
+    while (1)
+    {                                                                             规范要求。
+      /* USER CODE END WHILE */                                                      用户自己编写的应用程序
+      /* USER CODE BEGIN 3 */
+    HAL_GPIO_TogglePin(LED1_GPIO_Port,LED1_Pin);                                  需写在/* USER CODE BEGIN x
+           //LED1---PB5状态翻转                                                       */ 和 /* USER CODE END x */
+       HAL_Delay(100); //延时100毫秒
+                                                                                  之间。
+    HAL_GPIO_TogglePin(LED2_GPIO_Port,LED2_Pin);                                     写在其他地方，在使用
+         //LED2---PE5状态翻转
+      HAL_Delay(100); //延时100毫秒                                                   STM32CubeMX重新配置和生
+    }                                                                             成工程时，会删除该代码。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (73/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——下载调试验证                                                        配置Keil5相关工程，重新编译。
+
+
+
+
+   单击keil uVision5工具栏的魔法棒 “Options for Target”                                    在Output选项卡中，勾选Create
+  按钮，打开配置窗口页面，在“Target”选项卡中将                                                   HEX File选项，在工程重新编译后，
+  “Xtal(MHz)”改为8.0，采用8MHz外部晶振                                                  会生成相应的HEX文件。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (74/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+设计步骤——下载调试验证                                                                      在“Debug”选项卡中，根据
+                                                                               所使用的开发板下载调试工具，
+                                                                               选择相应的选项，这里选择ST-
+                                                                               Link调试下载器
+
+
+                                                                            单击 “Build(F7)”
+                                                                                                  将开发板通过USB线与PC机
+                                                                            编译按钮，进行
+                                                                                                      进行连接
+                                                                             重新编译。
+
+
+
+
+                                                                          通过工具栏里的                 通过观察开发板上相应LED
+                                                                       “Download”按钮将编译通               灯的闪烁
+                                                                       过的程序下载到开发板上                情况来验证程序的正确性。
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (75/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析
+
+
+                        main.h                                              gpio.h
+
+
+
+
+                                                  main.c                                          gpio.c
+
+
+                          针对GPIO-LED闪烁工程相关源码共四个文件
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (76/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析                                                                                           main.c
+             /* Includes 头文件*/
+         #include "main.h"                                                    while (1)
+         #include "gpio.h"                                                     {
+                                                                                   //以下为用户编写的应用程序代码
+             /* 函数声明 */
+         void SystemClock_Config(void); //设置系统时钟                                     /*调用HAL_GPIO_TogglePin函数
+                                                                                       使LED1---PB5状态翻转 */
+         int main(void)
+         {                                                                    HAL_GPIO_TogglePin(LED1_GPIO_Port,LED1_Pin);
+                 /* 将所有的外设复位，                                                 HAL_Delay(100);
+                    并初始化Flash和系统滴答时钟Systick */                                       //调用HAL库函数HAL_Delay延时100毫秒
+           HAL_Init();                                                               /*调用HAL_GPIO_TogglePin函数
+               /*配置系统时钟*/                                                               使LED2---PE5状态翻转 */
+           SystemClock_Config();                                                  HAL_GPIO_TogglePin(LED2_GPIO_Port,LED2_Pin);
+                /***GPIO初始化，函数实现定义在gpio.c文件中                                      HAL_Delay(100);
+                  *此代码对应于STM32CubeMX软件中的Pinout &                                      //调用HAL库函数HAL_Delay延时100毫秒
+                  Configuration设置的引脚参数                                          }
+               */                                                             }
+           MX_GPIO_Init();
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                         (77/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析
+ 5.4.2 HAL库GPIO应用实例——源码分析                                                                         main.c
+           /***系统时钟配置，对应于STM32CubeMX软件中的系统时钟操作*/
+      void SystemClock_Config(void)
+      {
+              /*OSC外部晶振初始化结构体变量，用于打开HSE，设置PLL等 */
+        RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+             /*SYSCLK初始化结构体变量，用于选择sysclk的时钟源、设置AHB预分频系数*/
+        RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+            /* 给RCC_OscInitStruct的成员赋值，用于选择系统时钟源，设置PLL、PLLMul的值等 */
+        RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;//HSE为外部晶振8MHz
+        RCC_OscInitStruct.HSEState = RCC_HSE_ON; //打开HSE
+        RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;//设置HSE预分频系数为1
+        RCC_OscInitStruct.HSIState = RCC_HSI_ON; //打开HSI（高速内部时钟，HSI=8MHz）
+        RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;//打开PLL
+        RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;//PLL的输入时钟选择为HSE
+        RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;//设置PLLMul为9，倍频到72MHz
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (78/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析                                                                                       main.c
+                    /***调用HAL_RCC_OscConfig()函数对系统时钟进行初始化配置， 通过if语句判断是否成功，
+                         如果初始化配置不成功，则由Error_Handler()进行处理*/
+             if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+               {    Error_Handler();//出错处理函数 }
+                   /*给RCC_ClkInitStruct的成员赋值，用于选择SYSCLK的时钟源， 设置AHB、APB1、APB2的时钟，
+                    此代码对应于STM32CubeMX软件中的Clock Configuration配置的系统时钟操作 */
+              RCC_ClkInitStruct.ClockType =
+             RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+                       /*将 SYSCLK的时钟源选为PLLCLK */
+               RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+                      /* 将AHB Prescaler的分频值设为 1，AHB时钟频率=72MHz*/
+               RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+                     /* 将APB1 Prescaler的分频值设为2，APB2时钟频率=PCLK1 = 36 MHz*/
+               RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+                     /*将APB2 Prescaler的分频值设为1，APB2时钟频率=PCLK2 = 72MHz */
+               RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+                     /*判断SYSCLK时钟初始化配置是否成功， 如果初始化配置不成功，则由Error_Handler()进行处理*/
+             if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+               { Error_Handler(); }
+             }
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (79/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析
+ 5.4.2 HAL库GPIO应用实例——源码分析                                                                         main.c
+                     /* 错误处理函数 */
+                     void Error_Handler(void)
+                     {
+                                //错误处理代码由用户编写
+                     }
+
+                     /* 断言函数，如果使用断言的话，需定义宏USE_FULL_ASSERT ，这里
+                     没有使用断言*/
+                     #ifdef USE_FULL_ASSERT
+                     void assert_failed(uint8_t *file, uint32_t line)
+                     {
+                                //断言失败函数，具体处理代码由用户编写
+                     }
+                     #endif /* USE_FULL_ASSERT */
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                       (80/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析
+ 5.4.2 HAL库GPIO应用实例——源码分析
+                      gpio.c
+        /* Includes 头文件*/                                                            /* LED2-PE5引脚参数配置 */
+      #include "gpio.h"                                                          GPIO_InitStruct.Pin = LED2_Pin; //I/O引脚设置为LED2-PE5
+                                                                                 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+      /***GPIO初始化，方式和标准外设库的GPIO_Init类似                                              //引脚模式设置为推挽输出
+      *此代码对应于STM32CubeMX软件中的Pinout & Configuration设置的                            GPIO_InitStruct.Pull = GPIO_NOPULL; //无上拉
+      引脚参数*/                                                                     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+      void MX_GPIO_Init(void)                                                         //输出速度为低速
+      {                                                                          HAL_GPIO_Init(LED2_GPIO_Port, &GPIO_InitStruct);
+        GPIO_InitTypeDef GPIO_InitStruct = {0};                                      //调用初始化函数初始化PE5
+
+          /* 使能GPIOB、GPIOE端口时钟 */                                                    /* LED1-PB5引脚参数配置 */
+       __HAL_RCC_GPIOE_CLK_ENABLE();                                             GPIO_InitStruct.Pin = LED1_Pin; //I/O引脚设置为LED1-PB5
+       __HAL_RCC_GPIOB_CLK_ENABLE();                                             GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+                                                                                     //引脚模式设置为推挽输出
+         /* 配置GPIO初始引脚LED2-PE5为低电平 */                                            GPIO_InitStruct.Pull = GPIO_NOPULL; //无上拉
+       HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);              GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                                                                                      //输出速度为低速
+        /* 配置GPIO初始引脚LED1-PB5为低电平 */                                             HAL_GPIO_Init(LED1_GPIO_Port, &GPIO_InitStruct);
+       HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);                   //调用初始化函数初始化PB5
+                                                                             }
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                            (81/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+ GPIO工程源码解析
+ 5.4.2 HAL库GPIO应用实例——源码分析                                                                         gpio.h 源码
+      /*条件编译，防止头文件被重复包含*/
+   #ifndef __MAIN_H
+   #define __MAIN_H
+                                            main.h源码                           /* 条件编译，防止头文件被重复包含*/
+                                                                            #ifndef __gpio_H
+   #ifdef __cplusplus
+                                                                            #define __gpio_H
+   extern "C" {
+   #endif
+        /* Includes 头文件, stm32f1xx_hal.h这个头文件很重要*/                          #ifdef __cplusplus
+   #include "stm32f1xx_hal.h"                                               extern "C" {
+       /* 函数声明 */                                                           #endif
+   void Error_Handler(void);                                                   /* Includes 头文件*/
+       /* 端口引脚的宏定义，方便修改 */                                                  #include "main.h"
+   #define LED2_Pin GPIO_PIN_5                                                 /* 函数声明 */
+   #define LED2_GPIO_Port GPIOE                                             void MX_GPIO_Init(void);
+   #define LED1_Pin GPIO_PIN_5                                              #ifdef __cplusplus
+   #define LED1_GPIO_Port GPIOB                                             }
+    #ifdef __cplusplus
+                                                                            #endif
+   }
+   #endif
+                                                                            #endif /*__ pinoutConfig_H */
+    #endif /* __MAIN_H */
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                          (82/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+4.3 基于HAL库开发的一般流程
+           类似于基于标准库的开发，基于HAL库的开发主要有以下流程：
+
+          开启系统时钟                      配置系统时钟树                   外设参数配置                    生成工程代码    应用程序编写
+
+       • 在STM32CubeMX                • 将外部的8MHz              •在                         • 设置好工程所   • STM32CubeMX
+         主界面中的                         晶振经PLL倍频               STM32CubeMX                 要存放的位置     配置完成后，
+         "Pinout &                     9倍得到72MHz              主界面中的                       及所使用的集     生成工程代码，
+         Configuration” 选              的系统时钟，                 “Pinout &                   成开发环境，     就可以在Keil软
+         项页将RCC设置系                     然后设置相应                 Configuration”              就可以生成工     件中编写应用
+         统外部时钟源为                       外设时钟，如                 选项页对片上                      程代码        程序，以实现
+         HSE，HSE选                      APB1为系统时               外设进行功能                                 相应功能。
+         择 ”Crystal/Ceram              钟的2分频为                 配置，如GPIO、
+         ic Resonator”（晶               36MHz，APB2             ADC、定时器、
+         振/陶瓷谐振器）                      设置为与系统                 NVIC等
+                                       时钟相同
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                        (83/100)
+Supplementary
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的总线接口
+  • Cortex-M3 内核架构：                                                     • I-Code总线
+    – CM3处理器核心、可嵌套中断向量控制器NVIC、    – I-Code 总线是一条基于AHB-Lite总线协议的 32 位总线，
+    总线阵列、存储保护单元MPU、闪存地址重载及断点      负责在 0x0000_0000 – 0x1FFF_FFFF 之间的取指操作。
+    单元FPB、数据监测点与跟踪DWT、仪表跟踪宏单元
+    ITM、嵌入跟踪宏单元ETM、跟踪端口接口单元TPIU、 • D-Code总线
+    AHB访问端口和JTAG调试口等。             – D-Code 总线是一条基于AHB-Lite总线协议的 32 位总线，
+                                                                         负责在0x0000_0000 – 0x1FFF_FFFF之间的数据访问操作。
+
+                                                                        • 系统总线
+                                                                         – 也是一条基于 AHB-Lite 总线协议的 32 位总线，负责在
+                                                                         0x2000_0000 – 0xDFFF_FFFF 和0xE010_0000– 0xFFFF_FFFF
+                                                                         之间的所有数据传送，取指和数据访问都算上。
+
+                                                                        • 外部私有外设总线
+                                                                         – 这是一条基于 APB 总线协议的 32 位总线。此总线来负责
+                                                                         0xE004_0000 – 0xE00F_FFFF 之间的私有外设访问。
+
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                 (85/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+          Cortex M3的寄存器
+  • 通用寄存器 R0-R12
+    – R0-R12都是32位通用寄存器，用于数据
+    操作。
+  • 堆栈指针 R13                                                         Lower          • 特殊功能寄存器组
+    – Cortex-M3拥有两种堆栈指针，分别是                                                         • 程序状态寄存器 xPSR或PSPs
+    进程堆栈PSP (Process Stack Pointer)和                                 Reg.
+                                                                                      – 应用PSR(APSR)：记录算术逻辑单元ALU标志
+    主堆栈MSP (Main Stack Pointer)，这两
+    种堆栈都指向R13，任一时刻进程堆栈或主                                                              – 执行PSR(EPSR)：执行状态
+    堆栈中只有一个是可见的。                                                                      – 中断PSR(IPSR)：正服务的中断号
+  • 链接寄存器 R14                                                                       • 中断屏蔽寄存器组
+    – R14是链接寄存器 LR (Link Register)。                                 High              – PRIMASK，1位寄存器。当置位时，它允许
+    在一个汇编程序中，可以把它写做LR或R14。                                                            NMI和硬件默认异常，所有其他的中断和异常
+    LR用于在调用子程序时存储返回地址，也
+                                                                    Reg.              将被屏蔽。
+    用于异常返回。                                                                           – FAULTMASK，1位寄存器。当置位时，它只
+  • 程序计数寄存器 R15                                                     MSP PSP           允许NMI，所有中断和默认异常处理被忽略。
+    – R15是程序计数器，在汇编代码中将其称                                                             – BASEPRI，9位寄存器。它定义了屏蔽优先级。
+    为 PC (Program Counter)。                                                           当它置位时，所有同级的或低级的中断被忽略。
+    – 因为Cortex-M3内部使用了指令流水线，                                                        • 控制寄存器 CONTROL，定义特权状态，
+    读PC时返回的值是当前指令的地址+4。                                                               并且决定使用哪一个堆栈指针。
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                         (86/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                                             3级流水线，分别是
+          Cortex M3的流水线
+                                                                             取指、解码和执行
+                                                                             Fetch, Decode, Excute
+   ……         周期1 周期2 周期3 周期4 周期5 周期6                                地址             指令                    取指     译码        执行
+                                                                    0x0200    MOV    R0, #00      step1   MOV     --         --
+  指令1 取指 译码 执行
+                                                                    0x0202    ADDS R0, R0, #1     step2   ADDS   MOV         --
+  指令2    取指 译码 执行
+                                                                    0x0204    CMP    R0, #0x7D0 step3     CMP    ADDS      MOV
+                                 取指 译码 执行
+  指令3                               取指 译码 执行
+                                                                    0x0208    BNE    0x00000202 step4     BNE    CMP       ADDS
+                                                                    0x020A BX        0X00000300 step5     ADDS   BNE        CMP
+  指令4
+                                                                    0X020C LDR       R1, #00               BX    BNE        CMP
+   ……                                   step6 CMP                                                                ADDS      BNE
+     在第4个周期，指令1执行 ……
+                4        ……
+
+    完成，指令2和指令3流水线 0x0300 MOV R2, #20
+程序存 推进一级，同时开始指令4
+                                     APSR的Z!=0
+ 储器 的取指处理。
+                                     APSR的Z=0
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                                    (87/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类
+                                                   MOV     R1,R2              ;将R2的值存入R1
+  • 1.寄存器寻址；
+  • 2.立即寻址；                                        SUB     R0,R1,R2           ;将R1的值减去R2的值，结果保存到R0
+  • 3.寄存器移位寻址；
+  • 4.寄存器间接寻址；
+  • 5.基址寻址；
+  • 6.多寄存器寻址；                                                                R2           0xAA
+  • 7.堆栈寻址；
+                                                                             R1           0xAA
+                                                                                          0x55
+  • 8.相对寻址。
+
+                                                                          MOV R1, R2
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (88/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类                                         SUBS R0,R0,#1              ;R0减1，结果放入R0，并且影响标志位
+  • 1.寄存器寻址；
+                                                   MOV     R0,#0xFF000 ;将立即数0xFF000装入R0寄存器
+  • 2.立即寻址；
+  • 3.寄存器移位寻址；
+  • 4.寄存器间接寻址；                                             程序存储
+  • 5.基址寻址；                                            MOV R0,#0xFF00
+  • 6.多寄存器寻址；                                                                                     从代码中
+  • 7.堆栈寻址；                                                                                       获得数据
+  • 8.相对寻址。
+                                                                   R0          0xFF00
+                                                                                0x55
+
+                                                         MOV R0, #0xFF00
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (89/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类                                        当第2个操作数是寄存器移位方式时，第2个寄存器操作
+  • 1.寄存器寻址；                                      数在与第1个操作数结合之前，选择进行移位操作。
+                                                  MOV         R0,R2,LSL #3                 ;R2的值左移3位，结果放入R0，
+  • 2.立即寻址；
+                                                                                           ;即是R0=R2×8
+  • 3.寄存器移位寻址；
+                                                  ANDS        R1,R1,R2,LSL R3              ;R2的值左移R3位，然后和R1
+  • 4.寄存器间接寻址；                                                                             ;相“与”操作，结果放入R1
+  • 5.基址寻址；
+  • 6.多寄存器寻址；
+                                                                                   逻辑左移3位
+  • 7.堆栈寻址；                                                R2            0x01                     0x08
+  • 8.相对寻址。
+                                                           R0            0x08
+                                                                         0x55
+
+                                                          MOV R0, R2, LSL #3
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                          (90/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类                                      LDR         R1,[R2]                      ;将R2指向的存储单元的数据读出
+  • 1.寄存器寻址；                                                                             ;保存在R1中
+  • 2.立即寻址；                                     SWP         R1,R1,[R2]                   ;将寄存器R1的值和R2指定的存储
+  • 3.寄存器移位寻址；                                                                           ;单元的内容交换
+  • 4.寄存器间接寻址；
+  • 5.基址寻址；                                                  0x40000000                      0xAA
+  • 6.多寄存器寻址；
+  • 7.堆栈寻址；
+                                                                               R2 0x40000000
+  • 8.相对寻址。
+                                                                               R0    0xAA
+                                                                                     0x55
+
+                                                                              LDR R0, [R2]
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                   (91/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类                                    LDR         R2,[R3,#0x0C]                   ;读取R3+0x0C地址上的存储单元
+  • 1.寄存器寻址；                                                                              ;的内容，放入R2
+  • 2.立即寻址；                                   STR         R1,[R0,#-4]!                    ;先R0=R0-4，然后把R1的值
+  • 3.寄存器移位寻址；                                                                            ;寄存到保存到R0指定的存储单元
+  • 4.寄存器间接寻址；
+  • 5.基址寻址；                                                     0x4000000C                        0xAA
+  • 6.多寄存器寻址；
+                                                  将R3+0x0C
+  • 7.堆栈寻址；                                                                        R3 0x40000000
+  • 8.相对寻址。                                       作为地址装载
+                                                  数据                               R2    0xAA
+                                                                                         0x55
+
+                                                                   LDR R2, [R3, #0x0C]
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                     (92/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                                                       允许一条指令传送16个寄存器的
+       Cortex M3的汇编指令                                                                     任何子集或所有寄存器。
+  • 寻址方式分类     LDMIA R1!,{R2-R7,R12}                                                  ;将R1指向的单元中的数据读出到
+                                                                                      ;R2～R7、R12中(R1自动加1)
+  • 1.寄存器寻址；
+               STMIA R0!,{R2-R7,R12}                                                  ;将寄存器R2～R7、R12的值保存到
+  • 2.立即寻址；
+                                                                                      ;R0指向的存储，单元中R0自动加1
+  • 3.寄存器移位寻址；
+  • 4.寄存器间接寻址；    R6    0x04
+                         0x??                                                                     0x04   0x4000000C
+  • 5.基址寻址；
+  • 6.多寄存器寻址；     R4    0x03
+                         0x??                                                                     0x03   0x40000008
+  • 7.堆栈寻址；       R3    0x02
+                         0x??                                                                     0x02   0x40000004
+  • 8.相对寻址。
+                                              R2    0x01
+                                                    0x??                                          0x01   0x40000000
+                                              R1 0x40000000
+                                                 0x40000010                                              存储器
+
+                                                               LDMIA R1!, {R2-R4,R6}
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                            (93/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                                  堆栈寻址是隐含的，它使用一个专门的寄存器
+       Cortex M3的汇编指令                                             (堆栈指针)指向一块存储区域(堆栈)，指针所
+  • 寻址方式分类                                                        指向的存储单元即是堆栈的栈顶。存储器堆栈
+                                                                  可分为两种：
+  • 1.寄存器寻址；                                                      ▪向上生长：向高地址方向生长，称为递增堆栈
+  • 2.立即寻址；                                                       ▪向下生长：向低地址方向生长，称为递减堆栈
+  • 3.寄存器移位寻址；                                             堆栈压栈                       0x12345678
+  • 4.寄存器间接寻址；
+                                                  SP→栈顶                                                 栈底
+  • 5.基址寻址；
+  • 6.多寄存器寻址；
+  • 7.堆栈寻址；                                            栈区         向上                      堆栈       向下   栈区
+  • 8.相对寻址。                                                       增长                      存储       增长
+                                                                                           区
+                                                       栈底                                               栈顶SP
+
+                                                                                   0x12345678      堆栈压栈
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                      (94/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+                                                                  堆栈寻址是隐含的，它使用一个专门的寄存器
+       Cortex M3的汇编指令                                             (堆栈指针)指向一块存储区域(堆栈)，指针所
+  • 寻址方式分类                                                        指向的存储单元即是堆栈的栈顶。
+  • 1.寄存器寻址；                                           堆栈指针指向最后压入的堆栈的有效数据项，称为满堆栈；
+                                                       堆栈指针指向下一个待压入数据的空位置，称为空堆栈。
+  • 2.立即寻址；
+  • 3.寄存器移位寻址；                                         所以可以组合出四种类型的堆栈方式：
+  • 4.寄存器间接寻址；                                         ▪满递增：堆栈向上增长，堆栈指针指向内含有效数据
+  • 5.基址寻址；                                            项的最高地址。指令如LDMFA、STMFA等；
+  • 6.多寄存器寻址；                                                         SP→ 栈顶
+                                                       ▪空递增：堆栈向上增长，堆栈指针指向堆栈上的第一
+  • 7.堆栈寻址；                                            个空位置。指令如LDMEA、STMEA等；
+                                                       SP→ 栈顶
+  • 8.相对寻址。                                            ▪满递减：堆栈向下增长，堆栈指针指向内含有效数据
+                                                       项的最低地址。指令如LDMFD、STMFD等；
+                                                             满堆栈             空堆栈
+                                                       ▪空递减：堆栈向下增长，堆栈指针向堆栈下的第一个
+                                                         栈底              栈底
+                                                       空位置。指令如LDMED、STMED等。
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (95/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+       Cortex M3的汇编指令
+  • 寻址方式分类
+  • 1.寄存器寻址；
+                                                     相对寻址是基址寻址的一种变通。由程序计
+  • 2.立即寻址；
+                                                   数器PC提供基准地址，指令中的地址码字段作为
+  • 3.寄存器移位寻址；                                     偏移量，两者相加后得到的地址即为操作数的有
+  • 4.寄存器间接寻址；                                     效地址。
+  • 5.基址寻址；                                                     BL            SUBR1               ; 调用到SUBR1子程序
+  • 6.多寄存器寻址；                                                   BEQ           LOOP                ; 条件跳转到LOOP标号处
+  • 7.堆栈寻址；                                                     ...
+  • 8.相对寻址。                                        LOOP         MOV           R6,#1
+                                                                ...
+                                                   SUBR1        ...
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                          (96/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+            Cortex M3的汇编
+  • ARM处理器是基于精简指令集计算机                                                   • ARM微处理器的指令集是加载/存储型的，
+  (RISC)原理设计的，指令集和相关译码机                                                 即指令集仅能处理寄存器中的数据，而且
+  制较为简单。                                                                处理结果都要放回寄存器中，而对系统存
+  • ARM具有32位ARM指令集和16位                                                  储器的访问则需要通过专门的加载/存储
+  Thumb指令集，ARM指令集效率高，但                                                  指令来完成。
+  是代码密度低；而Thumb指令集具有较高                                                  • ARM微处理器指令集可以分为六大类 :
+  的代码密度，却仍然保持ARM的大多数性                                                    – 跳转指令
+  能上的优势，它是ARM指令集的子集。                                                     – 数据处理指令
+  • 所有的ARM指令都是可以有条件执行的，                                                  – 程序状态寄存器（PSR）处理指令
+  而Thumb指令仅有一条指令具备条件执行                                                   – 加载/存储指令
+  功能。ARM程序和Thumb程序可相互调                                                   – 协处理器指令
+  用，相互之间的状态切换开销几乎为零。                                                     – 异常产生指令
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (97/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+                ARM 汇编程序
+
+            ; 文件名：TEST1.S
+            ; 功能：实现两个寄存器相加                   使用“；”进行注释
+            ; 说明：使用ARMulate软件仿真调试
+                        AREA   Example1, CODE, READONLY ; 声明代码段Example1
+                        ENTRY                           ; 标识程序入口
+                        CODE32                          ; 声明32位ARM指令
+            START       MOV    R0,#0                    ; 设置参数
+                        MOV    R1,#10
+            LOOP        BL     ADD_SUB                  ; 调用子程序ADD_SUB
+                        B      LOOP        实际代码段        ; 跳转到LOOP
+            ADD_SUB
+                        ADDS   R0,R0,R1                 ; R0 = R0 + R1
+                        MOV    PC,LR                    ; 子程序返回
+                        END                             ; 文件结束
+         标号顶格写
+                                                 声明文件结束
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                              (98/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+                  ARM 指令集                                                                         绝大部分的ARM指令都可以条件
+                                                                                                  执行，而Thumb指令只有B（跳
+   ARM指令格式                                                                                        转）指令具有条件执行 功能。如
+                                                                                                  果指令不标明条件代码，将默认
+   <opcode> {<cond>} {S}                         <Rd> ,<Rn>{,<operand2>}                          为无条件（AL）执行。
+   其中<>号内的项是必须的，{}号内的项
+   是可选的。各项的说明如下：
+   opcode：指令助记符； cond：执行条件；
+   S：是否影响CPSR寄存器的值；
+   Rd：目标寄存器；      Rn：第1个操作数的寄存器；
+   operand2：第2个操作数；
+
+   灵活使用第2个操作数“operand2”能够提高代码效率：
+     ▪#immed_8r ——常数表达式；    该常数必须对应8位位图，即必须是一个8位
+     ▪Rm        ——寄存器方式；    的常数通过循环右移偶数位可以得到的数。
+     ▪Rm,shift  ——寄存器移位方式；
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                          (99/100)
+Progress: STM32 F1系列时钟系统 >> GPIO工作原理 >> GPIO 标准外设库 >> 模块化编程 >> 小结 >> GPIO HAL库 >> Supplementary
+
+
+
+
+                ARM 混合编程
+  • C语言 中 用汇编变量                                                         • 汇编语言 中 用C变量
+    – 汇编程序的变量名用 EXPORT 来声明                                               – C语言中的变量 只要不使用 static 来声明就
+    – C使用时用 extern 来声明                                                   可以由汇编使用
+    – 变量名 asm_var 在汇编中代表地址，而在C                                           – 使用时用 import 语句来声明变量
+    程序中代表存储空间
+
+
+
+                                       ; 汇编程序
+  // C 程序                                                                 ; 汇编程序                  // C 程序
+                                       IMPORT c_var
+  int c_var                                                               EXPORT asm_var          extern int asm_var;
+                                       LDR R0, =3
+                                                                          asm_var DCD 0           asm_var=2
+                                       LDR R1, =c_var
+                                       STR R0, [R1]
+
+
+
+EE114 Embedded System -> Lecture 13 STM32 RCC & GPIO                                                           (100/100)
+

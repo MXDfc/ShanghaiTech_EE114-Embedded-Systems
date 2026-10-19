@@ -1,0 +1,2221 @@
+           EE114: Introduction to
+               Embedded Systems
+Dr. Tao Wu     吴涛      研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+               Demo Task
+
+       • 掌握STM32 USART 硬件结构与配置方法
+       • 完成至少2个 USART 编程范例
+              – 固件库轮询方式、中断方式、DMA (后续章节)
+              – (了解) HAL库 轮询方式、中断方式、DMA (后续)
+       • 完成至少1个串口通信模块实践
+              – 蓝牙 (HC/SPP) 或者 WiFi (ESP/NRF) 模块
+       • (进阶) 理解和掌握自定义串口协议
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (2/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+       STM32 Communication
+
+                ◆理解和掌握通信的基本概念；
+                ◆了解常见的串行通信接口；
+                ◆熟悉标准外设库和HAL库中有关USART的库函数；
+                ◆掌 握 STM32F103 微 控 制 器 USART 标 准 外 设 库
+                 异步模式的配置方法；
+                ◆掌握USART查询方式、中断方式以及DMA方式
+                 三种方式的应用；
+                ◆掌握基于标准外设库开发USART应用的方法；
+                ◆了解基于HAL库开发USART应用的方法。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (3/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+       STM32 Communication
+                 USART                            SPI                       I2C                      I2S
+         通用同步异步收发                               Serial           Inter Integrated-
+                                                                                                Inter IC Sound，
+         器，只需2 (或3)                          Peripheral           Circuit，需2根线
+                                                                                                 内置音频总线，
+         根线，要求收发两                         Interface, 串行外          即可在连接总线上
+                                                                                                用于传输音频数据
+         端波特率必须一致                            设，需4根线               器件之间传递信息
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                               (4/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+        串口通信
+
+                           1 通信概述
+
+                           2 异步串行通信
+
+                           3 STM32的USART模块
+
+                           4 USART模块的标准外设库接口函数及应用
+
+                           5 USART模块的HAL库接口函数及应用
+
+                           6 编程思想之自定义串口通信协议
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (5/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述
+                                                   通信方式
+                                                       分类
+
+                  按数据                             按通信数据                           按数据传输方向
+                 传送方式                              同步方式                           及与时间的关系
+
+
+             串行               并行                  异步         同步              单工           半双工   全双工
+             通信               通信                  通信         通信              通信           通信     通信
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (6/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述                                                     串行通信与并行通信
+
+
+         串行通信（Serial Transmission），                                                   8位同时传送
+                                                                                                0
+                                                                                                1
+                                                                                                1
+
+        是指通过一根数据线或少量数据线
+                                                                                                0
+                                                                     接收                         0
+                                                                                                1   发送
+                                                                                                1
+                                                                     设备                         0
+                                                                                                    设备
+                                                                                         询问
+        （少于8根）将数据一位一位地按顺
+                                                                                         应答
+        序依次传送。
+
+                                                                      并行通信（Parallel Transmission），
+                                                                      是指用多条数据线同时传送多位数
+           接收         D0                               发送
+                                                  D7
+           设备
+                              8位顺次传送
+                                                       设备             据，通常以8位、16位、32位等数
+                                                                      据位传送。
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                          (7/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述
+                             并行通信传输数据量是串行传输
+      串行通信是目前最为流行的一 的数倍，如早期的并行接口的硬盘、
+     种通信方式，如采用USB接口的设 打印机，采用PCI（Peripheral
+     备、工业上常用的RS-485和RS-232 Component Interconnect，外设部件
+     等，都是串行通信设备。           互连标准）并行接口的显卡等。
+                                                                                                长距离传输成本较高；
+         USB的串行
+          通信接口                                                    并行传输                           信号线之间的干扰大，
+                                                                   的缺点                          传输速率很难达到很高；
+       计算机网络中所使用的传输方式均是
+                                                                                                 体积大，占用空间大，
+      串行传输，单片机与外设之间也大多采                                                                          不利于设备的小型化
+      用各类串行接口，比如USART、USB、                                       计算机内部的总线结构，即CPU与
+      IIC、SPI、RS232/485、CAN等。                                    内部寄存器及接口之间采用并行传输。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                         (8/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述                                                   同步通信与异步通信
+
+              同步通信是连续串行传送数                                              异步通信在发送的有效数据
+          据的通信方式，要求收发双方                                                中增加一些用于同步的控制位，
+          的时钟必须保持严格的同步。                                                比如开始位和停止位等，数据
+              特点：输速率较高                                                 以字符为单位组成数据帧进行
+                                      时钟信号                             传送，收发双方需约定数据的
+         设备A                                                  设备B
+                                      数据信号
+                                                                       传输速率。
+               1     2     3      4     5     6   7   8   9     10      特点：
+       时钟
+       数据                                                                 传输效率较低；
+                                                                          通信设备实现简单、成本低。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (9/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述                                             单工、半双工、全双工通信
+
+                   根据数据传输方向以及与时间的关系，
+                   串行通信可以分为单工、半双工和全双工三种通信方式。
+          通信方式                                      描述                                          举例
+
+                            任何时刻都只能单方向通信的工作方式，
+             单工                                 灯塔、广播和电视
+                            即一端固定为发送端，另一端固定为接收端
+
+                            两 个 设 备 均 可 以 收 发 数 据 ，
+            半双工                                     对讲机
+                            但不能在同一时刻进行
+
+
+            全双工             两个设备可以同时收发数据                                                手机
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                      (10/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 1 通信概述                                             通信传输速率
+
+                               波特率                                                  字符速率
+         每秒传输的二进制位数，单位为
+                                                                每秒所传输的字符数：
+        比特每秒（bit/s，bps），是衡量串
+                                                                波特率=字符速率×每个字符包含的位数
+        行数据传输速度快慢的指标。
+
+
+           举      字符速率为120字符/秒，若每个字符包含10位        常用的串口传输速率
+           例
+                 （1个起始位，7个数据位，1个校验位，1个结束位），（波特率）有1200、
+                 则波特率为                           2400、4800、9600、
+                    10 位/字符 ×120 字符/秒 ＝ 1200 bps 19200和115200等。
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (11/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+2 异步串行通信
+
+
+                                                          目 录
+
+                                                  2.1 异步串行通信协议
+
+
+                                                    2.2 异步串行通信接口
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (12/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  2.1 异步串行通信协议                                              通信传输速率和数据帧格式一起称为通信协议
+
+
+        异步串行通信标准的数据帧由起始
+                                                                  起始位：占一位，位于数据帧的开头，
+                                                                  以逻辑“0”表示传输数据的开始。
+       位、数据位、校验位、停止位四部分
+       组成。数据传输速率为50、75、100、                                       数据位：要发送的数据，数据长度
+       150、300、600、1200、2400、4800、                                可以是5～8位。
+       9600、19200 、38400 、57600 、                                 校验位：占一位，用于检测数据是否
+       115200和256000波特。                                           有效。
+                             一个字符帧                                停止位：一帧传送结束的标志，根据
+                起                                 校 停
+        空       始                                 验 止    空 下一字符   实际情况定，可以是1、1.5或2位。
+        闲       位             数据位                 位 位    闲 起始位
+
+      1 1 1                                             1 1 1
+                                                                  空闲位：数据传输完毕，用“1”表
+                    LSB                   MSB                     示当前线路上没有数据传输。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (13/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  2.2 异步串行通信接口
+                                                     • UART至少需要两根数据线用于通信双方进行
+                                                       数据双向同时传输，最简单的UART接口由
+            UART（Universal                             TxD、RxD、GND共3根线组成。
+       Asynchronous Receiver                         • 其中，TxD用于发送数据，RxD用于接收数据，
+                                                       GND为信号地线，通过交叉连接实现两个芯
+       Transmitter，通用异步收
+                                                       片间的串口通信。
+       发传输器）是一个全双工
+                                                                -RxD：数据输入引脚，数据接受。
+       通用异步串行收/发模块，                                             -TxD：数据输出引脚，数据发送。
+       主要用于打印程序调试信
+                                                           微控 TxD                               TxD
+                                                                                                       外设
+       息、上位机和下位机的通                                         制器 RxD                                      模块
+                                                                                                RxD
+       信以及ISP程序下载等场合。                                     UART                                        UART
+                                                                   GND                          GND
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                              (14/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  2.2 异步串行通信接口                                                          USB接口也一样！
+
+  •     RS-232是美国电子工业协会（EIA，                                     •    RS-232的电气标准逻辑，不能与微
+        Electronic Industry Association）                              控制器中UART的TTL电平设备直接
+        制定的串行通信物理接口标准，规定                                              相连，必须进行电平转换。
+        了相应的电气特性和物理特性，通常                                               通讯标准      电平标准
+        采用DB-9或DB-25的形式。                                                                    逻辑1：2.4V ~ 5V
+                                                                          5V TTL
+       针脚号          符号             功能                                                       逻辑0：0 ~ 0.5V
+        1           DCD       数据载波检测，输入
+                              接收数据，输入
+                                                                                            逻辑1：-15V~ -3V
+        2           RxD                                                   RS-232
+        3           TxD       发送数据，输出                                                       逻辑0：+3V ~ +15V
+        4           DTR       数据终端准备就绪，输出                                                   RS232
+                                                                                            转换器
+        5           GND       信号地                                        TxD                         TxD
+        6           DSR       数据设备准备就绪，输入                         ARM
+                                                                                                           PC机
+        7           RTS       请求发送，输出                             芯片 RxD                             RxD
+
+        8           CTS       清除发送，输入                                    GND                         GND
+        9            RI       振铃指示，输入
+EE114 Embedded System -> Lecture 15 STM32 USART                                                             (15/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3 STM32的USART模块                                        USART 全称是：
+                                                       Universal Synchronous Asynchronous
+                                                       Receiver and Transmitter
+
+
+                                                  3.1 USART内部结构
+
+                                                  3.2 USART接口
+
+                                                  3.3 USART编程模式
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (16/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.1 USART内部结构
+
+     USART内部功能实现由
+    三部分构成:
+
+                                          ①功能引脚
+                                          ②数据寄存器
+        数据收发寄           波特率发生
+         存器单元             器               USART_DR
+                                          ③控制器
+                                          ④波特率发生器
+              发送器/接收器控
+                制单元
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (17/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.1 USART内部结构
+
+     USART内部功能实现由
+    三部分构成:
+
+                                          ①功能引脚
+                                          ②数据寄存器
+        数据收发寄           波特率发生
+         存器单元             器               USART_DR
+                                          ③控制器
+                                          USART_CR1/2/3
+              发送器/接收器控
+                制单元                       USART_SR
+                                          ④波特率发生器
+                                          USART_BRR
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (18/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.1 USART内部结构
+                                                                     发送器/接收器控制单元
+                  波特率发生器                                   通过向USART的控制寄存器（Control
+         通过USART_BRR寄存器                                Register）CR1、CR2、CR3和USART的状态
+        实现串口通信数据传输速                                    寄存器SR（Status Register）写入相应的
+        率的设置。                                          参数，实现 USART 数据的发送和接收控制。
+                                                                                𝒇𝒄𝒍𝒌
+                                                              𝑩𝒂𝒖𝒅 𝑹𝒂𝒕𝒆 =
+                                                                          𝟏𝟔 ∗ 𝑼𝑺𝑨𝑹𝑻𝑫𝑰𝑽
+                   CR1 主要用于配置USART的数据位、校验位及中断使能；
+                   CR2 用于配置USART的 停止位以及 SCLK时钟控制；
+                   CR3 主要涉及CTS硬件流控制和单字节/DMA多缓冲传输控制的配置。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (19/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.1 USART内部结构                                     USART状态寄存器SR各bit位所代表的含义
+   bit位 寄存器名称                                                       功能描述
+   31-10 保留，硬件强制设置为“0”
+                                                                          0：nCTS状态线上没有变化；
+      9         CTS         CTS标志
+                                                                          1：nCTS状态线上发生变化。
+                           LIN断开检测标志                                      0：没有检测到LIN断开；
+      8        LBD
+                           (LIN break detection flag )                    1：检测到LIN断开。
+                           发送数据寄存器空                                       0：数据还没有被转移到移位寄存器；
+      7        TXE
+                           (Transmit data register empty)                 1：数据已经被转移到移位寄存器。
+      6          TC        发送完成 (Transmission complete)                   0：发送还未完成；1：发送完成。
+                           读数据寄存器非空                                       0：数据没有收到；
+      5       RXNE
+                           (Read data register not empty)                 1：收到数据，可以读出。
+                                                                          0：没有检测到空闲总线；
+      4        IDLE        监测到总线空闲（IDLE line detected）
+                                                                          1：检测到空闲总线。
+      3        ORE         过载错误（Overrun error）                            0：没有过载错误；1：检测到过载错误
+      2         NE         噪声错误标志（Noise error flag）                       0：没有检测到噪声；1：检测到噪声
+                                                                          0：没有检测到帧错误；
+      1          FE        帧错误（Framing error）
+                                                                          1：检测到帧错误或者break符。
+      0          PE        校验错误（Parity error）                             0：没有奇偶校验错误；1：奇偶校验错误
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (20/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.1 USART内部结构                                     数据发送过程                              触发TXE中断
+
+                                                        发送数据                  发送移位              传送      一帧发
+                                                  数据
+                                                       寄存器 (TDR)              寄存器               数据      送结束
+        数据收发寄存器单元
+        组成：                                            下一帧数据写                                        TC位被置位
+            发送数据寄存器                                    入TDR寄存器
+            （TDR）
+            接收数据寄存器                               数据接收过程                             RXNE中断
+            （RDR）
+                                                                           接收数据
+                                                        接收移位                                    处理     准备接收
+            发送移位寄存器                               数据                       寄存器
+                                                        寄存器                                     数据     下一帧
+                                                                            (RDR)
+            接收移位寄存器
+                                                                                                RXNE位被清零
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                           (21/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.2 USART接口                F103ZET6 F103VET6 F103RCT6 F103C8T6 80C51 AT89S52
+                      UART    5         5        5        3      1      2
+          STM32F103大容量产品有5个串行通信接口，USART4和USART5为2个通用
+         异步收发器，不支持同步模式，只有异步通信功能。
+            USART模式                      USART1      USART2           USART3             UART4   UART5
+             异步模式                       （支持）                                                   
+             硬件流控制                                                                （不支持）        
+
+      多缓存通信（DMA）                                                                              
+           多处理器通信                                                                             
+             同步                                                                               
+            智能卡                                                                               
+      半双工（单线模式）                                                                               
+                 IrDA                                                                         
+                  LIN                                                                         
+EE114 Embedded System -> Lecture 15 STM32 USART                                                          (22/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.2 USART接口                                   F103ZET6 F103VET6 F103RCT6 F103C8T6 80C51 AT89S52
+                                         UART    5         5        5        3      1      2
+            USART异步模式至少需要两个引脚：
+            Rx（接收数据引脚）和Tx（发送数据引脚），使用了复用I/O功能。
+                                                         USART1_ USART1_
+           总线          USARTx               复用功能                                                GPIO配置
+                                                         REMAP=0 REMAP=1
+          APB2                           USART1_TX           PA9              PB6          复用推挽输出
+                       USART1
+          总线                             USART1_RX          PA10              PB7          浮空输入
+                                         USART2_TX           PA2              PD5          复用推挽输出
+                       USART2
+          APB1                           USART2_RX           PA3              PD6          浮空输入
+          总线                             USART3_TX           PB10             PC10         复用推挽输出
+                       USART3
+                                         USART3_RX           PB11             PC11         浮空输入
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                          (23/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+                                          STM32F10x数据手册 - Pinouts and pin description
+3.2 USART接口                               ST每个系列的芯片都有一个数据手册，里面有引脚的详细功能。
+
+                                                                                                注意 USART 2&3
+                                                                                                在 APB1 (RCC 代码)
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                               (24/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.3 USART编程模式
+
+
+                     轮询方式                              中断方式                                 DMA方式
+
+            • CPU不断地查询I/O                         • 通过中断请求线，                         • 直接存储器传送，
+              设备是否准备就绪，                             在I/O设备准备就绪                         不 经 过 CPU 直 接 在
+              如果准备就绪就发                              时 向 CPU 发 出 中 断                    内存和外设之间进
+              送，否则提示超时                              请 求 ， CPU 中 止                      行批量数据交换，
+              错误；                                   正在进行的工作                            适用于高速大批量
+            • 会 占 用 CPU 的 大 量                       转 向 处 理 I/O 设 备                    成组数据的传输；
+              时间，效率低。                               的中断事件                            • 满足高速I/O设备的
+                                                  • 中断方式相比轮询                           传输要求，有利于
+                                                    方式效率较高。                            提 高 CPU 的 利 用 率 。
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (25/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.3 USART编程模式                                                    轮询方式
+
+           通过定期或循环查询USART状态寄存器SR各位的状态，编写应用程序对
+          接收或发送的数据进行处理，有两种方式实现对USART相关寄存器的操作：
+
+
+                      寄存器                                            基于库
+                       开发                                            的开发             间接对寄存
+                       方式            在编程代码                            方式            器操作实现相
+                                    中直接配置这                                          应的USART通
+                                    些功能寄存器                                          信功能
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (26/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.3 USART编程模式                                                    中断方式
+
+         USART主要有以下中断事件：
+
+             发送期间：发送完成、清除
+             发送和发送数据寄存器空；
+             接收期间：空闲总线检测、
+             溢出错误、接收数据寄存器
+             非空、校验错误、LIN断开符
+             号检测、噪音标志（仅在多
+             缓冲器通信）和帧错误（仅
+             在多缓冲器通信）。                                                                          USART中断映射
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                        (27/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.3 USART编程模式                                                    中断方式
+                                         USART中断事件及中断使能标志位
+                中断标志                 中断使能位           STM32中的定义                             中断事件
+                    TXE                  TXEIE     UART_IT_TXE                   发送数据寄存器空
+                    CTS                  CTSIE     UART_IT_CTS                   CTS标志
+                     TC                   TCIE     UART_IT_TC                    发送完成
+                  RXNE                 RXNEIE                                    接收数据就绪（可读）
+                                                   UART_IT_RXNE
+                    ORE                RXNEIE                                    检测到数据溢出
+                   IDLE                 IDLEIE     UART_IT_IDLE                  检测到空闲线路标志
+                 PE                       PEIE     UART_IT_PE                    奇偶检验错误标志
+                LBD                      LBDIE     UART_IT_LBD                   断开标志
+              NE或ORT或                                                            多缓冲通信中的噪声标
+                                           EIE     UART_IT_ERR
+                 PE                                                              志，溢出错误和帧错误
+EE114 Embedded System -> Lecture 15 STM32 USART                                                   (28/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+3.3 USART编程模式                                                   DMA方式
+
+
+                           USART模块可通过
+                         DMA方式进行大批量
+                         数据的连续传输。
+                                                          STM32F103微控制器的USART
+                                                        的发送和接收分别 映射到不同的
+                                                        DMA通道上，如 USART1_Rx被映
+                                                        射到DMA1的通道5，USART1_Tx被
+                                                        映射到DMA1的通道4。
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (29/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4 USART模块的标准外设库接口函数及应用
+
+
+                                     4.1 USART标准外设库接口函数
+
+
+                                     4.2 USART串口应用编程步骤
+
+
+                                     4.3 USART标准外设库应用实例
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (30/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+                                                                                  STM32的USART标准
+                                                                                外设库函数定义在
+                                                                                STM32F10x标准外设库的
+                                                                                stm32f10x_usart.c文件中，
+                                                                                其相应的
+                                                                                stm32f10x_usart.h头文件
+                                                                                定义了USART相关的
+                                                                                结构体和宏定义，并声明
+                                                                                了相关的标准外设库函数，
+                                                                                共29种。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                   (31/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数                                               USART_InitTypeDef结构体成员及其取值
+                                                                    结构体成员                         取值范围
+                    USART初始化结构体                                  USART_BaudRate        9600
+                                                                                                  也有误差，但不用管底层
+                                                                    （波特率）              115200
+                                                                USART_WordLength       USART_WordLength_8b（8位）
+    typedef struct                                                 （数据位数）              USART_WordLength_9b（9位）
+                                                                                       USART_StopBits_1 （1位）
+    {                                                             USART_StopBits       USART_StopBits_0_5（0.5位）
+      uint32_t USART_BaudRate;                                      （停止位）              USART_StopBits_2 （2位）
+                                                                                       USART_StopBits_1_5（1.5位）
+      uint16_t USART_WordLength;                                   USART_Parity
+                                                                                       USART_Parity_No （无校验）
+                                                                                       USART_Parity_Even（偶校验）
+                                                                   （校验模式）
+      uint16_t USART_StopBits;                                                         USART_Parity_Odd （奇校验）
+                                                                   USART_Mode          USART_Mode_Rx（接收模式）
+      uint16_t USART_Parity;                                       （收发模式）              USART_Mode_Tx（发送模式）
+                                                                                       USART_HardwareFlowControl_None
+      uint16_t USART_Mode;                                                             （不使用联络信号）
+                                                                                       USART_HardwareFlowControl_RTS
+      uint16_t USART_HardwareFlowControl;                      USART_HardwareFlow
+                                                                                       （使用RTS）
+                                                                    Control
+                                                                                       USART_HardwareFlowControl_CTS
+    } USART_InitTypeDef;                                          （硬件流控制）
+                                                                                       （使用CTS）
+                                                                                       USART_HardwareFlowControl_RTS_
+                                                                                       CTS（使用RTC和CTS）
+EE114 Embedded System -> Lecture 15 STM32 USART                                                               (32/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+          USART初始化函数
+          void USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct);
+          例如：
+          USART_Init(USART1, &USART_InitStructurer);                           // 初始化串口1
+
+
+                        USART初始化复位函数
+                        void USART_DeInit(USART_TypeDef* USARTx);
+                        当外设出现异常时，可以通过复位操作，对外设重新进行配置。
+                        例如：
+                        USART_DeInit(USART1);                                 // 复位串口1
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (33/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+
+             USART使能函数
+             void USART_Cmd(USART_TypeDef* USARTx, FunctionalState NewState);
+             例如：
+             USART_Cmd(USART1, ENABLE);                             //使能串口1
+
+
+                        USART发送单个数据函数
+                        void USART_SendData(USART_TypeDef* USARTx, uint16_t Data);
+                        例如：
+                        USART_SendData(USART1, 0x26)；//通过串口1发送十六进制数据26H
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (34/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+           USART接收数据函数
+           uint16_t USART_ReceiveData(USART_TypeDef* USARTx);
+           例如：
+           Temp = USART_SendData(USART1); //将接收串口1发来的数据存到变量Temp中
+
+           USART获取串口状态函数
+           FlagStatus USART_GetFlagStatus(USART_TypeDef* USARTx, uint16_t USART_FLAG);
+           使用串口进行数据发送或接收时，先判断状态寄存器的状态再进行下一步操作，
+           该函数实现对指定的USART标志位是否设置进行检查。
+           例如：FlagStatus Status;
+           Status = USART_GetFlagStatus(USART1, USART_FLAG_TXE);
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (35/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+                                                            USART_FLAG                           描述
+            USART获取串口状态函数
+                                                          USART_FLAG_CTS                    CTS标志位
+            函数 USART_GetFlagStatus()
+                                                          USART_FLAG_LBD                    LIN中断检测标志位
+            有两个输入参数：                                                                        发送数据寄存器
+                                                          USART_FLAG_TXE
+                参数1：USARTx，                                                                 空标志位
+                可选为 USART1、USART2                         USART_FLAG_TC                     发送完成标志位
+                或USART3；                                                                    接收数据寄存器
+                                                          USART_FLAG_RXNE
+                                                                                            非空标志位
+                参数2：USART_FLAG为
+                                                          USART_FLAG_IDLE                   空闲总线标志位
+                待检测的USART标志位；                             USART_FLAG_ORE                    溢出错误标志位
+                函数返回值为SET（置位）                             USART_FLAG_NE                     噪声错误标志位
+                或RESET（复位）。                               USART_FLAG_FE                     帧错误标志位
+                                                          USART_FLAG_PE                     奇偶错误标志位
+EE114 Embedded System -> Lecture 15 STM32 USART                                                     (36/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+                 USART获取串口状态函数
+                 串口采用USART_SendData()函数发送数据时，要先判断USART_FLAG_TXE
+                 （发送数据寄存器空标志位）或 USART_FLAG_TC（发送完成标志位）
+                 的状态，等发送完成后再执行后面的程序，具体实现代码如下：
+                 USART_SendData(USART1, (uint8_t) ch); //发送数据
+                    //判断发送是否完成，循环等待直到发送完毕
+                 while(USART_GetFlagStatus(USART1, USART_FLAG_TC) != SET);
+                 return ch;
+                   或
+                 while (USART_GetFlagStatus(DEBUG_USARTx, USART_FLAG_TXE) == RESET);
+                 return (ch);
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (37/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+             USART获取串口状态函数
+             采用USART_ReceiveData()函数进行接收数据时，要先判断USART_FLAG_RXNE
+             （接收数据寄存器非空标志位），非空时接收数据，该位被置“1”时，表示
+             有数据被接收，并可以读出。具体代码如下：
+              //判断接收寄存器是否为空，非空接收数据
+             if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == SET)
+             {
+                ch = USART_ReceiveData(USART1);      //接收数据
+             }
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (38/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+              USART清除状态标志函数
+              void USART_ClearFlag(USART_TypeDef* USARTx, uint16_t USART_FLAG);
+              例如：
+              USART_ClearFlag(USART1, USART_FLAG_TC); //清除串口1的TC状态标志位
+
+                 USART串口中断使能函数
+                 void USART_ITConfig(USART_TypeDef* USARTx, uint16_t USART_IT, FunctionalState NewState);
+                 例如：
+                 USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+                       //开启接收数据寄存器非空中断
+                 USART_ITConfig(USART1, USART_IT_TC, ENABLE); //开启发送完成中断
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (39/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+                                                                  USART_IT                      描述
+              USART串口中断使能函数
+                                                            USART_IT_PE                    奇偶错误中断
+              USART_ITConfig()函数的参数：
+                 参数1：USARTx，可选为                             USART_IT_TXE                   发送中断
+                 USART1、USART2或                             USART_IT_TC                    传输完成中断
+                 USART3；
+                                                            USART_IT_RXNE                  接收中断
+                 参数2：USART_IT为
+                                                            USART_IT_IDLE                  空闲总线中断
+                 待检测的USART标志位；
+                 参数3为ENABLE或DISABLE；                        USART_IT_LBD                   LIN中断检测中断
+                 函数返回值为SET（置位）                              USART_IT_CTS                   CTS中断
+                 或RESET（复位）。
+                                                            USART_IT_ERR                   错误中断
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                      (40/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数
+
+                 USART获取串口中断状态函数
+                 ITStatus USART_GetITStatus(USART_TypeDef* USARTx, uint16_t USART_IT);
+
+
+                  若使能了中断，则会设置状态寄存器中
+               的某个标志位，通过调用该函数来判断是
+               否是串口发送完成中断，实现方式如下：                                                                   9
+                                                                                       9
+               USART_GetITStatus(USART1, USART_IT_TC);
+               若返回值是SET，则说明串口1发送完成，                                                             9
+               产生了中断。
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                         (41/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 4.1 USART标准外设库接口函数                                                                     回忆一下有
+                                                                                        哪几个中断
+                                                                                        相关的函数？
+              USART清除串口中断标志函数
+              void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);
+              例如，复位发送完成中断标志位：
+              USART_ClearITPendingBit(USART1, USART_IT_TC);
+
+           USART串口DMA使能函数
+           void USART_DMACmd(USART_TypeDef* USARTx, uint16_t USART_DMAReq, FunctionalState NewState);
+           用于配置DMA与USART通道，例如：
+           USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+             // 使能USART1的发送DMA请求
+           USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
+              // 使能USART1的接收DMA请求
+EE114 Embedded System -> Lecture 15 STM32 USART                                                  (42/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.2 USART串口应用编程步骤
+
+
+                                                                                                     应用程序
+                                                                                            利用串口     编写
+                                                              使用串口                          使能函数
+                                                              初始化                           USART_
+                                                        设置波特
+                                                              函数                            Cmd()
+                              设置I/O                     率，设置
+                                                                                            使能相应
+                        串口所用  引脚功能                      数据格式： USART_
+                                                              Init()                        串口
+                        的GPIO 为复用推                      数据位、
+   声明                                                   停止位、  初始化相
+   GPIO和                时钟使能， 挽输出、                            应串口
+                        串口时钟  浮空输入                      校验位
+   USART
+   初始化结                 使能
+   构体
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (43/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.2 USART串口应用编程步骤
+
+           1
+              声明GPIO和USART初始化结构体
+           USART_InitTypeDef USART_InitStructure;
+
+             2
+               串口所用的GPIO时钟使能，串口时钟使能
+             开启外设时钟RCC_APB2PeriphClockCmd()。
+             例如：使能USART1、GPIOA的时钟，所用的函数为
+             RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|RCC_APB2Periph_GPIOA, ENABLE);
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (44/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.2 USART串口应用编程步骤
+
+           3                                             //USART1_TX，PA9，配置为复用推挽输出，并初始化PA9
+             设置I/O引脚功能为复用                             GPIO_InitStructure.GPIO_Pin           = GPIO_Pin_9;
+           推挽输出、浮空输入                                  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+               串口使用的是I/O的复用                           GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+               功能。USART1的发送引                                                                    //复用推挽输出
+
+               脚为PA9，需将PA9配置为                         GPIO_Init(GPIOA, &GPIO_InitStructure);
+                                                         //USART1_RX，PA10，配置为浮空输入，并初始化PA10
+               复用推挽输出；
+                                                      GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+               USART1的输入引脚为                           GPIO_InitStructure.GPIO_Mode =
+               PA10，需将PA10配置                          GPIO_Mode_IN_FLOATING;                 //浮空输入
+               为浮空输入。                                 GPIO_Init(GPIOA, &GPIO_InitStructure); //初始化PA10
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                             (45/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.2 USART串口应用编程步骤
+
+      4
+          设置波特率，设置数据格式：数据位、停止位、校验位
+      USART_InitStructure.USART_BaudRate = 115200;           //串口波特率
+      USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+                                                                                        //设置数据位占8位
+      USART_InitStructure.USART_StopBits = USART_StopBits_1;                              //设置停止位占1位
+      USART_InitStructure.USART_Parity                 = USART_Parity_No;                 //无奇偶校验位
+      USART_InitStructure.USART_HardwareFlowControl= USART_HardwareFlowControl_None;
+                                                                           //不采用硬件数据流控制
+      USART_InitStructure.USART_Mode= USART_Mode_Rx|USART_Mode_Tx;
+                                                 //设置为收发模式
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                      (46/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.2 USART串口应用编程步骤
+
+        5
+            使用串口初始化函数USART_Init()初始化相应串口
+         USART_Init(USART1, &USART_InitStructure); //初始化串口1 USART1
+
+
+             6
+                 利用串口使能函数USART_Cmd()使能相应串口
+             USART_Cmd(USART1, ENABLE); //使能串口
+
+
+                   7
+                         应用程序编写
+                   void USART1_IRQHandler(void) //若使用中断，则编写串口中断函数
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (47/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例
+
+
+                                    应用实例一                                简单实现串口通信
+
+                                                                         重定向printf()函数
+                                    应用实例二
+           应用                                                             和scanf()函数
+           实例
+                                    应用实例三                                  USART查询方式
+
+                                    应用实例四                                  USART中断方式
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (48/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例
+
+       应用实例一：简单实现串口通信                                       功能描述：
+                                                             通过串口USART1实现简单的收发功能。
+                                                             通过串口调试助手进行数据的收发显示。
+                         编程代码
+                                                            USART初始化头文件USART_Init_Config.h，
+                           USART初始                          代码如下：
+    USART初始                                                 #ifndef __USART_INIT_CONFIG_H
+                             化程序                  主程序
+     化头文件                                                   #define __USART_INIT_CONFIG_H
+                           USART_Init             main.c
+    USART_Init
+                            _Config.c             文件        #include "stm32f10x.h"
+     _Config.h
+                              文件                            void USART_Init_Config(void);
+                                                            #endif
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (49/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例一：简单实现串口通信
+   USART初始化程序USART_Init_Config.c文件                                  GPIO_Init(GPIOA, &GPIO_InitStructure);
+   #include <stdio.h>                                                 //USART1参数配置
+   #include "USART_Init_Config.h"                                   USART_InitStructure.USART_BaudRate = 115200;
+                                                                      //设置波特率为115200
+   void USART_Init_Config(void)                                     USART_InitStructure.USART_WordLength =
+   {                                                                USART_WordLength_8b; //数据位占8位
+    GPIO_InitTypeDef GPIO_InitStructure;                            USART_InitStructure.USART_StopBits =
+    USART_InitTypeDef USART_InitStructure;                          USART_StopBits_1;        //1位停止位
+         //开启GPIOA和USART1的时钟                                        USART_InitStructure.USART_Parity =
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|                   USART_Parity_No;         //无校验
+    RCC_APB2Periph_GPIOA, ENABLE);
+                                                                    USART_InitStructure.USART_HardwareFlowControl
+         //USART1_TX，设置PA9为复用输出模式
+                                                                    =USART_HardwareFlowControl_None;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;   //PA9
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;               USART_InitStructure.USART_Mode =
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;                 USART_Mode_Rx | USART_Mode_Tx;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);                          USART_Init(USART1, &USART_InitStructure);
+         //USART1_RX，设置PA10为浮空输入模式                                         //初始化串口1
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;  //PA10              USART_Cmd(USART1, ENABLE); //使能串口1
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;          }
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                             (50/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例一：简单实现串口通信
+
+  主程序main.c文件，代码如下：                                Code 1      另一种实现方式：                                       Code 2
+  #include "stm32f10x.h"
+  #include <stdio.h>                                           int main(void)
+  #include "led.h"                                             {
+  #include "USART_Init_Config.h"                                 … // Initialization
+  int main(void)                                                 while(1)
+  { LED_Init();                                                  {
+    USART_Init_Config();                                           if(USART_GetFlagStatus(USART1, USART_IT_RXNE) == SET)
+    char Temp;                                                    {
+    while(1)                                                           ch = USART_ReceiveData(USART1); //接收数据
+    { if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE))                 USART_SendData(USART1, ch);        //发送数据
+       { USART_ClearFlag(USART1, USART_FLAG_TC);                              //循环等待发送完毕
+         Temp = USART_ReceiveData(USART1);                             while(USART_GetFlagStatus(
+         USART_SendData(USART1, Temp);                               USART1, USART_FLAG_TC) != SET);
+         USART_ClearFlag(USART1, USART_FLAG_RXNE);                 }
+       }                                                         }                           两种代码方式的
+    }                                                          }                              差异理解吗？
+  }
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                  (51/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例
+    应用实例二：重定向printf()函数和scanf()函数
+                                                                fputc()函数                       fgetc()函数
+        在嵌入式C语言开发中需
+        要重新定义printf()函数和                          函数 int fputc(int ch, FILE *f)
+                                                                                          int fgetc(FILE *f)
+                                                  原型
+        scanf()函数，将标准的输
+        入和输出重新定向到串口， 功能 将 一 个 字 符 写 入 到 从 文 件 f 中 读 出
+                                文件中          一个字符
+        才能实现串口输出或LCD
+        输出。                     ch为要输出的字符，
+                             参数              f指向FILE结构的指针
+        重 定 向 printf() 函 数 和    f指向FILE结构的指针
+        scanf() 函 数 也 就 是 重 写                      返    发 送 成 功 ， 返 回 ch 的 成 功， 则返回读取的
+        fput()函数和fget()函数。                         回    值 ； 失 败 ， 则 返 回 字符；失败 ，则返回
+                                                   值    EOF（通常为 -1）        EOF（通常为 -1）
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                (52/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+                                                                 ➢ printf使⽤⾮中断⽅式的、发⼀个字节的函数
+  4.3 USART标准外设库应用实例                                             ➢ 哪⼀个C⽂件中要使⽤printf，就必须要包含 stdio.h
+
+    应用实例二：重定向printf()函数和scanf()函数
+
+             重定向printf()函数和scanf()                          //重定向C库函数printf()到串口
+             函数，需要在串口初始化                             int fputc(int ch, FILE *f)
+             头文件usart.h中添加                           {
+                                                            /* 发送一个字节数据到串口 */
+             #include <stdio.h>头文件，
+                                                       USART_SendData(DEBUG_USARTx, (uint8_t) ch);
+             同时在Keil MDK编译器的                               /*等待发送完毕 */
+             Target中勾选Use MicroLIB。                    while (USART_GetFlagStatus(DEBUG_USARTx,
+             按照fget()函数和fput()函数                        USART_FLAG_TXE) == RESET);
+             的原型，重写相应的USART                               return (ch);
+             接口程序                                    }
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (53/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例
+    应用实例二：重定向printf()函数和scanf()函数
+                使用上述代码输出字符串时，会出现丢失第一个字符的现象，
+                可以在发送字符前调用USART_ClearFlag()复位TC标志位
+
+             USART_ClearFlag(USARTx, USART_FLAG_TC);
+                //重定向C库函数scanf()到串口，重定向后可使用scanf()函数
+             int fgetc(FILE *f)
+             { /*等待串口输入数据 */
+                while (USART_GetFlagStatus(DEBUG_USARTx, USART_FLAG_RXNE)==RESET);
+                     return (int)USART_ReceiveData(DEBUG_USARTx);
+             }
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (54/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                                        USART_Init_Config.h
+
+                                                                  开始                        USART_Init_Config.c文件
+             功能描述
+                                                                                            main.c程序
+    应            通过串口1利用查询方式
+                                                               串口初始化
+
+    用
+    实           实现发送字符命令“Y”点亮                                                     USART初始化头文件
+    例           LED灯，发送字符命令“N”
+                                                             接收寄存器非空？
+                                                                              否   USART_Init_Config.h，代码如下：
+    三
+                熄灭LED灯。                                           是
+   ——USART
+
+
+
+
+                                                                                  #ifndef
+                                                             读取接收到的数据             __USART_INIT_CONFIG_H
+                 USART可以采用查询方式                                                    #define
+                进行数据通信，根据各状态                                将接收到的数据通过             __USART_INIT_CONFIG_H
+                                                             串口发送到PC机
+    查           寄存器的状态决定下一步是
+    询                                                                             #include "stm32f10x.h"
+    方           否要执行发送接收或转入相                                                      void USART_Init_Config(void);
+    式           应错误处理。
+                                                               是否发送完？
+                                                                             否
+                                                                 是                #endif
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                   (55/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例三：USART查询方式
+
+   USART初始化程序USART_Init_Config.c文件，代码如下：
+   #include <stdio.h>                                 GPIO_InitStructure.GPIO_Mode =
+   #include "USART_Init_Config.h"                     GPIO_Mode_IN_FLOATING;
+   void USART_Init_Config(void)                       GPIO_Init(GPIOA, &GPIO_InitStructure);
+   {
+     GPIO_InitTypeDef GPIO_InitStructure;             //USART1参数配置：波特率115200，8位数据位，
+     USART_InitTypeDef USART_InitStructure;           1位停止位，无校验，不使用硬件流控制
+       //使能USART1和GPIOA的时钟                            USART_InitStructure.USART_BaudRate = 115200;
+     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|    USART_InitStructure.USART_WordLength =
+           RCC_APB2Periph_GPIOA, ENABLE);             USART_WordLength_8b;
+     USART_DeInit(USART1);       //复位串口1              USART_InitStructure.USART_StopBits = USART_StopBits_1;
+        //USART1_TX PA9为复用推挽输出                        USART_InitStructure.USART_Parity = USART_Parity_No;
+     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;        USART_InitStructure.USART_HardwareFlowControl=
+   //PA.9                                             USART_HardwareFlowControl_None;
+     GPIO_InitStructure.GPIO_Speed=GPIO_Speed_50MHz;
+     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; USART_InitStructure.USART_Mode =
+     GPIO_Init(GPIOA, &GPIO_InitStructure);           USART_Mode_Rx | USART_Mode_Tx;
+        //USART1_RX，PA10为浮空输入                         USART_Init(USART1, &USART_InitStructure);
+     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;       USART_Cmd(USART1, ENABLE);
+   //PA.10                                           }
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (56/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                    应用实例三：USART查询方式
+      //重定向printf函数                               int main(void)
+  int fputc(int ch, FILE *f)                      {
+  {
+                                                    char ch;       //定义一个字符变量，用于接收字符
+                                                    LED_Init();      //LED灯初始化
+        /* 发送一个字节数据到 USART1*/                                                                 main.c程序
+                                                    USART_Init_Config(); //USART初始化
+     USART_SendData(USART1, (uint8_t) ch);
+                                                    while(1)                                  #include "stm32f10x.h"
+        /*等待发送寄存器为空 */                              { ch = getchar();                         #include <stdio.h>
+     while (USART_GetFlagStatus(USART1,                 printf("接收到的指令 %c \n",ch);            #include "led.h"
+     USART_FLAG_TXE) == RESET);                        switch(ch)                             #include
+     return (ch);                                      { case 'N':                            "USART_Init_Config.h"
+  }                                                        GPIO_SetBits(GPIOB, GPIO_Pin_5); printf("熄灭LED灯 \n");
+   //重定向scanf函数                                          break;
+  int fgetc(FILE *f)                                     case 'Y':
+  {                                                        GPIO_ResetBits(GPIOB, GPIO_Pin_5); printf("点亮LED灯 \n");
+       /*等待串口1输入数据 */
+                                                         break;
+                                                         default:
+      while (USART_GetFlagStatus(USART1,
+                                                           printf(“请输入正确的指令： N熄灭灯， Y点亮灯!\n");
+       USART_FLAG_RXNE) == RESET);
+                                                         break;                                注意相关LED
+      return (int)USART_ReceiveData(USART1);           } }
+  }                                               }                                             初始化定义
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                (57/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例四：USART中断方式
+
+     1        GPIO 和USART 宏定义                     方便程序移植和升级
+                                                                                        配置中断控制器
+                                                                                  2     并使能USART 接收中断；
+          在usart的头文件里定义
+
+
+
+
+                                                                                     这个程序写在哪里？
+                                                                                    中断编程的流程是什么？
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                   (58/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例四：USART中断方式
+
+     3      初始化GPIO，并将 GPIO 复用到USART 上，使能USART；
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (59/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  4.3 USART标准外设库应用实例                                                 应用实例四：USART中断方式
+
+     4      在USART 接收中断服务函数实现数据接收和发送                                                            这里在干啥？
+                              主函数
+
+
+
+
+                     stm32f4xx_it.c 中的
+                     USART 中断服务函数
+
+
+
+
+                       程序都在哪里？
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                          (60/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+       思考：STM32固件库没有函数传输字符串，怎么实现？
+       /*                                                        /*
+       @brief      将一个字节数据发送给上位机                                 @brief      利用查询的方式接收一个字节数据
+       @params     data 待发送的数据                                   @params     None
+       @retval     None                                          @retval     接收到的一个字节数据
+       */                                                        */
+       void usart_send_byte(unsigned char data){                 unsigned char usart_recv_byte(void){
+              USART_SendData(USART1,data);                           while(!USART_GetFlagStatus(USART1,
+              while(!USART_GetFlagStatus(USART1,                     USART_FLAG_RXNE));
+              USART_FLAG_TC));                                       //查询是否接收到数据
+             //等待数据发送完成                                              return USART_ReceiveData(USART1);
+       }                                                         }
+
+
+                如何改成 调用固件库函数 传输和接收 特定长度的字符串 ？
+                例如： /* 发送两个字节的数据 */
+                void Usart_SendHalfWord (USART_TypeDef* pUSARTx, uint16_t data)
+                         /* 发送8位数据的数组 */
+                void Usart_SendArray (USART_TypeDef* pUSARTx, uint8_t *array, uint8_t num)
+                         /* 发送字符串 */
+                void Usart_SendStr (USART_TypeDef* pUSARTx, uint8_t *str)
+EE114 Embedded System -> Lecture 15 STM32 USART                                                           (61/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+         其他通信模块
+    • 蓝牙模块
+        – HC05/SPP，ESP32，NRF52，etc
+        – 微信小程序和ESP32/NRF52的蓝牙通讯
+    • WIFI 模块
+        – ESP8266/ESP32，nRF2401 等
+    • 通信总线：
+        – Modbus，RS485接口，CAN 协议
+    • 其他模块：
+        – LORA/GSM/GPRS/GPS，以太网
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (62/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+HC-05 Bluetooth Module                                                           • Enable / Key: This pin is used to toggle
+                                                                                   between Data Mode (set low) and
+                                                                                   AT command mode (set high).
+  • 蓝牙HC05是主从一体的蓝牙串口模块，                                                            By default it is in Data mode.
+    当蓝牙设备配对连接成功后，我们可以                                                            • Range: <100m
+    忽视内部的通信协议，直接将蓝牙当做                                                            • Data Mode Baud Rate: 9600, 8, N, 1
+                                                                                 • Command Mode Rate: 38400, 8, N, 1
+    串口用。
+  • 串口通信编程思路
+     • 串口时钟使能，GPIO 时钟使能
+     • 串口参数初始化 & GPIO 端口模式设置
+     • 串口开启中断并且初始化 NVIC（如果需要）
+     • 使能串口
+     • 编写中断处理函数
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                      (63/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+      ESP8266/ESP32 WiFi
+ • ESP8266 comes with capabilities
+   of 2.4 GHz Wi-Fi (802.11 b/g/n,
+   WPA/WPA2)
+ • I²C & SPI protocol & 10-bit ADC                         例程名称        功能简介             使用方法
+
+ • I²S interfaces with DMA, UART,                                      使用串口调试助
+                                                                                        把模块接入STM32 开发板的
+                                                                                        USART2(9600-N-
+   and PWM
+                                                           1-
+                                                                       手做用户界面，          8-1)，然后把串口调试助手(115200-N-8-
+                                                           ESP8266AT
+                                                                       配置和使用            1)连接到开发板的USART1。按照串口调
+ • To communicate with the ESP8266                         指令测试
+                                                                       ESP8266 模块。      试助手打印的提示配置模块，配置完成
+                                                                                        之后控制模块与电脑/手机进行数据传输。
+   WiFi module, needs to use set of                                                     把模块接入STM32 开发板的
+   AT commands                                                         使用串口调试助
+                                                                       手做用户界面，
+                                                                                        USART2(9600-N-8-1)，然后把串口调试
+                                                                                        助手(115200-N-8-1)连接到开发板的
+ • Microcontroller communicates                            2-WIFI透传
+                                                                       配置ESP8266模
+                                                                       块，然后抓取网
+                                                                                        USART1。按照串口调试助手打印的提示
+
+   with ESP8266 WiFi module using
+                                                                                        配置模块，配置完成之后模块会根据已
+                                                                       页数据打印到串
+                                                                                        设定的网址抓取其网页数据并打印到串
+                                                                       口调试助手。
+   UART having specified Baud rate                                                      口调试助手。
+                                                           3-向电脑网络助手上传数据 或者手机app控制，请自行了解
+   (Default 115200)                                        掌握查阅开发手册资料和其他知识拓展能力
+EE114 Embedded System -> Lecture 15 STM32 USART                                                              (64/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+                Modbus协议
+                                                              https://blog.csdn.net/qq_41954556/article/details/123292592
+                                                              https://blog.csdn.net/weixin_47702410/article/details/122651417
+
+
+ Modbus是一种串行通信协议，
+ 是Modicon公司(现在施耐德电气)
+ 于 1979 年 为 可 编 程 逻 辑 控 制 器
+ (PLC)通信而发表。Modbus已经
+ 成为工业领域通信协议的标准。
+ ➢ Modbus采用主从通信结构即：
+   1. 从 机 不 能 主 动 发 送 数 据 ；
+   2.系统中只有一个主机。
+ ➢ MODBUS 协 议 又 分 为
+   RTU, ASCII & TCP三种模式：
+ 前两种RTU & ASCII 所用的物理
+ 硬件接口都是串行通信口
+ (RS232/RS422/RS485) ； 而 TCP
+ 采用以太网(Ethernet) 硬件接口。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                          (65/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+         RS485 vs Modbus
+ • RS-485 是美国电子工业协会（EIA）在
+   1983年批准了一个平衡传输标准                                              •   RS485采用半双工方式，支持多点数据通信。
+   （balanced transmission standard），                             •   Modbus协议主要描述的是应用层的信息封装
+   EIA一开始将RS（Recommended                                             格式，处于OSI模式的第七层（应用层）。
+   Standard）做为标准的前缀，后来为了                                             Modbus的物理层可以是RS-485、Ethernet
+   便于识别标准的来源，已改为EIA/TIA。                                             II /802.3。使用EIA/TIA-485这种串行通
+                                                                     讯方式的Modbus协议框图如下所示:
+ • 目前标准名称为TIA-485，但工程师及应
+   用指南仍继续使用RS-485称呼。
+ • RS-485仅是一个电气标准，描述了接口
+   的物理层，像协议、时序、串/并行以及
+   链路全部由设计者或更高层协议定义。
+   RS485定义的是使用平衡（也称作差分）
+   多点传输线的驱动器（driver）和接收器
+   （receiver）的电气特性。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (66/90)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+                LVDS简介
+ LVDS（低压差分信号）标准
+ 是业界流行的差分数据传输标准，
+ 它是双线、低摆幅差分信号。
+ 其优点包括：
+ • 低电源电压运行                                                                                   LVDS标准
+ • 高速数据传输
+ • 良好的共模噪声抑制
+ • 噪音产生更少
+
+ LVDS是在100Ω的受控阻抗介质上
+ 进行基带数据传输，其中传输介
+ 质可以是PCB走线、背板或电缆。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (60/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+                LVDS简介
+ LVDS优于单端标准的优势                                                                     10 MHz NORMAL 模拟输入
+ LVDS接收器只会查看两个信号之间的                                                                  信号的数字化数据眼图
+ 差异，这种差分数据传输方法比
+ CMOS等单端方案更不容易受到共模
+ 噪声的影响。差分传输使用两条具有
+ 相反电流和电压摆动的线来传输数据，
+ 而不是CMOS中使用的一条线。
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (61/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+         CAN基础知识介绍
+    CAN简介
+    CAN是Controller Area Network的缩写，是ISO国际标
+    准化的串行通信协议。
+
+     帧类型                               帧用途
+
+     数据帧 用于发送单元向接收单元传送数据的帧
+                用于接收单元向具有相同 ID 的发送单元请求
+     遥控帧
+                数据的帧
+     错误帧 用于当检测出错误时向其它单元通知错误的帧
+
+     过载帧 用于接收单元通知其尚未做好接收准备的帧
+
+     间隔帧 用于将数据帧及遥控帧与前面帧分离开来的帧
+
+      其中，数据帧和遥控帧有标准格式和扩展格式
+      两种格式。标准格式有11 个位的标识符（ID），
+      扩展格式有29 个位的ID 。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (46/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+CAN基础知识介绍-数据帧介绍                                                                          具体实现不作要求
+
+  ① 帧起始。
+   表示数据帧开始的段。
+  ② 仲裁段。
+   表示该帧优先级的段。
+  ③ 控制段。
+   表示数据的字节数及保留位的段。
+  ④ 数据段。
+   数据内容，一帧0~8个字节数据。
+  ⑤ CRC段。
+   检查帧的传输错误的段。
+  ⑥ ACK段。
+   表示确认正常接收的段。
+                                                                   图中D表示显性电平，R表示隐形电平（下同）
+  ⑦ 帧结束。
+   表示数据帧结束的段。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (47/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+CAN基础知识介绍-数据帧解析
+      1，帧起始。标准帧和扩展帧都是由1个位的显性电平表示帧起始。
+      2，仲裁段。表示数据优先级，标准帧和扩展帧格式在本段有所区别，如图所示：
+
+
+
+
+         ID：高位在前，低位在后。
+         基本ID，禁止高7位都为隐性，即不能：ID=1111111XXXX。
+         RTR，远程请求位。0，数据帧；1， 远程帧；
+         SRR，替代远程请求位。设置为1（隐性电平）；
+         IDE，标识符选择位。0，标准标识符；1，扩展标识符；
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (48/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+CAN基础知识介绍-数据帧解析
+      3，控制段。由6个位构成，表示数据段的字节数。
+         标准帧和扩展帧的控制段稍有不同，如图所示：
+
+
+
+
+             r0，r1：保留位。必须以显现电平发送，但是接收可以是隐性电平。
+             DLC：数据长度码。0~8，表示发送/接收的数据长度（字节）。
+             IDE，标识符选择位。0，标准标识符；1，扩展标识符；
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (49/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+CAN基础知识介绍-数据帧解析
+    4，数据段。该段可包含0~8个字节的数据，从最高位（MSB）开始输出。
+      标准帧和扩展帧在这个段的格式完全一样：
+
+
+
+
+    5，CRC段。该段用于检查帧传输错误。由15个位的CRC顺序和1个
+    位的CRC界定符组成，标准帧和扩展帧在这个段的格式也是相同的：
+
+
+
+
+          CRC的值计算范围包括：帧起始、仲裁段、控制段、数据段。
+          接收方以同样的算法计算 CRC 值并进行比较，不一致时会通报错误。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (50/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+CAN基础知识介绍-数据帧解析
+    6，ACK段。此段用来确认是否正常接收。由ACK槽(ACK Slot)和ACK界定符
+      2个位组成。标准帧和扩展帧在这个段的格式也是相同的：
+
+
+
+
+        发送单元ACK段：发送2个隐性位。
+        接收单元ACK段：接收到正确消息的单元，在ACK槽发送显性位，通知发送单元，
+        正常接收结束。称之为发送ACK/返回ACK。
+        注意：发送 ACK 的是既不处于总线关闭态也不处于休眠态的所有接收单元中，接
+        收到正常消息的单元（发送单元不发送ACK）。正常消息是指：不含填充错误、
+        格式错误、CRC 错误的消息。
+    7，帧结束。由7个位的隐性位组成。标准帧和扩展帧在这个段格式完全一样。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (51/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    STM32 CAN 控制器简介                                                            CAN控制器框图
+
+ ◆ CAN的标识符表示发送优先级
+ ◆ STM32 CAN控制器，提供了28
+   个可配置的筛选器组（仅互联型
+   才有28个，其他只14个）
+ ◆ 筛选器可配置为：屏蔽位模式和
+   标识符列表模式。
+ ◆ 在屏蔽位模式下，标识符寄存器
+   和屏蔽寄存器一起，指定报文标
+   识符的任何一位，应该按照“必
+   须匹配”或“不用关心”处理。
+ ◆ 在标识符列表模式下，屏蔽寄存                                                               两个CAN分别拥有自己的发送邮箱和
+   器也被当作标识符寄存器用。                                                                接收FIFO，但是他们共用28个筛选器
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (52/68)
+Progress: STM32 SPI 接口与应用 >> SPI 应用实例 >> STM32 I2C 接口与应用 >> I2C MPU6050 Demo >> PS2 遥控实例 >> CAN 协议 >> 小结 >> Supplementary
+
+
+
+
+    STM32 CAN 控制器使用
+
+                                                                 ① 配置相关引脚的复用功能，使能CAN时钟。
+                                                                 CAN的时钟通过APB1ENR的第25位来设置
+                                                                 同时需要设置CAN的相关引脚为复用输出
+                                                                 ② 设置CAN工作模式及波特率等。
+                                                                 设置CAN_MCR寄存器的INRQ位，让CAN进入初始
+                                                                 化模式，再设置CAN_MCR的其他相关控制位。
+                                                                 通过CAN_BTR设置波特率和工作模式（正常/环回）
+   ◆ 工作模式
+         ①初始化模式（INRQ=1，SLEEP=0）
+                                                                 等信息。 最后设置INRQ为0，退出初始化模式。
+         ②正常模式（INRQ=0，SLEEP=0）                                   ③ 设置滤波器。
+         ③睡眠模式（SLEEP=1）                                          设置CAN_FMR的FINIT位，进入初始化模式；
+   ◆ 测试模式                                                        设置筛选器组0的工作模式以及标识符ID和屏蔽位；
+         ①静默模式（ LBKM=0，SILM=1 ）                                  最后激活筛选器，并退出初始化模式。
+         ②环回模式（ LBKM=1，SILM=0 ） ④ 发送接收消息。
+         ③环回静默模式（LBKM=1，SILM=1） ⑤ CAN控制器状态获取。
+   ◆ 调试模式
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                             (53/68)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+6 编程思想之自定义串口通信协议
+
+    复杂的通信控制往往是以数据帧为单位进行传输的。帧是数据传输的一种单位，
+   一帧数据由多个字符组合而成，不同字段的字符代表不同的含义，实现不同功能。
+
+
+
+
+                                                  发送端                                     接收端
+                  自定义串口
+                  通信协议就                      按照规定的数据帧                       根据规定的数据帧格式进
+                  是根据需求                     格式发送一帧数据                        行解析，获取正确的数据。
+                  定义一个数
+                  据帧的格式
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (67/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+6 编程思想之自定义串口通信协议
+                                                                          起始位：也就是帧头，表示一帧数据的开
+                                                                          始，必须要有，长度不限，但不建议太长。
+            例如：自定义一种数据帧格式
+                                                                          数据1：用于表示设备，长度不限，用户
+     起始                                           校验                      根据需要自定义。
+                    数据1                 数据2                 结束位
+       位                                           位
+                                                                          数据2：用于功能选择，长度不限，用户
+                01：设备1 00：功能1                                             根据需要自定义。
+     0xAA                                         ——        0xCC
+                02：设备2 01：功能2
+                                                                          校验位：复杂的通信协议中需要用到，一
+                                                                          些简单的自定义串口通信协议此项可有可
+                01：设备1 02：功能1                                             无，长度一般为1～2个字节。
+     0xBB                                         ——        0xCC
+                02：设备2 03：功能2
+                                                                          结束位：也即帧尾，表示一帧数据的结束，
+                                                                          长度不限。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (68/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+6 编程思想之自定义串口通信协议
+                                                                 在主程序中定义一个数组变量，
+          应用实例：上位机通过                                            用于接收数据
+          一个由4个字节组成的数据帧                                  /* USER CODE BEGIN PV */
+          控制指示灯LED的亮灭                                      uint8_t Rx_Buff[16];
+                                                              // 定义一个数组，用于数据接收
+    帧头             数据1                     数据2        帧尾 /* USER CODE END PV */
+
+         0xA1  0x01指示灯亮
+    0xAA                0x55                                        开启串口接收中断
+         控制指示灯 0x02指示灯灭
+                                                                /* USER CODE BEGIN 2 */
+                                                               HAL_UART_Receive_IT(&huart1, Rx_Buff, 4);
+                                                                /* USER CODE END 2 */
+
+                                                                                                4个字节
+EE114 Embedded System -> Lecture 15 STM32 USART                                                        (69/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+6 编程思想之自定义串口通信协议
+  /* USER CODE BEGIN 4 */
+  void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+  {
+    if(huart->Instance == USART1) //判断是哪个串口触发的接收中断
+     { if(Rx_Buff[0] == 0xAA && Rx_Buff[3] == 0x55) //判断帧头和帧尾
+                                                                         在串口中断回调函数中，根据接收
+        { switch(Rx_Buff[1])
+            { case 0xA1:
+                                                                         的数据内容进行相应的中断操作
+                switch(Rx_Buff[2])
+                { case 0x01:           // 0x01指示灯亮
+          HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);           HAL_UART_Receive_IT(&huart1, Rx_Buff, 4);
+                       printf(“ LED2 is ON! \r\n ");                            }
+                       break;                                                 else // if 判定第二字节 控制指令 有误
+                    case 0x02: // 0x02指示灯灭                                     {
+          HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);              printf("命令错误!\r\n");
+                      printf(“ LED2 is OFF !\r\n ");                           }      // if 判定串口 结束
+                  break;                                                      HAL_UART_Receive_IT(&huart1, Rx_Buff, 4);
+                    default: printf(“指令错误!\r\n”); // Rx_Buff[2] 判定        }
+                  break;                                                 }
+                }
+                break;                                                   /* USER CODE END 4 */
+              default:     // Rx_Buff[1] 判定
+                printf("The command is wrong !\r\n");
+                break;
+            }
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                           (70/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+           小结
+
+                                                                 4 USART模块                           6 编程思想
+                            2 串行通信                3 STM32的                            5 USART模块
+                                                                 的标准外设                               之自定义串
+   1 通信概述                                                                             的HAL库接口
+                                接口                USART模块        库接口函数                               口通信协议
+                                                                                      函数及应用
+                                                                    及应用
+
+      串行、
+                               硬件接口                内部结构              接口函数                 接口函数
+      并行通信
+
+      同步、
+                               通信协议                  接口              编程步骤                 应用实例
+      异步通信
+
+    单工、半双工、
+                                                   编程模式              应用实例                       实例
+     全双工通信
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                         (71/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+              AI 小结
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (72/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 串口通信实验
+ 库函数 vs HAL库 主要代码                                                                               固件库函数
+
+ • 库函数配置好串口以后，
+   当串口接收到数据再发送给
+   上位机时需要循环发送，
+   但是HAL库就直接调用
+   HAL_UART_Transmit函数
+   就能直接将串口的数据发给
+   上位机。
+ • 库函数的串口通信函数只适
+                                                                                                HAL库函数
+   用于STM32F1系列，对于其
+   他系列就不能通用了；
+ • 但是对于HAL库，只要外设
+   相同，基本上很容易移植。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                     (73/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+        Q&A
+
+       • STM32里数据大小端的概念
+       • STM32单片机串口波特率如何计算？
+
+       • USART TX/RX GPIO_Mode 分别设置成什么模式？为什么？
+       • USART1、2、3 分别挂着哪条RCC Bus APB1/APB2? 意味着什么？
+
+       • 串口2或3 与串口1 的编程有哪些不同之处？
+
+       • 重定向 printf(), fputc(), fgetc() 的目的是什么？
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (74/90)
+            STM32
+
+
+
+
+                                                  The   End!
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5 USART模块的HAL库接口函数及应用
+
+
+
+                                          5.1 UART的HAL库接口函数
+
+                                             5.2 USART的HAL库应用实例
+
+                                          5.3 USART模块应用实例拓展
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (76/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数
+
+
+                                                                                        UART模块的HAL库相关
+                                                                                        接口函数定义在源文件
+                                                                                        stm32f1xx_hal_uart.c中
+
+
+                                                                                        在stm32f1xx_hal_uart.h
+                                                                                        头文件中可以查看相关
+                                                                                        库函数声明以及相关的
+                                                                                        结构体定义。
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                          (77/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数                                           USART模块的HAL库常用接口函数
+       类型                                        函数及功能描述
+               HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout);
+           轮询 功能描述：串口轮询模式发送函数，使用超时管理机制
+           方式 HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout);
+               功能描述：串口轮询模式接收函数，使用超时管理机制
+               HAL_UART_Transmit_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size);
+           中断 功能描述：串口中断模式发送函数
+  引脚       方式 HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size);
+  功能           功能描述：串口中断模式接收函数
+  操作           HAL_UART_Transmit_DMA(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size);
+  函数           功能描述：串口DMA模式发送函数
+               HAL_UART_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size);
+           DMA 功能描述：串口DMA模式接收函数
+           方式 HAL_UART_DMAPause(UART_HandleTypeDef *huart);
+               功能描述：串口DMA模式暂停函数
+               HAL_UART_DMAStop(UART_HandleTypeDef *huart);
+               功能描述：串口DMA模式停止函数
+EE114 Embedded System -> Lecture 15 STM32 USART                                                        (78/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数                                           USART模块的HAL库常用接口函数
+          类型                                               函数及功能描述
+            HAL_UART_Init(UART_HandleTypeDef *huart)
+       初始化及 功能描述：UART初始化函数
+       复位函数 HAL_UART_DeInit(UART_HandleTypeDef *huart)
+            功能描述：UART复位函数
+            void HAL_UART_IRQHandler(UART_HandleTypeDef *huart);
+            功能描述：UART中断处理函数
+            void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+            功能描述：UART数据发送完成时的回调函数，用户在该函数内编写中断处理程序
+       中断处理 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart);
+         函数 功能描述：UART数据发送一半时的回调函数
+        （回调 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+        函数） 功能描述：UART数据接收完成时的回调函数，用户在该函数内编写中断处理程序
+            void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart);
+            功能描述：UART数据接收一半时的回调函数
+            void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
+            功能描述：UART传输出现错误时调用的回调函数
+            HAL_UART_GetState(UART_HandleTypeDef *huart);
+       外设状态 功能描述：获取串口状态函数
+         函数 HAL_UART_GetError(UART_HandleTypeDef *huart);
+            功能描述：获取串口错误函数
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (79/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数                                           UART发送函数HAL_UART_Transmit()
+
+       函数 HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart,
+       原型 uint8_t *pData, uint16_t Size, uint32_t Timeout);
+
+       函数 该函数为串口在轮询方式下发送指定长度的数据，采用超时管理机制，若超
+       解析 出设定值时数据还没有发送完成，则不再发送，返回超时标志HAL_TIMEOUT
+
+       函数 第一个参数huart为结构体类型                                   第二个参数uint8_t *pData为要发送的数据，
+       参数 UART_HandleTypeDef定义的指                             pData为指向数据缓冲区的指针，类型为uint8_t，
+                 针，取值为huart1 ~ huart5。                       若发送的数据不是此类型，需要进行类型转换。
+                  第三个参数uint16_t Size                         第四个参数uint32_t
+                  为要发送数据的大小。                                 Timeout为超时等待时间。
+       使用 const char *Send_Data = "Welcome to School ! \r\n";
+       范例 HAL_UART_Transmit(&huart2, (uint8_t *) Send_Data, strlen(Send_Data), 0xFFFF);
+          HAL_Delay(1000);   //串口2发送固定数据，无限等待，间隔1s循环发送
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (81/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数                                           UART接收函数HAL_UART_Receive()
+
+       函数 HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart,
+       原型 uint8_t *pData, uint16_t Size, uint32_t Timeout);
+
+       函数  HAL_UART_Receive() 为UART在轮询模式下的接收函数，
+       解析 采用超时管理机制，使用方式同HAL_UART_Transmit()
+
+       函数 第一个参数huart为结构体类型                                   第二个参数uint8_t *pData为要接收的数据，
+       参数 UART_HandleTypeDef定义的指                             pData为指向数据缓冲区的指针，类型为uint8_t，
+                 针，取值为huart1 ~ huart5。                       若接收的数据不是此类型，需要进行类型转换。
+                  第三个参数uint16_t Size                         第四个参数uint32_t
+                  为要发送数据的大小。                                 Timeout为超时等待时间。
+
+       使用 uint8_t ch;
+       范例 HAL_UART_Receive(&huart3,(uint8_t *)&ch, 1, 1000);
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (81/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.1 UART的HAL库接口函数                                           UART中断接收函数HAL_UART_Receive_IT( )
+   HAL_StatusTypeDef HAL_UART_Receive_IT(
+   UART_HandleTypeDef *huart, uint8_t *pData,               例：uint8_t RxBuffer[10];
+   uint16_t Size)                                           HAL_UART_Receive_IT(&huart1,(uint8_t *)&RxBuffer,1);
+   {
+     if (huart->RxState == HAL_UART_STATE_READY)                       /* huart解锁 */
+         //如果串口处于空闲状态，则执行以下语句                                      __HAL_UNLOCK(huart);
+     {                                                                /*使能UART的PE（奇偶检验错误）中断 */
+         if ((pData == NULL) || (Size == 0U))                      __HAL_UART_ENABLE_IT(huart, UART_IT_PE);
+       {      return HAL_ERROR;                                      /*使能UART错误中断*/
+       }                                                           __HAL_UART_ENABLE_IT(huart, UART_IT_ERR);
+       __HAL_LOCK(huart); //配置huart参数前先上锁                             /*使能UART数据寄存器非空中断*/
+          /* 以下为结构体变量huart的参数配置 */                                 __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
+       huart->pRxBuffPtr = pData; //设置缓存指针                         return HAL_OK; //配置完成，则返回HAL_OK
+       huart->RxXferSize = Size;      //设置接收数据数量                   }
+       huart->RxXferCount = Size; //设置接收计数器                        else
+       huart->ErrorCode = HAL_UART_ERROR_NONE;                     { return HAL_BUSY;
+          //ErrorCode设置为无错误                                          //若huart不是READY状态，则返回HAL_BUSY忙状态
+       huart->RxState = HAL_UART_STATE_BUSY_RX;                    }
+         //接收状态设置为接收忙碌                                         }
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                 (82/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.2 USART的HAL库应用实例
+
+        功能                                                     硬件
+                      实现简单的STM32串口                             设计
+              发送和接收数据，调试此
+                                                                                                  STM32F103
+              应用实例，需要在PC机端                                           PC
+                                                                   串口调试助手             USB转串口    USART1_Tx
+              安装“串口调试助手”。                                                                       USART1_Rx
+
+              实例效果：                                               PC机需安装USB转
+                                                                  串口模块CH340驱动
+                STM32目标板每隔1s循
+              环发送字符“欢迎来到串                                       通过STM32F103目标板上的串口1
+              口通信模块”到PC机上的                                     实现与上位机的通信，然后可以通过
+              串口助手。                                            串口调试助手查看测试结果。
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                               (83/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.2 USART的HAL库应用实例                                                 软件设计流程
+
+             新建                       STM32
+            STM32                    CubeMX             生成工程                   编写应用             下载调试
+           CubeMX                    功能参数                代码                     程序               验证
+             工程                        配置
+                                                                      RCC时钟配置
+
+
+
+
+               选择具体STM32芯片                                                   APB2为72MHz，APB1为36MHz
+EE114 Embedded System -> Lecture 15 STM32 USART                                                        (84/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  软件设计——STM32CubeMX功能参数配置                                                     串口和引脚参数设置
+  ➢在“Connectivity”中选择“USART1”；    ➢USART1的发送引脚USART1_Tx默认连接在PA9；
+  ➢设置“Mode”为“Asynchronous”（异步传输模式）➢接收引脚USART1_Rx 默认连接在PA10；
+  ➢设置USART1的相关参数，配置为默认值：115200、➢在配置USART1时已经将PA9引脚设置为复用推挽
+   8、None和1。                       输出，PA10设置为输入模式。
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                 (85/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  软件设计——STM32CubeMX功能参数配置                                                     开启串口USART1的中断
+
+   ➢在“Configeration”配置页面的
+    “NVIC Settings”中勾选
+    “USART1 global interrupt”。
+
+
+                                                                               选择NVIC中断优先级分组
+                                                                                ➢ 在“System Core”的
+                                                                                  “NVIC”中可选择NVIC中
+                                                                                  断优先级分组，默认为
+                                                                                  “4bits for pre-amption
+                                                                                  priority”，
+                                                                                ➢ 勾选“USART1 global
+                                                                                  interrupt”。
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (86/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  软件设计——生成工程代码                                              在“Code Generator”选项栏中找到“Generated files”
+                                                          框，勾选“Generate peripheral initialization as a pair
+                                                          of ’.c/.h’ files per peripheral”，将外设初始化的代码设
+        配置keil工程名称和存放位置                                   置生成为独立的.c源文件和.h头文件。
+
+
+
+
+EE114 Embedded System -> Lecture 15 STM32 USART                                                       (87/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+  软件设计——编写应用程序                                    /* USER CODE BEGIN PV */
+                                                  uint8_t RxBuffer[10];
+                                                  uint8_t TxBuffer[10];
+     在main.c文件中添加代码：                              /* USER CODE END PV */
+     先定义两个数组RxBuffer                              /* USER CODE BEGIN 2 */
+    和TxBuffer，用于接收数据
+                                                  /* 使能USART1接收，调用中断处理函数 */
+    和发送数据；
+                                                  HAL_UART_Receive_IT(&huart1, (uint8_t *)&RxBuffer,1);
+                                                  /* USER CODE END 2 */
+      中断处理函数进行相应功能                                /* USER CODE BEGIN 4 */
+   程序的处理，                                         void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+                                                  { HAL_UART_Transmit(&huart1,(uint8_t *)&RxBuffer,1,0);
+   在/* USER CODE BEGIN 4 */ 和
+                                                    HAL_UART_Receive_IT(&huart1,(uint8_t *)&RxBuffer,1);
+   /* USER CODE END 4 */                          }
+   之间添加代码：                                        /* USER CODE END 4 */
+EE114 Embedded System -> Lecture 15 STM32 USART                                                      (88/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.3 USART应用实例拓展                                               硬件           使用STM32F103的串口1(USART1)，
+                                                               设计          PE5引脚连接一个LED灯。
+                                                                                                                 +3.3V
+
+         功能                                                                                     STM32F103目标板
+                                                                                                                     R
+                 基于HAL库采用                                            PC
+                                                                   串口调试助手         USB转串口    USART1_Tx                LED
+
+
+               中断控制方式实现上位机（PC）                                                              USART1_Rx
+
+                                                                                                               PE5
+
+               通过串口通信控制STM32 目标                                  PC机需安装USB转串口
+                                                                   模块CH341驱动
+
+
+               板上LED灯，
+               发送字符命令“Y”点亮，
+               发送字符命令“N”熄灭LED灯。
+
+         配置
+                 将PE5配置为“Output Push Pull”
+               （推挽输出），初始化电平为低电平
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                      (89/90)
+Progress: 通信基础 >> STM32的USART模块 >> USART 固件库函数与应用 >> 其他通信模块 >> 自定义通信 >> 小结 >> USART HAL库函数与应用
+
+
+
+
+ 5.3 USART应用实例拓展                                                      编写应用程序
+  定义一个字符变量Receive_data用于存放接收的字符，                                                                               重定向函数
+  在main.c文件中的while()中添加如下程序代码：                                     int fgetc(FILE * f)
+  while (1)                                                        {
+  {                                                                  uint8_t ch = 0;
+   /* USER CODE END WHILE */                                         // 轮询方式接收 1字节数据，超时时间设置为无限等待
+   /* USER CODE BEGIN 3 */                                           HAL_UART_Receive(&huart1,&ch, 1, 0xffff);
+   uint8_t Receive_data;          //定义一个字符变量                         return ch;
+   Receive_data = getchar();      //获取输入的命令字符                      }
+   printf("The Receive order is : %c\n", Receive_data);            int fgetc(FILE *f)
+  if(Receive_data == 'Y’)         //发送字符命令Y，点亮LED灯                 { int ch; //方法2
+  {                                                                   while (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) == RESET);
+     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET);            HAL_UART_Receive(&huart1, (uint8_t *)&ch, 1, 1000);
+                                                                      return (ch);
+     printf("The LED is ON !\r\n");
+                                                                   }
+  }
+  else if(Receive_data == 'N’) //发送字符命令N，熄灭LED灯
+      { HAL_GPIO_WritePin(GPIOE,GPIO_PIN_5,GPIO_PIN_SET);          int fputc(int ch, FILE *f)
+        printf("The LED is OFF !\r\n");                            { /* 发送一个字节数据到串口 */
+      }                                                               HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 1000);
+  }                                                                   return (ch);
+  /* USER CODE END 3 */                                            }
+EE114 Embedded System -> Lecture 15 STM32 USART                                                                            (90/90)
+

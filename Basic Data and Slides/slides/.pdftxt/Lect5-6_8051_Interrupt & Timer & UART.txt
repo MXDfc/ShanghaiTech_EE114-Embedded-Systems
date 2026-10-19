@@ -1,0 +1,1849 @@
+                               EE114 Introduction to
+                                Embedded Systems
+                   Dr. Tao Wu         吴涛 研究员，博导
+                   wutao@shanghaitech.edu.cn
+                   Office: SIST Bldg 3-326
+                   CourseWeb: http://10.15.25.5/
+                   Website: http://small.shanghaitech.edu.cn
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+                                                               目标 Objective
+
+                                                                                      • ISR Example (A51 & C51) 格式
+  • 讲解中断和定时器的原理和相关寄存器                                                                 • 定时器 Timer Mode 0、Mode 2
+                                                                                        查询和中断方式 A51范例
+  • 讲解UART的原理和相关寄存器                                                                   • Mode 1 C51范例（中断+额外变量）
+                                                                                      • Counter & Gate Examples
+  • 理解并解释课件程序范例
+                                                                                      • UART programming for data transmit（C51）
+  • 会用Proteus进行仿真                                                                     • UART programming for serial interrupt（C51）
+                                                                                      • 甲乙机串口通信发送和接收 A51 vs C51
+  • 会用C51进行中断/定时器/串口等模块                                                               • 练习：同步脉冲 & 10 Hz 方波
+
+      的编程                                                                             • 指示灯/数码管的中断控制
+                                                                                      • Software I2C
+                                                                                      • Programming with DHT11
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (2/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Lecture #5: 8051 Interrupt & Timer
+  What you will learn:
+         a) The concept of interrupt &
+            the interrupt routines in 8051
+
+         b) Timers in 8051
+
+
+
+
+                                                                                                                   (Figures are from internet)
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (3/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  What is Interrupt 中断 ?
+                快递电话                              肚子疼
+
+                                                                           去
+      看                                  取
+                                                                           卫
+                                         快
+      书                                                                    生
+                                         递
+                                                                           间
+
+     主程序                                                 看书
+                                                                                                       多重中断
+                                                                                                         单重中断
+
+     中断源                                   快递电话、肚子疼
+
+     中断服务程序                                取快递、去卫生间
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (4/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Why interrupts are necessary for embedded systems?
+                                                                                                              可提高CPU效率;
+                                                                                                              与外设的速度配合
+
+
+                  CPU
+                 速度快
+                      等待
+                         外设
+                         速度慢                                      +         中断                                可实现对实时事件的
+                                                                                                              及时处理（实时处理）
+
+
+                        降低CPU效率                                                                               可对突发故障进行及
+                                                                                                              时处理（异常处理）
+
+                       中断在嵌入式系统占有极其重要的地位，中断机制使得系
+             统能更有效更合理地发挥效能和提高效率。
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (5/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Interrupts Sources & Handling
+  • Interrupt sources 中断源                                                             • Interrupts Handling 中断处理
+      – 外部输入/输出设备，如A/D、打印机等。                                                             – 发出中断请求
+                                                                                         – 中断响应，保护现场
+      – 数据通信设备，如双机或多机通信。
+                                                                                         – 中断服务，中断函数入口
+      – 定时时钟。
+                                                                                         – 中断返回
+      – 故障源，如掉电保护请求等。
+                                                                                      IRQ: interrupt request (中断请求)
+      – 为调试程序而设置的中断源。
+                                                                                      ISR: interrupt service routine (中断服务程序)
+      – 其他。。。
+
+
+  • 8051 早期只设置了5个中断源
+  • INT0/1, Timer0/1, RX/TX
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (6/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 interrupts (hardware)                                                      • Internal logic
+  • Hardware assignment
+
+
+
+
+                                                                                              Mode
+
+
+                                                                                  • Related SFR
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (7/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 interrupts (hardware)
+                                                                                                                 F8h-FFh    (F8h-FFh)
+                                                                                                                 F0h-F7H   B (F0h-F7H)
+                                                                                                                 E8h-EFh    (E8h-EFh)
+                                                                                                                 E0h-E7h ACC (E0h-E7h)
+                         TCON                      IE                  IP                                        D8h-DFh   (D8h-DFh)
+             低电平                                                                                                 D0h-D7h PSW (D0h-D7h)
+   IT0=0                                                           PX0                    自                      C8h-CFh    (C8h-CFh)
+                                                                            1                       高级中          C0h-C7h    (C0h-C7h)
+INT0                     IE0                                                              然         断请求          B8h-BFh  IP (B8h-BFh)
+                                                                            0             优                      B0h-B7h P3 (B0h-B7h)
+    IT0=1                                    EX0                                                                 A8h-AFh IE (A8h-AFh)
+                                                                                          先     矢
+             下降沿                                                   PT0
+                                                                            1             级     量
+                                                                                                                 A0h-A7h P2 (A0h-A7h)
+   T0                                                                                                            98h-9Fh SCON (98h-9Fh)   SBUF
+                         TF0                                                                    地                90h-97h  P1 (90h-97h)
+                                             ET0                            0                                    88h-8Fh TCON (88h-8Fh)   TMOD   TL0    TL1            TH0
+                                                                                                址                80h-87h  P0 (80h-87h)     SP    DPL    DPH
+    IT1=0                                                          PX1      1                       PC
+ INT1                     IE1
+        IT1=1                                                               0
+                                             EX1
+                                                                  PT1                     自         低级中          30h-7Fh
+                                                                            1
+        T1                TF1                                                             然         断请求
+                                                                                          优
+                                             ET1                            0
+                                                                                                矢             • ORG 0000H
+                                                                                          先
+       TX                                                         PS        1             级     量             • LJMP MAIN               ;跳过中断地址表，转主程序
+                          TI                                                                                            40h-47h 48h-4Fh    50h-57h 58h-5Fh 60h-67h
+                                                                                                地             • ORG 0003H
+                                                                                                                20h-2Fh
+                                                                                                                        00h-07h  08-0Fh    10h-17h 18h-1Fh 20h-27h
+       RX                                                                   0
+                          RI                  ES        EA                                      址                LJMP INT0F
+                                                                                                              • 10h-17h
+                                                                                                                18h-1Fh   R0
+                                                                                                                          R0
+                                                                                                                                   R1
+                                                                                                                                   R1
+                                                                                                                                        ;转INT0中断服务
+                                                                                                                                             R2
+                                                                                                                                             R2
+                                                                                                                                                     R3
+                                                                                                                                                     R3
+                                                                                                                                                             R4
+                                                                                                                                                             R4
+
+                        SCON                                                                                     ORG 000BH
+                                                                                                              • 08h-0Fh   R0       R1        R2      R3      R4
+                                            源允许         总允许        优先级
+                        中断标志
+                                                                                                    PC        • LJMP T0F
+                                                                                                                00h-07h   R0       R1
+                                                                                                                                        ;转T0中断服务
+                                                                                                                                             R2      R3      R4
+                                                                                         硬件查询
+                                                                                                              • ORG 0013H
+                                                                                                              • LJMP INT1F              ;转INT1中断服务
+   TCON(88H)：定时控制寄存器                                                                                          • ORG 001BH
+   SCON(98H)：串行口控制寄存器                                                                                         • LJMP T1F                ;转T1中断服务
+                                                                                                              • ORG 0023H
+   IE(A8H) ： 中断允许寄存器                                                                                          • LJMP SIOF               ;转串口中断服务
+                                                                                                              • ORG 0030H
+   IP(B8H) ： 中断优先级寄存器                                                                         (8052+)         • MAIN：MOV SP，#5FH ;主程序
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                                 (8/72)
+ Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+总使能
+
+
+
+    8051 interrupts (SFR)                                                                                                                     有疑问查
+                                                                                                                                             datasheet
+    • Related SFR                                                                      TCON Register
+                                                                                       • TR0/1 为定时器T0/T1 的运行控制位
+                                                                                         TR0 位由软件置位和复位。当GATE（TMOD 的D3 位）为0 时，
+                                                                                         TR0 为1 时允许T0 计数；TR0 为0时禁止 T0计数。
+                                                                                         当GATE为1时，仅当TR0等于 1且INT0（P3.2）输入为高电平时才
+                                                                                         允许T0 计数。TR0 为0 或 INT0 输入低时都禁止T0 计数。
+                                                                                       • TF0/1 为定时器T0/T1 的溢出标志位
+                                                                                         当T0 被允许计数以后，T0 从初值开始加1 计数，最高位产生溢出时
+                                                                                         置“1”TF0，并向CPU 请求中断，当CPU 响应时，由硬件清
+                                                                                         “0”TF0；TF0 也可以由程序查询或清“0”。
+                                                                                       • IE1/IE0 为外部中断请求标志
+                                                                                       • IT1/IT0 为外部中断触发方式选择位；0=电平触发，1=边沿触发
+
+
+                                                                                       IE Register
+                                                                                       • EA: 中断允许总控制位（总使能）
+                                                                                         EA=0, 禁止所有中断；EA=1, 开放所有中断。
+                                                                                       • EX0(EX1): 外部INT0、INT1中断允许位
+                                                                                       • EX0(EX1)=0, 禁止；EX0(EX1)＝1, 允许。
+                                                                                       • ET0(ET1): 定时/计数器T0、T1中断允许位
+                                                                                       • ET0(ET1)＝0, 禁止；ET0(ET1)＝1, 允许。
+                                                                                       • ES: 串行中断允许位
+                                                                                       • ES＝0，禁止； ES＝1，允许。
+
+ EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (9/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 interrupts (Priority)                                                                                                                 有疑问查
+                                                                                                                                            datasheet
+  • Interrupt priorities                                                              IP Register
+      – By default:                                                                   • PX0：外部中断0（INT0）优先级设定位
+        Int0 > T0 > Int1 > T1 > Serial port                                           • PT0：定时中断0（T0）优先级设定位
+      – Set the IP register to specify the priority                                   • PX1：外部中断1（INT1）优先级设定位
+        levels                                                                        • PT1：定时中断1（T1）优先级设定位
+                                                                                      • PS： 串行中断优先级；
+                                                                                      • 0：低优先级；1：高优先级
+
+                                                                                      ➢ 低优先级中断请求不能打断高优先级的中断服务；但
+                                                                                        高优先级中断请求可以打断低优先级的中断服务，从
+                                                                                        而实现中断嵌套。
+                                                                                      ➢ 如果一个中断请求已被响应，则同级的其他中断响应
+                                                                                        将被禁止。
+                                                                                      ➢ 如果同级的多个请求同时出现，则按CPU查询次序确
+                                                                                        定哪个中断请求被响应。其查询次序为：
+                                                                                        外部中断0 > 定时中断0 > 外部中断1 > 定时中断１
+                                                                                        > 串行中断。
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (10/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 interrupts (Programming)
+                                          “1”
+
+
+
+
+                                                                              ISR Example (A51):                           ISR Example (C):
+                                                                                                                          #include “reg51.h”
+                  Interrupt Vector Table for 8051                          ORG 00h ; Reset vector                         sbit P1_0=P1^0
+                                                                                                                          void timer0() interrupt 1
+                   Vector        Interrupt       Source                    SJMP Main                                      { TH0 = 0x15;
+                  (address)                                                ORG 03h ; INT0 vector                            TL0 = 0xA0;      //重置初值
+                                                                                                                            P1_0 = ! P1_0; //灯亮灭翻转
+                    0023h         RI / TI       Serial port                SJMP ISR0                                      }
+                    001Bh           TF1          Timer 1                   ORG 030h
+                                                                                                                          void main()
+                                                                      Main: MOV         ??? ; main function starts        { P1=0xff;       // P1口全置1
+                    0013h           IE1         External 1                                                                  TMOD=0x01;     //定时器工作mode
+                                                                           ……
+                    000Bh           TF0          Timer 0                                                                    TH0=0x15;
+                                                                           SJMP $ ; jumping to the current line             TL0=0xa0;
+                    0003h           IE0         External 0            ISR0: SETB        ??? ; ISR0 starts                   TR0=1;         //开启定时器
+                                                                                                                            EA=1;          //总中断使能
+                    0000h           RST          System                    ……                                               ET0=1;         //定时中断使能
+                                                  reset                    RETI ; interrupt return                          for( ; ; )
+                                                                                                                             {;}
+                                                                                                                          }
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (11/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 timer/counter (hardware)
+  • There are two 16 bits                                                             • Count for what?
+    timers/counters in 8051
+      – Timer 0
+
+                                                                                                     (P3.4)
+
+
+
+                                                                                                     (P3.2)
+      – Timer 1
+
+
+
+
+  • Related SFR
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (12/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 timer/counter (SFR locations)
+                        F8h-FFh    (F8h-FFh)
+                        F0h-F7H   B (F0h-F7H)
+                        E8h-EFh    (E8h-EFh)
+                        E0h-E7h ACC (E0h-E7h)
+                        D8h-DFh   (D8h-DFh)
+                        D0h-D7h PSW (D0h-D7h)
+                        C8h-CFh    (C8h-CFh)
+                        C0h-C7h    (C0h-C7h)                                                                                              128
+                        B8h-BFh  IP (B8h-BFh)                                                                                             SFR
+                        B0h-B7h  P3 (B0h-B7h)
+                        A8h-AFh  IE (A8h-AFh)
+                        A0h-A7h P2 (A0h-A7h)
+                        98h-9Fh SCON (98h-9Fh)    SBUF
+                        90h-97h  P1 (90h-97h)
+                        88h-8Fh TCON (88h-8Fh)   TMOD         TL0          TL1          TH0          TH1
+                        80h-87h  P0 (80h-87h)     SP          DPL          DPH                                               PCON
+
+
+
+
+                                                                                                                                           80
+                                                                                                                                         General
+                         30h-7Fh
+                                                                                                                                        purpose
+                                                                                                                                        registers
+
+
+
+
+                                    40h-47h      48h-4Fh     50h-57h      58h-5Fh     60h-67h      68h-6Fh      70h-77h      78h-7Fh     16 bit-
+                         20h-2Fh
+                                    00h-07h       08-0Fh     10h-17h      18h-1Fh     20h-27h       28-2Fh      30h-37h      38h-3Fh   addressable
+                         18h-1Fh      R0            R1         R2           R3          R4            R5          R6           R7        Bank 3
+                         10h-17h      R0            R1         R2           R3          R4            R5          R6           R7        Bank 2
+                         08h-0Fh      R0            R1         R2           R3          R4            R5          R6           R7        Bank 1
+                         00h-07h      R0            R1         R2           R3          R4            R5          R6           R7        Bank 0
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (13/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 timer/counter (working modes)
+                         T＝(2^13－计数初值x) *机器周期                                                                  T＝(2^16－计数初值x) *机器周期
+
+
+
+
+                                                         8 bits        5 bits                                                                8 bits         8 bits
+
+
+
+
+                                    T?M1       T?M0        Mode            Function
+                                      0           0          0          13-bit timer                   Timer启动的逻辑条件是：
+                                      0           1          1          16-bit timer                   (TRx=1) AND (GATE=0 OR INTx=1)
+                                       1          0          2       8-bit auto-reload
+                                                                                                       每次需要用软件重新装入初值。
+                                       1          1          3           Split mode
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                                (14/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Timer Mode 0 example
+  • 设单片机晶振频率fosc=6MHz，                                                                • TMOD寄存器初始化
+    使用定时器1 以方式0 产生周期为
+    500μs 的方波，并由 P1.0 输出。
+    以查询或中断方式完成。                                                                       • 定时器1，
+  • 解：                                                                                • M1M0 = 00H（方式0），
+  • 计算定时初值x                                                                             C/T = 0（定时），
+  • 欲产生500μs的方波,只需在P1.0端以                                                               GATE = 0（以软件启动定时器），
+    250μs为周期交替输出高低电平即可实                                                                 不用的位设定为 0，
+    现。为此,定时时间应为250μs。晶振为                                                                最后得TMOD应初始化00H。
+    6MHz,则1个机器周期为2μs。
+  • 则: (213－x）*2μs＝250μs                                                              • 用TCON寄存器的TR1位来
+  • x＝8067＝1111 1100 00011B                                                             启动（＝1）或停止（＝0）定时器。
+  • 即: TH1＝0FCH，TL1＝03H。
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (15/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Timer Mode 0 A51 example                                                            • 中断方式:
+  • 查询方式:                                                                             • ORG 8000H
+                                                                                      • MOV TMOD, #00H                      ;T1工作在方式0
+  • MOV TMOD,#00H                        ;T1工作在方式0
+                                                                                      • MOV TL1, #03H
+  • SETB TR1                             ;启动T1工作
+                                                                                      • MOV TH1, #0FCH                      ;置定时初值
+  • LOOP:
+                                                                                      • SETB EA                             ;开中断
+  • MOV TL1, #03H                                                                     • SETB ET1                            ;允许T1中断
+  • MOV TH1,#0FCH                        ;置定时初值
+  • WAIT:                                   查什么查                                      • LOOP: SETB TR1
+                                                                                      • WAIT: SJMP WAIT
+                                                                                                                            ;启动T1工作
+                                                                                                                            ;等待中断
+  • JNB TF1, WAIT
+  • CLR TF1
+                                        ;定时未到，循环等待
+                                        ;定时到，清TF1
+                                                                                      • AJMP LOOP
+                                                                                      • ORG 001BH
+                                                                                                                               中什么断
+                                                                                                                            ;T1中断入口
+  • CPL P1.0                            ;由P1.0输出，信号取反                                 • LJMP SUB                            ;跳至中断服务程序SUB
+  • SJMP LOOP                           ;循环输出方波                                       • ORG 8100H                           ;中断服务程序
+                                                                                      • SUB: CPL P1.0                       ;输出信号取反
+                          编程思想：                                                       • MOV TL1, #03H
+                        进入中断子程序后要                                                     • MOV TH1,#0FCH                       ;重置定时初值
+                        清除/重置标志位！
+                                                                                      • RETI                                ;中断返回
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (16/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Timer Mode 1 C51 example                                       #include <reg52.h>
+                                                                 #include <stdio.h>
+                                                                 /*------------------ Timer 0 Interrupt Service Routine.
+  • C51 program for a delay of 0.05 sec                          Set a breakpoint on 'overflow_count++'. ----------------*/
+                                                                 static unsigned long overflow_count = 0;
+    (50 000 machine cycles)                                      void timer0_ISR (void) interrupt 1
+                                                                 {
+                                                                     TR0 = 0;        /* Stop the Timer 0 */
+                                                                     TH0 = 60;      /* Reload the initial value */
+                                                                     TL0 = 176; /* Reload the initial value */
+                                                                    overflow_count++; /* Increment the overflow count */
+                                                                     TR0 = 1;       /* Restart the timer */
+                                                                 }
+                                                                 void main (void)
+                                                                 { /*---------- Set Timer0 for 16-bit timer mode. The timer
+                                                                 counts to 65535, overflows, and generates an interrupt. */
+                                                                     TMOD = (TMOD & 0xF0) | 0x01; /* Set T0 Mode */
+                                                                     TH0 = 60;            /* Load the initial value */
+                                                                     TL0 = 176;           /* Load the initial value */
+                                                                     ET0 = 1;             /* Enable Timer 0 Interrupts */
+                                                                     TR0 = 1;             /* Start Timer 0 Running */
+    1. Start the debugger.                                           EA = 1;              /* Global Interrupt Enable /
+                                                                     /*--------------------------------------
+    2. Set a breakpoint on the overflow_count++ line in the ISR.
+                                                                     Do Nothing. Actually, the timer 0
+    3. Run the program.                                              interrupt will occur every 65536 clocks.
+    Each time the interrupt routine is invoked, the debugger         --------------------------------------*/
+    stops running the program. Position the cursor over the          while (1);
+    overflow_count variable to view its current value.           }
+                                                                                       Program is modified from the example of Keil Co. (http://www.keil.com/download/docs/96.asp)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                                        (17/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 timer/counter (working modes)
+                         T＝ (2^8－计数初值x ) * 机器周期
+                            x = TL0（首次） 或者 TH0)                                                                T＝(2^8－计数初值x) * 机器周期
+
+
+
+
+                                      特别适合用作串行通信的波特率发生器
+                                    T?M1       T?M0        Mode            Function
+                                      0           0          0          13-bit timer
+                                      0           1          1          16-bit timer                    ※ 方式3是为了在使用串行口时，
+                                       1          0          2       8-bit auto-reload                  需要两个独立的计数器而特别提供的。
+                                       1          1          3           Split mode
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (18/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Mode 2 example
+  • 方式2应用举例                                                                           • TMOD寄存器初始化
+  • 设单片机晶振频率fosc=6 MHz，
+    使用T0以方式2 产生周期为200 μs
+    的方波，并由P1.0输出。                                                                     • 定时器0，
+                                                                                        M1M0 = 10H （方式2）,
+  • 以查询或中断方式完成。                                                                         C/T = 0（定时），
+  解：                                                                                    GATE = 0（以软件启动定时器），
+  • 计算计数初值x                                                                             不用的位设定为 0，
+  • 晶振为 6 MHz，                                                                          最后得TMOD应初始化为 02H。
+    则1个机器周期为2 μs 。
+  • (28－x)*2 = 100,
+                                                                                      • 用TCON寄存器的TR0位来
+  • x = 206 = CEH                                                                       启动（＝1）或停止（＝0）定时器
+  • 即TH0 = 0CEH,
+      TL0 = 0CEH.
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (19/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Mode 2 example
+  • 查询方式:                                                                             • 中断方式:
+  • MOV TMOD,#02H                        ;T0工作在方式2                                    • MOV TMOD, #02H;T0工作在方式2
+  • MOV TL0, #0CEH                                                                    • MOV TL0, #0CEH
+  • MOV TH0, #0CEH ;置定时初值                                                             • MOV TH0, #0CEH ;置计数初值
+  • SETB TR0        ;启动T0工作                                                           • SETB EA        ;开中断
+  • WAIT: JNB TF0,WAIT
+                                                                                      • SETB ET0       ;允许T0中断
+                                         ;定时未到, 循环等待
+                                                                                      • LOOP: SETB TR0 ;启动T0工作
+  • CLR TF0                              ;定时到，清TF0
+                                                                                      • WAIT: SJMP $    ;等待中断
+  • CPL P1.0                             ;由P1.0输出，信号取反
+                                                                                      • CLR TF0   ;计数溢出标志位TF0清0
+  • SJMP WAIT                            ;循环输出方波
+                                                                                      • AJMP LOOP
+                                                                                      • ORG 000BH      ;中断服务程序
+                                                                                      • CPL P1.0       ;由P1.0输出，信号取反
+                                                                                      • RETI           ;中断返回
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (20/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  HC-SR04 Ultrasonic Module Interfacing                                                                                          读懂后会编程吗？
+  • Ultrasonic transmitter, receiver, and control                                     • Steps of Programming
+    circuit on a single board                                                         • MCU needs to transmit at least 10 μs trigger
+  • Only 4 pins: Vcc, Gnd, Trig, and Echo.                                              pulse to the HC-SR04 Trig Pin.
+  • When a pulse of 10µsec or more is given to the                                    • Waits for the rising edge to be captured
+    Trig pin, 8 pulses of 40 kHz are generated.                                         occurring at the Echo pin
+  • After this, the Echo pin is made and remains high                                 • Then start Timer again wait for the falling edge
+    till it gets the echo signal of the transmitted                                     on the Echo pin.
+    pulses back.                                                                      • As soon as the falling edge is captured at the
+  • The time for which the echo pin remains high, i.e.                                  Echo pin, the MCU reads the count of the Timer,
+    the width of the Echo pin gives the time taken                                      which is μsed to calculate the distance.
+    for generated ultrasonic sound to travel towards
+    the object and return.
+  • μsing this time and the speed of sound in air, we
+    can find the distance of the object μsing a simple
+    formula for distance μsing speed and time.
+                                  𝑆𝑜𝑢𝑛𝑑𝑉𝑒𝑙𝑜𝑐𝑖𝑡𝑦 ∗𝑇𝑖𝑚𝑒
+                 𝐷𝑖𝑠𝑡𝑎𝑛𝑐𝑒 =               2
+  https://www.electronicwings.com/8051/ultrasonic-module-hc-sr04-interfacing-with-8051
+  https://item.szlcsc.com/21184790.html
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (21/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  HC-SR04 Ultrasonic Module Programming
+    #include<reg52.h> /<stdio.h> /<LCD_8_bit.h> /<math.h>                    void main()                                        查询法占用资源，
+    #define sound_velocity 34300                                             { float distance_measurement, value;               且容易出问题。
+    /* sound velocity in cm per second */                                      unsigned char distance_in_cm[10];
+    #define period_in_μs pow(10,-6)
+                                                                                                                                   怎么解决？
+                                                                                LCD_Init(); /* Initialize 16x2 LCD */
+    #define Clock_period 1.085*period_in_μs                                     LCD_String_xy(1,1,"Distance:");
+    /* period for clock cycle of 8051*/
+                                                                                init_timer(); /* Initialize Timer*/
+                                                                                 while(1) {
+    sbit Trigger_pin=P2^6;     /* Trigger pin */
+                                                                                     send_trigger_pulse(); /* send trigger pulse of 10μs */
+    sbit Echo_pin=P2^7;        /* Echo pin */
+                                                                                     while(!Echo_pin);      /* Waiting for Echo */
+    void Delay_μs()
+    { TL0=0xF5; TH0=0xFF; TR0=1;                                                     TR0 = 1;               /* Timer Starts */
+      while (TF0==0);                                                                while(Echo_pin && !TF0); /* Waiting for Echo goes LOW */
+      TR0=0; TF0=0;                                                                  TR0 = 0;               /* Stop the timer */
+    }                                                                                 /* calculate distance μsing timer */
+    void init_timer()                                                                value = Clock_period * sound_velocity;
+    { TMOD=0x01;         /*initialize Timer*/                                        distance_measurement = (TL0|(TH0<<8));
+      TF0=0; TR0 = 0;                                                                /* read timer register for time count */
+    }                                                                                 distance_measurement = (distance_measurement*value)/2.0;
+    void send_trigger_pulse()                                                        /* find distance(in cm) */;
+    { Trigger_pin= 1;    /* pull trigger pin HIGH */                                 LCD_String_xy(2,1,distance_in_cm);
+      Delay_μs();        /* provide 10μs Delay*/                                      LCD_String(" cm ");      /* show distance on 16x2 LCD */
+      Trigger_pin = 0;   /* pull trigger pin LOW*/                                   delay(100);
+    }                                                                            }
+                                                                             }
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (22/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Counter Example
+  • T0运行于对外计数方式，工作方式1                                                                 • 初始化程序
+    （即16位计数方式），要求外部引脚                                                                 • ASM版本：
+    出现5个脉冲后TF0置1。
+                                                                                          MOV TMOD, #05H ; 设置T0工作在方式1
+                                                                                          MOV TH0, #0FFH ; 初值送TH0
+  • 求计数初值Y并编写初始化程序。                                                                       MOV TL0, #0FBH ; 初值送TL0
+                                                                                          SETB TR0       ; 启动T0运行
+
+  • 解：
+  • 初值Y = X -计数值；                                                                     • C51版本：
+                                                                                          TMOD = 0x05;
+  • 即：Y=65536-5=65531=0FFFBH
+                                                                                          TH0 = 0xFF;
+                                                                                          TL0 = 0xFB;
+                                                                                          TR0 = 1;
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (23/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Gate utilization
+
+
+
+
+                                                                                      • C51 code
+  • Assembly
+                                                                                      sbit PulseIn = P3^2;                  // 输入脉冲信号
+  ORG 8000H
+                                                                                      unsigned short PulseCount = 0;        // 保存计数结果
+  START:    MOV TMOD, ＃09H               ; GATE=1，方式1、定时
+                                                                                      void main()
+            MOV TL0, #00H                ; T0 清零
+                                                                                      { TMOD = 9;
+            MOV TH0, #00H                ;
+                                                                                         TL0 = 0; TH0 = 0;
+  WAIT1:    JB P3.2, WAIT1               ; 等待0 INT 变低
+                                                                                          while(PulseIn);                   // 等待0 INT 变低
+            SETB TR0                     ; 启动定时
+                                                                                          TR0 = 1;                          // 启动定时
+  WAIT2： JNB P3.2, WAIT2                 ; 等待0 INT 变高，启动定时
+                                                                                          while(!PulseIn);                  // 等待INT0变高
+  WAIT3： JB P3.2, WAIT3                  ; 一旦0 INT 再变低
+                                                                                          while(PulseIn);                   // 等待INT0再变低
+            CLR TR0                      ; 停止计数
+                                                                                          TR0 = 0;                          // 停止定时
+            MOV R0, TL0                  ; 读取计数结果TL0
+                                                                                          PulseCount = TH0;                 // 读计数结果TH0
+            MOV R1, TH0                  ; 读取计数结果TH0
+                                                                                          PulseCount <<= 8;                 // 左移8位至高字节
+            SJMP $
+                                                                                          PulseCount |= TL0;           // 读TL0, 16 位计数值保存到变量 PulseCount
+                                                                                          while(1);
+                                                                                      }
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (24/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 中断、定时/计数 小结
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (25/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Summary
+  • Interrupt                                                                         • Timer/counter
+      – commonly μsed to implement computer                                              – Applications
+        multitasking, especially in real-time                                               • Timing & Counting pulses
+        computing
+                                                                                            • Compare and capture
+      – Hardware configuration                                                              • Baud rate generation (for UART)
+                                                                                            • PWM generation
+      – Interrupt priority
+                                                                                         – Internal configuration
+      – Software interrupt handler,
+        (interrupt service routine, ISR)                                                 – Different working modes
+
+      – Three related SFR:                                                               – How to program a timer/counter
+        IE, IP, and TCON (partially)                                                     – Six related SFR
+      – Different types of interrupt                                                       TCON, TMOD, TH0, TL0, TH1, TL1
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (26/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  思考
+  • 8051定时器/计数器有哪几种工作方式？ • 编程练习
+  • 响应中断后，怎样保护断点和保护现场？ • 设重复周期大于1ms的低频脉冲信号从
+  • 查询方式和中断方式的差异？          引脚T0（P3.4）输入。
+                           要求P3.4每发生一次负跳时，P1.0 输出
+  • 定时器/计数器作定时用时，其定时时间
+                           一个500 µs的同步负脉冲，
+    与哪些因素有关？作计数用时，对输入
+                           同时由P1.1 输出一个1 ms的同步正脉冲。
+    信号频率有何限制？
+                           设晶振频率为6 MHz。
+  • 一个按键能否编程实现多种状态？
+  • 如果结构框图变复杂，还能否看懂~
+
+  • 如果时钟频率增大和SFR变为16/32位，
+    系统会有什么变化？
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (27/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Example: Assembly code                                                        vs                          C51 code
+         ORG 2000H                                                                    sbit P34 = P3^4;
+  START: SETB P3.4     ;P3.4初值为1                                                      sbit P10 =P1^0;
+         SETB P1.0     ;P1.0初值为1                                                      sbit P11 =P1^1;
+         CLR P1.1      ;P1.1初值为0                                                      void main()
+  LOOP: MOV TMOD, #06H ;设T0方式2、外部计数                                                   {     P34 = 1;     P10 = 1;     P11 = 0;
+         MOV TH0，#0FFH ;计数值为01就溢出                                                           while(1)
+         MOV TL0，#0FFH                                                                      {   TMOD = 6;             // 设置T0方式2，外部计数
+         SETB TR0      ;启动计数器                                                                   TH0 = 0xFF; TL0 = 0xFF; // 设置初值
+  WT01: JBC TF0, PUL1  ;检测外部下跳变信号                                                               TR0 = 1;                   // 启动计数
+         AJMP WT01                                                                              while(!TF0);          // 检测外部脉冲到来，计数器溢出
+  PUL1: CLR TR0                                                                                 TF0 = 0;
+         MOV TMOD，#02H ;重置T0方式2、500µs定时                                                         TR0 = 0;
+         MOV TH0, #06H                                                                          TMOD = 2;             //重置T0方式2、500µs定时
+         MOV TL0, #06H                                                                          TH0 = 6;     TL0 = 6;
+         SETB P1.1     ;P1.1置1                                                                  P11 = 1;              // P1.1置1
+         CLR P1.0      ;P1.0清零                                                                  P10 = 0;              // P1.0 置0
+         SETB TR0      ;启动定时器0                                                                  TR0 = 1;
+  D5B1: JBC TF0, Y5B1  ;检测首次500µs                                                               while(!TF0);          //检测首次500µs
+         AJMP D5B1                                                                              TF0 = 0;
+  Y5B1: SETB P1.0      ;P1.0置1                                                                  P10 = 1;              // P1.0置1
+  D5B2: JBC TF0, Y5B2  ;第二次检测500µs                                                              while(!TF0);          //第二次检测500µs
+         AJMP D5B2                                                                              P11 = 0;              // P1.1清零
+  Y5B2: CLR P1.1       ;P1.1恢复为0                                                                TR0 = 0;              // 停止定时
+         CLR TR0                                                                          }
+         AJMP LOOP                                                                    }
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (28/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Q&A
+  1. 设单片机晶振频率fosc=12MHz，使用
+                                                                                      2. 启动定时器T0工作的指令是
+      定时器0以方式1产生周期为2ms的方波，
+      并由P1.0输出。以查询或中断方式完成。                                                               A. SETB TR0
+  • 解：计算定时初值x; 定时时间1 ms;
+                                                                                         B. CLR TR0
+    晶振12MHz，则1个机器周期为1 μs。
+  • 则: (216 - x）*1μs = 1000μs
+  • x = 64536 = 1F18H
+                                                                                      3. 利用定时器T0产生一个100Hz的方波，
+  • 即: TH0 = 01FH，
+        TL0 = 18H。                                                                         由P1.1输出，设具体振荡器频率为
+  • 定时器0，
+  • M1M0=00H（方式0），C/T=0（定时），                                                               12MHz
+    GATE＝0（以软件启动定时器），
+    最后得TMOD应初始化为 00H 。                                                                   t = ( 213/16/8-T0/1初值) ×机器周期
+  • 用TCON寄存器的TR1位来
+    启动（＝1）或停止（＝0）定时器。
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (29/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Q & A: 10 Hz square wave generation
+  • Generate a square wave of 10 Hz (100ms) on                                        #include <reg51.h>
+    PORT1.0 μsing Timer0 interrupt.                                                   sbit test = P1^0; /* set test pin0 of P1 */
+                                                                                      void Timer_init()
+  • μse Timer0 in mode1 with 11.0592 MHz oscillator
+    frequency.                                                                        { TMOD = 0x01; /* Timer0 mode1 */
+                                                                                         TH0 = 0x4C;     /* 50ms timer value */
+  • Count = (50×10^(-3))/(1.085×10^(-6) ) ≈ 46080                                        TL0 = 0x00;
+  • Value = (65535 - Count) +1 = 19456 = (4C00) Hex                                      TR0 = 1;        /* Start timer0 */
+  • TH0 = 0x4C & TL0 = 0x00                                                           }
+                                                                                      void Timer0_ISR() interrupt 1
+                                                                                         /* Timer0 interrupt service routine (ISR) */
+                                                                                      { test = ~test;    /* Toggle port pin */
+                                                                                          TH0 = 0x4C;    /* 50ms timer value */
+                                                                                          TL0 = 0x00;
+                                                                                      }
+                                                                                      int main (void)
+                                                                                      { EA = 1;          /* Enable global interrupt */
+                                                                                          ET0 = 1;       /* Enable timer0 interrupt */
+                                                                                          Timer_init();
+                                                                                          while(1);
+                                                                                      }
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (30/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Proteus 仿真 - 指示灯/数码管的中断控制
+  功能: 开机后D1灭灯，LED1黑屏，随后                                                               技能：
+   单击K1 → D1 开始1s闪烁；再次单击灭灯；
+   单击K2 → LED1 循环显示0～F字符。                                                             • I/O 输入输出
+  硬件电路要求：                                                                             • 中断
+  1、K1、K2分别接INT0（P3.2）和INT1（P3.3）引脚，                                                  • 定时
+    单击后应能产生下降沿脉冲；
+  2、D1接P0.4引脚，高电平驱动，经上拉电阻接电源；
+  3、共阴极数码管LED1接P2口，COM端接地。
+
+
+
+
+                                                                                                                请自行在
+                                                                                                        Proteus里实践
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (31/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Lecture #6: Communication
+  What you will learn:
+  a) The principle and some definitions
+     of serial communication
+  b) The working principle of serial UART
+  c) How to program the UART
+  d) The principle of I2C & SPI
+
+
+
+
+                                                             (Figures are from internet)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (32/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Transmission mode                                                                    Transmission Mode
+
+                                                                        Parallel                                         Serial
+
+
+
+
+                                                                              Transmission
+                             8位同时传送                                                           Parallel                                 Serial
+                                                      0
+                                                      1                       Characteristics
+                                                      1
+
+    接收
+                                                      0
+                                                                                                       Bytes in a single     Bytes transmitted in a
+                                                      0
+                                                                  发送          Transmission
+                                                                                                       character transmitted linear fashion, one bit
+                                                      1
+
+                                                                              Description
+                                                      1
+    设备                                                0
+                                                                  设备                                   simultaneously        a time
+                                  询问
+                                                                              Comparative
+                                                                                                       Faster                          Slowly
+                                  应答                                          Speed
+                                                                              Distance
+                                                                                                       Shorter                         Farther
+                                                                              Limitation
+                                                                                                Within a computer’s bus, Between two computers,
+    接收                                                            发送          Application       from a comp. to parallel also a comp. to
+                    D0                                    D7
+    设备                                                                                          devices                   peripherals
+                                                                  设备
+                               8位顺次传送                                                           Each bit travels down its All bits travel down a
+                                                                              Cable Description own wire, simultaneously single wire, one bit a
+                                                                                                with other bits.          time
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (33/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Transmission mode
+  • Parallel and serial communication                                                 • Examples on your
+                                                                                        desktop PC backboard
+
+
+
+
+                                                                                      • Inside your PC
+
+
+
+
+                                                                                                           (Figures are from internet)
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (34/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Transmission mode                                                                    Transmission Mode
+
+                                                                        Parallel                                         Serial
+
+
+                                                                                                  Asynchronous                         Synchronous
+                         异步 vs.同步 读写操作
+
+             同步通信
+             每一帧也有
+            同步字符和校验，
+            但按数据块传输
+
+
+             异步通信
+             每一帧信息都有
+            •   起始位、
+            •   数据位、
+            •   奇偶校验位、
+            •   停止位。
+                                                   Asynchronous                                            Synchronous
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (35/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (Universal Asynchronous Receiver-Transmitter)
+  • UART is a computer hardware device                                                • Asynchronous & Synchronous
+    for asynchronous serial
+    communication in which the data
+    format and transmission speeds
+    are configurable.
+  • Each UART contains a shift register,
+    which is the fundamental method of
+                                                                                      • Shift register
+    conversion between serial and
+    parallel forms.
+  • Transmission through a single wire,
+    less costly than parallel transmission
+    through multiple wires.
+
+
+                                      (Figures are from internet)
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (36/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (internal configuration)
+  • A full-duplex port
+      – being able to transmit and receive data
+        simultaneously
+
+
+
+
+  • Related SFR
+
+
+                                                                                                                             READ
+                                                                                                                             SBUF
+
+
+
+
+                                                                                                            (Figures are from V51 & internet)
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (37/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  SFR of original 8051
+                                        F8h-FFh    (F8h-FFh)         Data and stack pointers
+                                                                                                   CPU
+                                        F0h-F7H   B (F0h-F7H)
+                                        E8h-EFh    (E8h-EFh)
+                                        E0h-E7h ACC (E0h-E7h)
+
+      Red address:
+                                        D8h-DFh   (D8h-DFh)                  Interrupt control
+                                        D0h-D7h PSW (D0h-D7h)
+           bit addresses                C8h-CFh    (C8h-CFh)                            I/O ports
+                                        C0h-C7h    (C0h-C7h)                                                                                                128
+      Black address:                    B8h-BFh
+                                        B0h-B7h
+                                                 IP (B8h-BFh)
+                                                 P3 (B0h-B7h)
+                                                                                                 UART                                                       SFR
+
+           byte addresses               A8h-AFh  IE (A8h-AFh)
+                                                                                             Timers
+                                        A0h-A7h P2 (A0h-A7h)
+                                        98h-9Fh SCON (98h-9Fh)    SBUF
+                                        90h-97h  P1 (90h-97h)
+                                        88h-8Fh TCON (88h-8Fh)   TMOD         TL0          TL1           TH0        TH1
+                                        80h-87h  P0 (80h-87h)     SP          DPL          DPH                                               PCON
+                                                                                                                                             PCON
+
+
+
+
+                                                                                                                                                          80
+                                                                                                                                                        General
+                                        30h-7Fh
+                                                                                                                                                       purpose
+                                                                                                                                                       registers
+
+
+
+
+                                                    40h-47h      48h-4Fh    50h-57h      58h-5Fh      60h-67h      68h-6Fh      70h-77h     78h-7Fh     16 bit-
+                                        20h-2Fh
+                                                    00h-07h       08-0Fh    10h-17h      18h-1Fh      20h-27h       28-2Fh      30h-37h     38h-3Fh   addressable
+                                        18h-1Fh       R0            R1        R2           R3           R4            R5          R6          R7        Bank 3
+                                        10h-17h       R0            R1        R2           R3           R4            R5          R6          R7        Bank 2
+                                        08h-0Fh       R0            R1        R2           R3           R4            R5          R6          R7        Bank 1
+                                        00h-07h       R0            R1        R2           R3           R4            R5          R6          R7        Bank 0
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                                (38/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (data format and baud rate)
+  • 8051 UART has 4 operating modes
+    MODE SM0 SM1             DESCRIPTION                  BAUD RATE
+       0      0      0     8-bit Shift Register     1/12 the quartz frequency
+       1      0       1         8-bit UART         Determined by the timer 1
+
+                                                      1/32 the quartz freq.
+       2      1      0          9-bit UART
+                                                     (1/64 the quartz freq.)
+
+       3      1       1         9-bit UART         Determined by the timer 1
+
+                                                                                       • Baud rate
+  • Data format in mode 1
+                                                                                          – A number of sent/received bits per second.
+                                                                                          – Formula              𝟐𝑺𝑴𝑶𝑫         𝒇𝑶𝑪𝑪
+                                                                                                              𝑩𝒂𝒖𝒅𝑹𝒂𝒕𝒆 =                 ×
+                                                                                                                                  𝟑𝟐         𝟏𝟐 × 𝟐𝟓𝟓 − 𝑻𝑯𝟏
+                                                                                                             𝑺𝑴𝑶𝑫 =Baud Rate Doubler (in PCON)
+                                                                                                             𝑓𝑂𝐶𝐶 =Oscillator Rate
+                                                                                                             𝑇𝐻1 =Timer 1 Auto-reload value
+
+                                                                                       • 8051 Baud rate calculator
+                                                                                          – http://www.keil.com/c51/baudrate.asp
+                                                            (Figures are from V51)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (39/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (Common setup)
+  • 51常用波特率初值表                                                                                    一般波特率偏差在 4％ 左右都是可以的
+
+
+
+
+                                                                                                                          如何配置Baud Rate？
+                                                                                                                          主频越高，误码偏差
+                                                                                                                             越小？
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (40/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (parity check)                                                                    常见串口设置为115200-N-8-1
+  • Data format in mode 3                                                             • Parity check
+      – Put the parity bit in TB8/RB8                                                    – A parity bit, or check bit, is a bit added to
+                                                                                           a string of binary code to ensure that the
+                                                                                           total number of 1-bits in the string is even
+                                                                                           or odd. Parity bits are used as the
+                                                                                           simplest form of error detecting code.
+                                                                                         – There are two variants of parity bits:
+                                                                                           even parity bit and odd parity bit.
+
+
+
+
+                                                                                                                 (Figures are from V51)
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (41/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (electrical specs.)
+  • UART has only configured                                                          • RS-232 (serial port in PC)
+    data format and transmission speeds                                                  – first introduced in 1962 by the EIA
+  • The electric signaling levels and                                                      (Electronics Industry Association)
+    methods (such as differential                                                        – The standard defines
+    signaling, etc.) are handled by a                                                       •   electrical characteristics
+                                                                                            •   timing of signals
+    driver circuit external to the UART.                                                    •   meaning of signals
+  • Different electrical standards                                                          •   physical size and pinout of connectors
+
+      – RS-232，
+      – RS-485， etc
+
+                       RS-232 logic and voltage levels
+                       Data              Control
+                                                               Voltage
+                       circuits          circuits
+                       0 (space)         Asserted              +3 to +15 V
+                       1 (mark)          Deasserted            −15 to −3 V
+                                                                                                             (Figures are from internet)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (42/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 & RS-232 Serial Interface
+  • Interface standard
+  • 8051 serial communication has TTL voltage
+    level: 0V for logic 0 and 5V for logic 1.
+  • In computers and most of the old devices,
+    RS232 protocol with DB9 connector is used.
+    RS232 serial communication has different
+    voltage levels,
+    i.e. +3V to +25V for logic 0
+    and -3V to -25V for logic 1.
+  • We need to use voltage level converter
+    like MAX232 IC.
+  • Although there are 9 pins in DB9 connector,
+    we don’t need to use all the pins.
+    Only 2nd Tx (Transmit), 3rd Rx (Receive)
+    and 5th GND pin needs to be connected.
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (43/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  基本概念
+  1. 串口、COM口是指的物理接口形式(硬件)。                                                            • 记住，这种接口的协议只有两种：
+     而TTL、RS-232/-485是指的电平标准(电信号)。
+                                                                                        RS-232和RS-485。
+  2.接设备的时候，一般只接GND, RX, TX。不会接
+     Vcc或者+3.3V的电源线，避免与目标设备上的供                                                          不会是TTL电平的
+     电冲突。                                                                               (除非特殊应用)。
+  3.PL2303、CP2102、CH340等芯片是 USB 转 TTL
+     串口 的芯片，用USB来扩展串口 (TTL电平)。
+  4.MAX232芯片是 TTL电平 与 RS-232电平 的专用
+     双向转换芯片。
+  5.TTL标准是低电平为0，高电平为1 (+5V电平)。
+     RS-232标准是正电平为0，负电平为1 (±15V电
+     平)。
+  6.RS-485与RS-232类似，但采用差分信号负逻辑。
+  7.COM口即串行通讯端口，简称串口。这里区别于
+     USB的“通用串行总线”和硬盘的“SATA”。一
+     般常见到的是两种物理标准。D型9针插头和4针杜
+     邦头两种。
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (44/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Specifications of different Interfaces
+  SPECIFICATIONS                                        RS232                       RS423                      RS422                   RS485
+  Mode of Operation                                     SINGLE-ENDED                SINGLE-ENDED               DIFFERENTIAL            DIFFERENTIAL
+
+  Total Number of Drivers and Receivers on One Line     1 DRIVER                    1 DRIVER                   1 DRIVER                32 DRIVER
+  (One driver active at a time for RS485 networks)      1 RECVR                     10 RECVR                   10 RECVR                32 RECVR
+
+  Maximum Cable Length                                  50 FT. (~15 m)              4000 FT.                   4000 FT.                4000 FT. (~1220 m)
+  Maximum Data Rate
+                                                        20kb/s                      100kb/s                    10Mb/s-100Kb/s          10Mb/s-100Kb/s
+  (40ft. - 4000ft. for RS422/RS485)
+  Maximum Driver Output Voltage                         +/-25V                      +/-6V                      -0.25V to +6V           -7V to +12V
+  Driver Output Signal
+                             Loaded                     +/-5V to +/-15V             +/-3.6V                    +/-2.0V                 +/-1.5V
+  Level (Loaded Min.)
+
+  Driver Output Signal
+                             Unloaded                   +/-25V                      +/-6V                      +/-6V                   +/-6V
+  Level (Unloaded Max)
+
+  Driver Load Impedance (Ohms)                          3k to 7k                    >=450                      100                     54
+
+  Max. Driver Current in
+                             Power On                   N/A                         N/A                        N/A                     +/-100uA
+  High Z State
+
+  Max. Driver Current in
+                             Power Off                  +/-6mA @ +/-2v              +/-100uA                   +/-100uA                +/-100uA
+  High Z State
+  Slew Rate (Max.)                                      30V/uS                      Adjustable                 N/A                     N/A
+  Receiver Input Voltage Range                          +/-15V                      +/-12V                     -10V to +10V            -7V to +12V
+  Receiver Input Sensitivity                            +/-3V                       +/-200mV                   +/-200mV                +/-200mV
+  Receiver Input Resistance (Ohms),
+                                                        3k to 7k                    4k min.                    4k min.                 >=12k
+  (1 Standard Load for RS485)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (45/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (programming for data transmit)
+                                                                                      ➢ Programming steps
+                                                                                      1. Configure timer 1 in auto reload mode.
+  • Normally mode-1 (SM0 =0, SM1=1) is used
+    with 8 data bits, 1 start bit and 1 stop bit.                                     2.Load TH1 with value as per required baud rate e.g.
+  • Bit 5 - SM2: mode 2 & 3.                                                            for 9600 load 0xFD. (-3 in decimal)
+  • Bit 4 - REN: Receive Enable (1 = enable, 0 = disable)                             3.Load SCON with serial mode and control bits.
+  • Bit 3 - TB8: 9th Transmit Bit in mode 2 & 3 (9-bit mode)                            e.g. for mode 1 and enable reception, load 0x50.
+  • Bit 2 - RB8: 9th Receive Bit in mode 2 & 3 (9-bit mode)
+  • Bit 1 - TI: Transmit Interrupt Flag                                               4.Start timer 1 by setting TR1 to 1.
+  • Bit 0 – RI: Receive Interrupt Flag                                                5.Load transmitting data in SBUF register.
+    MODE SM0       SM1      DESCRIPTION                 BAUD RATE
+                                                                                      6.Wait until loaded data is completely transmitted
+       0      0      0    8-bit Shift Register   1/12 the quartz frequency
+                                                                                        by polling TI flag.
+       1      0      1        8-bit UART         Determined by the timer 1
+
+                                                  1/32 the quartz frequency           7.When TI flag is set, clear it and
+       2      1      0        9-bit UART
+                                                 (1/64 the quartz frequency)            repeat from step 5 to transmit more data.
+       3      1      1        9-bit UART         Determined by the timer 1
+
+
+                                                                                                                     A piece of cake ?
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (46/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (programming for data transmit)
+  #include <reg51.h>                                                                  void String(char *str)
+  void UART_Init()                                                                    {   int i;
+  {      TMOD = 0x20;                                                                     for(i=0; str[i]!=0; i++)
+               /* Timer 1, 8-bit auto reload mode */                                               /* Send each char of string till the NULL */
+        TH1 = 0xFD;                                                                       {
+               /* Load value for 9600 baud rate */                                            Transmit_data(str[i]);
+        SCON = 0x50;                                                                               /* Call transmit data function */
+               /* Mode 1, reception enable */                                             }
+        TR1 = 1;            /* Start timer 1 */                                       }
+                                                                                                                            查询法
+  }
+                                                                                                                           有什么问题？
+  void Transmit_data(char tx_data)                                                    void main()
+  {      SBUF = tx_data;                                                              {
+               /* Load char in SBUF register */                                               UART_Init();          /* UART initialize function */
+        while (TI==0);                                                                        String("test"); /* Transmit 'test’ */
+               /* Wait until stop bit transmit */                                             while(1);
+                                                                    查询法
+        TI = 0;             /* Clear TI flag */                                       }
+  }
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (47/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (programming for serial interrupt)
+  • Set timer1 in auto reload mode.
+                                                                                                   TCON                  IE              IP
+                                                                                  IT0=0                                              PX0                     自
+                                                                                                                                              1                        高级中
+  • Load TH1 with value as per required baud rate e.g.INT0                                         IE0
+                                                                                                                   EX0
+                                                                                                                                              0
+                                                                                                                                                             然
+                                                                                                                                                             优
+                                                                                                                                                                       断请求
+
+    for 9600 baud rate load 0xFD.
+                                                          IT0=1
+                                                                                                                                                             先     矢
+                                                                                                                                     PT0
+                                                                                 T0                                                           1              级     量
+                                                                                                   TF0
+  • Load SCON with serial mode and control bits.                                                                                              0                    地
+                                                                                                                   ET0                                             址
+
+    e.g. for mode 1 and enable reception load 0x50.
+                                                                                   IT1=0                                            PX1       1                        PC
+                                                                                INT1                IE1
+                                                                                                                                              0
+  • Start timer1 by setting TR1 bit to 1.
+                                                                                      IT1=1                        EX1
+                                                                                                                                    PT1                     自          低级中
+                                                                                                                                              1
+                                                                                                                                                            然          断请求
+  • Enable Global and serial interrupt bit,
+                                                                                      T1            TF1
+                                                                                                                   ET1                        0             优
+                                                                                                                                                            先    矢
+    i.e. EA = 1 and ES = 1.                                                        TX
+                                                                                                    TI
+                                                                                                                                    PS        1             级    量
+                                                                                                                                                                 地
+                                                                                   RX
+  • Now whenever data is received or transmitted,                                                   RI              ES        EA              0                  址
+
+
+    interrupt flag will set and controller will jump to
+                                                                                                  SCON             源允许        总允许    优先级
+                                                                                                                                                                       PC
+                                                                                                  中断标志                                                      硬件查询
+    serial ISR.
+  • TI/RI flag must be cleared by software in ISR.
+  • Note: For transmission and reception interrupt,
+    same interrupt vector address is assigned, so
+    when controller jumps to the ISR, we have to
+    check whether it is Tx interrupt or Rx interrupt
+    by TI and RI bits status.
+                                                                                                                                                  (8052+)
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                                    (48/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (programming for serial interrupt)
+  #include "reg_c51.h"                                                                #include <reg51.h>
+  char uart_data;                                       Version 1                     void Ext_int_Init()                                           Version 2
+  void main (void)                                                                    { EA = 1;             /* Enable global interrupt */
+  { SCON = 0x50;                /* UART in Mode 1 (8 bit), REN=1 */                      ES = 1;            /* Enable serial interrupt */
+     TMOD = TMOD | 0x20 ;          /* Timer1 in Mode 2 */                             }
+     TH1 = 0xFD;                   /* 9600 Bauds at 11.059MHz */                      void UART_Init()
+     TL1 = 0xFD;                   /* 9600 Bauds at 11.059MHz */                      { TMOD = 0x20;
+     ES = 1;                       /* Enable serial interrupt */                         TH1 = 0xFD;
+                                                                                         SCON = 0x50;
+     EA = 1;                       /* Enable global interrupt */
+                                                                                         TR1 = 1;
+     TR1 = 1;                      /* Timer1 run */
+                                                                                      }
+     while(1);                     /* endless */
+                                                                                      void Serial_ISR() interrupt 4
+  }
+                                                                                      { P1 = SBUF;          /* Give received data on P1 */
+  void serial_IT(void) interrupt 4
+                                                                                         RI = 0;            /* Clear RI flag */
+  { if (RI == 1)                                                                      }
+       { RI = 0;                   /* clear rx flag */                                void main()
+          uart_data = SBUF;        /* Read data */                                    { P1 = 0x00;          /* Make P1 output */
+          SBUF = uart_data;                                                              Ext_int_Init();
+     else TI = 0;                  /* if emission occur */                               UART_Init();
+                                   /* clear tx flag for next*/                           while(1);
+  }                                                                                   }
+              serial interrupt, echo received data
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (49/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART (programming)
+  • 甲机发送                                                                              • 乙机接收
+  • 串行口工作在方式1，                                                                        • 与甲机发送相呼应，接收器把接收到的
+    波特率为1200；fosc=11.0592MHz                                                            32个字节数据存放在内部RAM的
+  • T1作为波特率发生器，工作方式2；                                                                   20H ~3FH中，波特率与晶振频率同上。
+    查得时间常数为E8H。                                                                       • 若奇校验出错，则置进位位1。
+
+  • 甲机将内部RAM单元20H～3FH的
+    32个字节的ASCII码数据，在最高位上
+    加奇校验位后，由串口TXD发送给乙机；
+    即采用8位异步通信。
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (50/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Assembly Example
+  甲机发送                                                                                 乙机接收
+  START:MOV TMOD,#20H ;T1为方式2                                                          START: MOV TMOD, #20H       ;T1方式2
+        MOV TL1,#0E8H    ;时间常数低8位                                                             MOV TL1, #OE8H
+        MOV TH1,#0E8H    ;                                                                    MOV TH1, #OE8H
+        SETB TR1        ;启动T1工作                                                               SETB TR1
+        MOV SCON,#01000000B ;串行口方式1                                                           MOV R0, #20H
+        MOV R0,#20H     ;数据首地址                                                                MOV R7, #32
+        MOV R7,#32      ;32字节数据 (dec not hex)                                          LOOP: MOV SCON, #01010000B ;串行方式1, 能接收
+  LOOP: MOV A, @R0      ;取数据                                                           DONE: JNB RI,DONE    ;等待接收一帧
+        MOV C, P        ;置奇校验位                                                                CLR RI        ;清RI, 再接收
+        CPL C                                                                                 MOV A,SBUF    ;取数据
+        MOV ACC.7, C                                                                          JNB P, ERROR  ;校验错, 转出错处理
+        MOV SBUF, A     ;启动发送                                                                 ANL A, #7FH   ;去掉奇校验位
+  DONE: JNB TI, DONE    ;等待发完一帧                                                               MOV @R0,A     ;奇校验, 存数据
+        CLR TI          ;清TI,允许再发送                                                            INC R0        ;指向下一数据
+        INC R0         ;指向下一数据                                                                DJNZ R7, LOOP ;数据块, 未接收完, 循环
+        DJNZ R7, LOOP  ;未送完,送下一个数                                                             AJMP START    ;循环接收
+        AJMP START     ;循环发送                                                           ERROR: …             ;出错处理
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (51/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  C51 Example                                                                          //两个单片机通讯，使用中断法
+                                                                                       #include <reg51.h>
+                                                                                       #define uchar unsigned char
+                                                                                       #define uint unsigned int
+                                                                                       #define key_port P1
+                                                                                       #define dis_port P2
+                                                                                       void main (void)
+                       Check Proteus Example                                           {
+                                                                                          uchar key_in=0xff;
+                                                                                          SCON=0x50;           //MODER1,REN=1;
+                                                                                          TMOD=0x20;           //TIMER1 MODER2;
+                                                                                          TH1=0xf3; TL1=0xf3;             //bode=2400
+                                                                                          ET1=1; TR1=1;
+                                                                                          EA=1; ES=1;
+                                                                                          while(1)
+                                                                                          {        if (key_in != key_port)
+                                                                                                   {           key_in = key_port;
+                                                                                                               SBUF=key_in;
+                                                                                                   }
+                                                                                          }
+                                                                                       }
+                                                                                       void get_disp (void) interrupt 4 using 0
+                                                                                       {
+                                                                                          if (RI)             //如果是串口输入引起中断
+                                                                                          {       dis_port = SBUF;
+                                                                                                  RI=0;
+                                                                                          }
+                                                                                          else TI=0;          //否则就是串口输出引起的中断
+                                                                                       }
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (52/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  WiFi Module 无线模块
+  • ESP8266 comes with capabilities of
+    2.4 GHz Wi-Fi (802.11 b/g/n,
+    WPA/WPA2),
+  • I² C & SPI protocol & 10-bit ADC
+  • I² S interfaces with DMA (Direct
+    Memory Access) , UART, and PWM.
+  • To communicate with the ESP8266
+    WiFi module, microcontroller needs
+    to use set of AT commands.
+                                                   其他无线模块/SoC
+  • Microcontroller communicates with              • nRF2401/nRF24E1 (8051 compatible)
+    ESP8266 WiFi module using UART                 • nRF51/52 (BT & Cortex)
+    having specified Baud rate.                    • STM32L/STM32WB (SoC)
+  • Please refer online resource for               • TLSR8359 / SX1281 LoRa
+    Interfacing          http://news.eeworld.com.cn/mcu/ic477280.html
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (53/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Programming with ESP8266
+  #include                                         //发送字符                                            void main()
+  #include "intrins.h"                             void send(u8 value)                               {
+  sbit LED1=P2^0;                                  {                                                      Init();
+  typedef unsigned int u16;                             ES=0;      //关闭串口中断                               wifi_init();
+  typedef unsigned char u8;                             TI=0;      //清发送完毕中断请求标志位                         while(1)
+  u8 receive[2];                                        SBUF=value;           //发送                        {
+  u8 sign=0;                                            while(!TI);           //等待发送完毕                          wifi_data();
+                                                        TI=0;      //清发送完毕中断请求标志位                         }
+  void delay1s(void)     //误差 0us                       ES=1;      //允许串口中断                          }
+  {                                                }
+     u8 a,b,c;                                     //单片机向模块发送AT指令 （需要查阅 Manual）                      //中断程序，此程序只把+IPD,x,x:后的有用数据存进receive数组里
+     for(c=46;c>0;c--)                             void wifi_init()                                  void ZD() interrupt 4
+       for(b=152;b>0;b--)                          { u8 j=0;                                         {
+          for(a=70;a>0;a--);                         u8a[]="AT+CIPMUX=1rn"; //重新配置的指令                     if(RI)
+     _nop_(); //if Keil,require use intrins.h        u8b[]="AT+CIPSERVER=1,6666rn";                       {
+  }                                                  while(a[j]!='')                                            RI=0;
+                                                     {     send(a[j]);                                          if(sign==1)
+  //初始化串口                                                  j++;                                                 {
+  void Init()                                        }                                                                receive[0]=SBUF;
+  {                                                     j=0;                //清零准备发第二条指令                              sign=0;             //保存receive[0]的数据
+       SCON = 0x50;     //串口模式1，允许接收                    delay1s();          //延时一下                              }
+       TMOD = 0x20;     //T1工作模式2，自动重装               while(b[j]!='')                                            if(SBUF==':')     sign=1;
+       PCON = 0x80;     //波特率倍增                      {                                                    }
+       REN = 1;                                            send(b[j]);                               }
+                            //根据实际选择                       j++;
+  // TH1 = 0xfa;         //波特率9600(11.0592)          }
+     TH1 = 0xf3;        //波特率4800(12.0000)              delay1s();
+  // TH1 = 0xf4;         //波特率4800(11.0592)        }
+     TL1 = TH1;
+     RI=0;
+                                                   void wifi_data()
+                                                   {                                                   MCU
+     EA = 1;                                            if(receive[0]=='A') LED1=0; //亮
+     ES = 0;                                            if(receive[0]=='B') LED1=1; //灭
+     TR1 = 1;                                      }
+  }
+                       http://news.eeworld.com.cn/mcu/ic477280.html
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (54/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  HC-05/06 Bluetooth Module
+  • HC-05/06 is a Bluetooth device used for                                           • Enable / Key: This pin is used to toggle
+    wireless communication with serial UART                                             between Data Mode (set low) and AT
+    interface.                                                                          command mode (set high).
+  • data mode and command mode.                                                         By default it is in Data mode.
+                                                                                      • Range: <100m
+  • The data mode is used for
+    data transfer between devices                                                     • Data Mode Baud Rate: 9600, 8, N, 1
+  • The command mode is used for changing                                             • Command Mode Rate: 38400, 8, N, 1
+    the settings of the Bluetooth module.
+  • As HC-05 module has 3.3 V level for RX/TX
+    and MCU can detect 3.3 V level, so, no need
+    to shift transmit level of HC-05 module. But
+    we need to shift the transmit voltage level
+    from MCU to RX of HC-05 module.
+
+
+  https://www.electronicwings.com/8051/hc-05-bluetooth-module-interfacing-with-8051
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (55/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Example code
+                                             如果是接收多条
+                                             指令， 想用APP
+  #include "UART_H_file.h"               /* 通过蓝牙或者wifi
+                                            Include UART lib*/
+  sbit LED=P1^0;                            控制，如何编程？
+  void main()
+  { char Data_in;
+     UART_Init();      /* Initialize UART */
+     P1 = 0;           /* Clear port initially */
+     LED = 0;          /* Initially LED turn OFF */
+     while(1)
+       { Data_in = UART_RxChar();                                     void UART_Init()                                   void UART_TxChar(char Data)
+         if(Data_in == '1’)                                           { TMOD = 0x20;                                     { SBUF = Data;
+           { LED = 1; /* Turn ON LED */                                  TH1 = 0xFD;                                        while (TI==0);
+              UART_SendString("LED_ON");                                 SCON = 0x50;                                       TI = 0;
+         else if(Data_in == '2’)                                         TR1 = 1;                                        }
+                                                                      }                                                  char UART_RxChar()
+           { LED = 0;    /* Turn OFF LED */
+                                                                      void UART_SendString(char *str)                    { char dat;
+              UART_SendString("LED_OFF");
+                                                                      { int i;                                              while (RI==0);
+           }
+         else UART_SendString("Select options");
+                                                                          for(i=0;str[i]!=0;i++)                            RI = 0;
+                                                                         { UART_TxChar(str[i]);                             dat = SBUF;
+      }
+                                                                         }                                                  return(dat);
+  }
+                                                                      }                                                  }
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (56/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Communication Mode
+    • Parallel vs Serial                                       不同的
+                                                              分类方法
+    • Syn. vs Asyn.
+    • According to data trans. direction & time
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (57/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  SPI and I2C serial & Synchronous Communication
+  • The purpose is to SPI                                                             • I2C
+      – 4 pins                                                                           – 2 pins
+      – Simple hardware configuration                                                    – Slower 100Kbps / 400Kbps / 1Mbps
+        & high speed 5M /10M /20Mbps                                                       / 3.4Mbps / unidirectional 5Mbps
+        or faster (up to 200Mbps)                                                        – Half-duplex
+      – Full-duplex                                                                      – Software defined address
+      – Hardware slave enable                                                            – Bidirectional acknowledgement
+      – No hardware slave                                                                – Open drain drive
+        acknowledgment
+      – Push-pull drivers
+
+
+                                                                    Eliminate the
+                                                                    connecting pins !
+
+
+                                                                  (Figures are from internet)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (58/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Serial Communication Comparison
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (59/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  I2C interface bus
+  • I² C (Inter-Integrated Circuit),                                                  • I2C series bus connection
+    pronounced I-squared-C, is a                                                         – Multiple devices/ICs are connected on the
+    multi-master, multi-slave,                                                             bus for mutual communication
+    packet switched, single-ended,                                                       – Save a lot of I/Os
+                                                                                                                                            Why 7 bit ?
+    serial computer bus                                                               • Device addressing
+    invented by Philips Semiconductor                                                    – Usually 7 bits for addressing,
+                                                                                           i.e., up to 128 devices
+    (now NXP Semiconductors).
+  • Bidirectional Data Transfer
+  • Half duplex & Synchronous bus
+  • Typically used for attaching lower-speed
+    peripheral ICs to processors
+    and microcontrollers in short-distance,
+    intra-board communication.                                                                                   (Figures are from internet)
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (60/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Typical I2C protocol or operation
+  • Start & stop sequences                                                            • Data sequence 在SCL为高电平时，读数据有效
+                                                                                                                        在SCL为低电平时，写数据有效
+
+
+
+
+  • Data format
+                                      每个字节必须为8位，首先传输的时字节最高位（MSB）
+
+
+
+
+     发送起始信号后，紧接着的一个字节其前7位是从设备地址，最后一位表示数据传输方向                                                                                        (Figures are from internet)
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (61/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Software I2C
+  #include <reg51.h>                void I2C_Restart()              unsigned char I2C_Send (unsigned char Data)               unsigned char I2C_Read ()
+  #include <stdio.h>               {                                {                                                         {
+  #define SDA P0_0                   SDA = 1; delay();                unsigned char i, ack_bit;                                  unsigned char i, Data=0;
+  #define SCL P0_1                   SCL = 1; delay();
+                                                                      for (i = 0; i < 8; i++) {                                  for (i = 0; i < 8; i++) {
+                                     SDA = 0; delay();
+  void I2C_Init()                    SCL = 0; delay();                  if ((Data & 0x80) == 0)                                    SCL = 1; delay();
+  {                                }                                        SDA = 0;                                                   //高电平读有效
+    SDA = 1; delay();                                                   else SDA = 1; //获取发送位数据                                    if(SDA)
+    SCL = 1; delay();              void I2C_Ack()                       delay();                                                      Data |= 1;
+  }                                {
+                                                                        SCL = 1; delay();                                             //dat来接受SDA数据
+                                     SDA = 0; delay();
+  void I2C_Start()                   SCL = 1; delay();                       //发送数据时SCL保持高电平                                          //可以不需要if(SDA)
+  {                                  SCL = 0; delay();                  SCL = 0; delay();                                          if(i<7)
+    SDA = 1; delay();                SDA = 1; delay();                       //再拉低SCL，完成一个位周期                                         Data <<= 1;
+    SCL = 1; delay();              }                                    Data <<= 1; } // 左移1位                                      delay();
+    SDA = 0; delay();                                                 SDA = 1; delay();                                            SCL = 0; delay();
+  }                                void I2C_Nak()
+                                                                      SCL = 1; delay();                                          }
+                                   {
+   void I2C_Stop()                   SDA = 1; delay();                ack_bit = SDA;                                            return Data;
+  {                                  SCL = 1; delay();                SCL = 0; delay();                                       }
+    SDA = 0; delay();                SCL = 0; delay();                return ack_bit;
+    SCL = 1; delay();                SDA = 1; delay();              }
+    SDA = 1; delay();              }
+  }
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (62/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  SPI interface bus
+  • The Serial Peripheral Interface
+    bus (SPI) is a synchronous serial
+    communication interface
+    specification used for short distance
+    communication, primarily
+    in embedded systems.
+  • The SPI bus logic signals:
+      – SCLK: Serial Clock (output from master).
+      – MOSI: Master Output Slave Input,
+        (data output from master).
+      – MISO: Master Input Slave Output,
+         (data output from slave).
+      – SS: Slave Select (often active low,
+        output from master)
+
+                              (Figures are from internet)
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (63/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  1-Wire Sensor Interfacing
+  • 1-Wire单总线是美国DALLAS公司推出的
+    外围串行扩展总线技术，与SPI、I2C串行
+    通信方式不同，它采用单根信号线，既传输
+    时钟又传输数据，而且数据传输是双向的。
+  • DS18B20 / DHT11 is a single wire digital
+      humidity (20 to 90% RH) and temperature
+      sensor(up to 50ºC), which provides humidity
+      and temp. values serially.
+  • 4 pins: 2 pins for supply, 1 not used and 1 for
+    data (some model 3 pins)
+  • The data pin is the only pin used for
+    communication. Pulses of different TON and
+    TOFF are decoded as logic 1 or logic 0 or
+    start pulse or end of the frame.
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (64/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Programming with DHT11
+                                       20~40μs                   80μs             26~28μs                      70μs
+
+
+
+
+                             >18ms                   80μs                  ~50μs              ~50μs
+
+
+
+
+             • Programming Steps                                                      • DHT11 datasheet
+                                                                                                                                      DHT11 一线协
+             1. Define a pin to interface DHT11 sensor.                                                                               议是什么通信
+             2. Send the start pulse to the DHT11 sensor                                                                                方式？
+                by making low to high on data pin.
+             3. Receive the response pulse from the
+                DHT11 sensor.
+             4. After receiving the response, receive
+                40-bit data serially from DHT11 sensor.                                • Code Example:
+             5. Display this received data on LCD16x2 or                               • https://www.electronicwings.com/8051
+                do other processing.                                                     /dht11-sensor-interfacing-with-8051
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (65/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Programming with DHT11                                                      int Receive_data()
+                                                                              {     int q, c=0;
+                                                                                    for (q=0; q<8; q++)
+                                                                                                                      /* Receive data every eight bit*/
+
+
+                                                                                    { while(DHT11==0);                /* check received bit 0 or 1 */
+                                                                                       timer_delay30us();
+  #include<reg51.h>                                                                    if(DHT11 == 1)                 /* If high pulse is greater than 30μs */
+  #include<stdio.h>                                                                         c = (c<<1)|(0x01);        /* Then its logic HIGH */
+  #include<string.h>                                                                   else                           /* otherwise its logic LOW */
+  sbit DHT11=P2^1;       /* Connect DHT11 output Pin to P2.1 Pin */                         c = (c<<1);
+  int I_RH,D_RH,I_Temp,D_Temp,CheckSum;                                                while(DHT11==1);
+                                                                                    }
+  void timer_delay20ms()       /* Timer0 delay function */
+                                                                                    return c;
+  { TMOD = 0x01; TH0 = 0xB8; /* Load higher 8-bit in TH0 */
+                                                                              }
+    TL0 = 0x0C;                /* Load lower 8-bit in TL0 */
+                                                                              void main()
+    TR0 = 1;                   /* Start timer0 */
+                                                                              {     unsigned char dat[20];
+    while(TF0 == 0);           /* Wait until timer0 flag set */
+                                                                                    LCD_Init();                       /* initialize LCD */
+    TR0 = 0;                   /* Stop timer0 */
+                                                                                    while(1)
+    TF0 = 0;                   /* Clear timer0 flag */ }
+                                                                                    { Request();                      /* send start pulse */
+  void timer_delay30us()       /* Timer0 delay function */                            Response();                     /* receive response */
+  { TMOD = 0x01;               /* Timer0 mode1 (16-bit timer mode) */                 I_RH=Receive_data();            /* store first eight bit in I_RH */
+    TH0 = 0xFF;                /* Load higher 8-bit in TH0 */                         D_RH=Receive_data();            /* store next eight bit in D_RH */
+    TL0 = 0xF1;                /* Load lower 8-bit in TL0 */                          I_Temp=Receive_data();          /* store next eight bit in I_Temp */
+    TR0 = 1;                   /* Start timer0 */                                     D_Temp=Receive_data();          /* store next eight bit in D_Temp */
+    while(TF0 == 0);           /* Wait until timer0 flag set */                       CheckSum=Receive_data();        /* store next eight bit in CheckSum */
+    TR0 = 0;                   /* Stop timer0 */                                      if ((I_RH + D_RH + I_Temp + D_Temp) != CheckSum)
+    TF0 = 0;                   /* Clear timer0 flag */ }                                    { LCD_String_xy(0,0,"Error"); }          /* in LCD16x2 header file */
+  void Request()               /* Microcontroller send request */                     else  { sprintf(dat,"Hum  = %d.%d",I_RH,D_RH);
+  { DHT11 = 0;                 /* set to low pin */                                            LCD_String_xy(0,0,dat);
+    timer_delay20ms();         /* wait for 20ms */                                            sprintf(dat,"Tem = %d.%d",I_Temp,D_Temp);
+    DHT11 = 1;                 /* set to high pin */     }                                     LCD_String_xy(1,0,dat); LCD_Char(0xDF); LCD_String("C");
+                                                                                              memset(dat,0,20);
+  void Response()              /* Receive response from DHT11 */                              sprintf(dat,"%d ",CheckSum); LCD_String_xy(1,13,dat); }
+  { while(DHT11==1); while(DHT11==0); while(DHT11==1);                                delay(100); }
+  }                                                                           }
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                           (66/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 I/O (wired logic)                                                                                                       P0
+  • Yet, in general, you cannot directly                                              • Three important implications of this
+    connect two push-pull outputs                                                       open-drain bus configuration:
+    because current will flow freely from                                                – The signals always default to logic high.
+    VDD to ground if one is logic high and                                               – Any device on the bus can safely drive the
+    the other is logic low                                                                 signals to logic low, even if another device
+                                                                                           is trying to drive them high.
+    (short-circuited)
+                                                                                         – Devices with different supply voltages can
+                                                                                           coexist on the same bus, as long as will not
+                                                                                           be damaged.
+
+
+
+
+                  (Figures are from internet)
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (67/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Use the logic analyzer in Keil
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (68/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  8051 UART 与其他通信方式 小结
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (69/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Summary
+  • Wired communication                                                               • Skills
+      – Parallel: CPU and RAM                                                            – Read/Understand the interface from
+        Serial: most peripherals                                                           datasheets, and know how to connect
+                                                                                           and communicate
+      – Synchronous vs. asynchronous
+                                                                                         – Know how to analyze the timing/logic
+      – Simplex or duplex
+      – In terms of distance
+         RS232/RS485: long distance
+         I2C, SPI: inter-chip
+      – Principle and how to use
+         ▪ UART & RS232
+         ▪ I2C
+         ▪ SPI
+         ▪ 1-wrire
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (70/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  Q&A
+  • Asynchronous (异步) and synchronous (同步)
+  • UART是__步串行通讯；SPI、I2C都是__步串行通讯
+  • 采用9600波特率，8N1的UART异步串行通讯，理论上一秒
+    最多可以传输____个字节。
+
+  • SPI和I2C分别是____(Simplex, Full-Duplex, Half-Duplex)
+
+  • How to Use Related SFR: SBUF, SCON, PCON, IE
+
+  • How many wires, & what are the speed, distance difference for
+    UART, I2C, SPI ?
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (71/72)
+Progress: 8051 Interrupt >> 8051 Timer/Counter >> INT/TIM Summary >> 8051 UART >> UART Programming >> Synchronous Comm. >> Comm. Summary >> Supplementary
+
+
+  A Turing Machine - Overview
+
+
+
+
+EE114 Embedded System -> Lecture 5 & 6 8051 Interrupt & Timer & Communication                                                                               (72/72)
+

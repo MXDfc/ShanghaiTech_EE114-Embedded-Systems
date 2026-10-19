@@ -1,0 +1,2339 @@
+             EE114: Introduction to
+              Embedded Systems
+Dr. Tao Wu   吴涛     研究员，博导
+wutao@shanghaitech.edu.cn
+Office: SIST Bldg 3-326
+CourseWeb: http://10.15.25.5/
+Website: http://small.shanghaitech.edu.cn
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+Lec#12 STM32 Programming
+
+                             TASK：归纳&展示学习过程中产生的问题
+           ◆ 了解ARM最小系统和寄存器编程方式
+           ◆ 理解和掌握嵌入式C语言的程序结构；
+           ◆ 掌握嵌入式C语言的数据类型、const、volatile和extern等
+                关键字的使用；
+           ◆ 掌握嵌入式C语言的条件编译和语言指针的应用;
+           ◆ 学会分析STM32标准外设库函数和HAL库文件源码。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (2/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+STM32最小系统与嵌入式C语言
+
+
+
+                                              1. STM32最小系统
+
+
+                                              2. STM32嵌入式C语言与固件库
+
+
+                                              3. STM32 HAL库
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (3/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+1 STM32最小系统
+                                                                 请自学！
+
+                               01                                            1.1 电源电路
+
+
+            用最少的                         02                                   1.2 时钟电路（晶振电路）
+            元件组成
+            单片机可以
+            工作的系统                        03                                   1.3 复位电路
+
+
+                                    04                                       1.4 调试和下载电路
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                      (4/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 1.1 电源电路                                 为系统提供稳定可靠的供电                                   微控制器
+                                                                                         工作电压
+             电源电压                                                    1.5V
+                                                                     1.8V                3.4V~5.5V
+                                                                     2.5V                    或
+                                                                                         2.7V~3.6V
+                  5V              AMS1117系列芯片                        2.85V 供电
+                                                                     3.0V              STM32F103系列：
+                                                                     3.3V                 2.0V ~ 3.6V
+                                                                     5.0V
+
+                                                                         ➢输入电容，作用是
+                                                                          防止断电后出现电压倒置
+                                                                         ➢输出滤波电容，作用是
+                                                                          抑制自激振荡和稳定电压
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                   (5/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 1.1 电源电路
+                                                                                       STM32内部电源框图
+          STM32内部包含一个电压调节器，
+        将外部3.3V电压转换为1.8V提供给
+        Cortex-M3内核、内存以及外设使用。
+       内部有两个可选电源选项：
+       ➢ADC模块所需的参考电压VREF+和VREF-。
+        通常采用独立的供电电源。
+       ➢备用电池电源VBAT。当主电源VDD掉电后，
+        通过VBAT引脚为实时时钟和备份寄存器提
+        供电源。备用电池电压范围为1.8~3.6V。
+        若不使用备用电池供电，VBAT引脚必须与
+        主电源引脚VDD连接。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                            (6/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 1.2 时钟电路（晶振电路）
+
+                   有源晶振                                     低速晶振
+                   （振荡器）                                    频率为
+                                                            32.768kHz
+                       需要给它供电
+   晶                   不需要外接其他元件
+   振                   直接接入OSC_IN引脚，                              主要用作RTC的时钟源，用于精准计时
+                       OSC_OUT悬空                                  定时电路、万年历等。
+                    无源晶振
+                    （晶体）                                    高速晶振
+                       连接OSC_IN和OSC_OUT，                    频率为8MHz
+                       需外接负载电容（通常10-22pF）
+                       价格便宜
+
+                                                                  方便倍频，通过PLL等提供高达
+                      crystal model                               72M~200MHz的频率。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (7/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 1.3 复位电路                                                                              STM32内部复位电路
+    低电平时复位；NRST引脚内部已
+    经连接了一个上拉电阻，数据手
+    册建议复位电路需外接一个对地
+    电容，也可以外接一个上拉电阻。
+     上电复位：                                                            手动复位：
+        在上电瞬间，电容两端电压不                                                 按键S1按下时，RESET和地连
+     能突变，RESET出现短暂低电平，                                                通，产生低电平，实现复位。
+     芯片自动复位，充电时间：
+      t =1.1RC =1.110k0.1μF=1.1ms
+      上电后约1ms左右系统完成复位，
+     之后，单片机开始正常工作。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                           (8/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                                        STM32调试端口引脚功能
+ 1.4 调试和下载电路                                                 SWJ-DP引脚            JTAG-DP   SW-DP   引脚号
+                                                                         输入：      输入输出：
+                                                             JTMS/SWDIO                            PA13
+                                                                         JTAG模式选择 串行数据输入输出
+ 作用                                                                      输入：      输入：
+        将编译好的程序下载到单片机                                        JTCK/SWCLK
+                                                                         JTAG时钟   串行时钟
+                                                                                                   PA14
+
+      中运行以及进行在线调试                                                JTDI
+                                                                         输入：
+                                                                                                   PA15
+                                                                         JTAG数据输入
+ STM32F103系列微控制器内核集成                                                     输出：
+                                                           JTDO/TRACESWO          异步跟踪             PB3
+                                                                         JTAG数据输出
+ 了SWD/JTAG调试端口（SWJ-DP）                                                   输入：
+                                                                JNTRST                             PB4
+                                                                         JTAG模块复位
+     JTAG调试接口（5引脚的JTAG-DP）
+     SWD（Serial Wire Debug，串行单                           5根线                                        至少
+     总线调试）（ 2引脚的SW-DP）                                   TDO 、                                      3根线
+                                                         TDI 、                                      SWDIO、
+    SWD 和传统的调试方式区别                                       TMS、                                       SWCLK、
+    1. SWD 模式比 JTAG 在高速模式下面更加可靠                          TCK、                                       GND
+    2. 在板子的体积或者GPIO口资料有限的时候                              NTRST
+    推荐使用 SWD 模式
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                (9/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 1.4 调试和下载电路                                                     内核的启动模式
+       Cortex-M3内核有三种启动方式，可以通过BOOT0和BOOT1的电平组合进行选择。
+        启动模式选择引脚                               启动模式对应
+                                                                                       说明
+        BOOT0 BOOT1                             的存储介质
+                                                                     起始地址0x80000000开始运行代码，
+             0                 x          用户闪存Flash
+                                                                     这是STM32最常用的启动方式
+                                                                     起始地址0x1FFFF000
+             1                 0          系统Flash                    内置Bootloader启动，用于通过USART、
+                                                                     USB、CAN等接口进行串口下载（ISP）
+                                                                     起始地址0x20000000
+             1                 1          内置SRAM
+                                                                     用于调试代码在RAM中运行
+        在STM32F1系列微控制器中通过设置BOOT[1:0]引脚电平的高低选择三种不同
+       启动模式，从而将存储空间起始地址0x00000000映射到不同存储区域的起始地址。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                       (10/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ STM32的三种启动模式
+
+   STM32上电或者复位后
+   代码区始终从0x00000000开始，其实就是将存储空间的地址映射到0x00000000中。
+   三种启动模式如下：
+   从主闪存存储器启动：将主Flash地址0x0800 0000映射到0x00000000，这样代码启动
+   之后就相当于从0x08000000开始。主闪存存储器是STM32内置的Flash，一般我们使用
+   JTAG或者SWD模式下载程序时，就是下载到这个里面，重启后也直接从这启动程序。
+   从系统存储器启动：首先控制BOOT0、BOOT1管脚，复位后，STM32从系统存储器地
+   址0x1FFF F000开始执行代码。系统存储器是芯片内部一块特定的区域，芯片出厂时
+   在这个区域预置了一段Bootloader，就是通常说的ISP程序。
+   从内置SRAM启动：将SRAM地址0x2000 0000映射到0x00000000,这样代码启动之后
+   就相当于从0x2000 0000开始。内置SRAM，也就是STM32的内存，
+   没有程序存储的能力了，这个模式一般用于程序调试。
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (11/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+       STM32存储结构
+                                                                                         ◆ARM Cortex-M3系列微处理器
+     0xFFFF FFFF                                          ROM Table        0xE00F FFFF    采用存储器与I/O外设统一编
+                                                                           0xE00F F000
+                                                                                          址的方式，设置部分存储器
+                          Vendor-specific                External PPB
+     0xE010 0000                                                           0xE004 2000
+                                                             ETM
+     0xE00F FFFF                                                           0xE004 1000
+                   Private peripheral bus-External           TPIU
+     0xE004 0000                                                           0xE004 0000
+     0xE003 FFFF
+     0xE000 0000
+                   Private peripheral bus-Internal
+                                                            Reserved       0xE003 FFFF    地址范围用于外设的访问 ，
+     0xDFFF FFFF                                                           0xE000 F000
+
+                                                                                          将这种通过存储器地址访问
+                                                             NVIC
+                                                                           0xE000 E000
+                                                            Reserved
+                          External device                                  0xE000 3000
+                                            1.0GB             FPB
+                                                                           0xE000 2000
+                                                                                          外设的方式，称为存储器地
+                                                             DWT
+                                                                           0xE000 1000
+     0xA000 0000                                              ITM
+     0x9FFF FFFF                                                           0xE000 0000
+
+
+                           External RAM     1.0GB                          0x43FF FFFF    址映射。
+                                                     32MB Bit Band Alias
+     0x6000 0000
+     0x5FFF FFFF
+                                                     31MB
+                                                                           0x4200 0000
+                                                                           0x41FF FFFF   ◆存储器映射，就是将芯片中
+                             Peripheral     0.5GB                          0x4010 0000
+     0x4000 0000
+     0x3FFF FFFF
+                                                     1MB Bit Band region
+                                                                           0x4000 0000
+                                                                                          或芯片外的FLASH、RAM和外
+                                                                           0x23FF FFFF
+                                                                                          设接口等进行统一编址，用
+                               SRAM         0.5GB
+                                                     32MB Bit Band Alias
+     0x2000 0000                                                           0x2200 0000
+     0x1FFF FFFF                                                           0x21FF FFFF
+                                                     31MB
+
+     0x0000 0000
+                               Code         0.5GB
+                                                     1MB Bit Band region
+                                                                           0x2010 0000
+                                                                           0x2000 0000
+                                                                                          于程序存储、数据存储、寄
+                        Cortex-M3存储器映射                                                    存器和外设。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                     (12/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                        让GPIOB端口的16个引脚输出高电平，要怎么实现？
+           寄存器映射                                        1、0X40010C0C 是GPIOB输出数据寄存器ODR的地址，如何找到？
+                                                        2、(unsigned int*)的作用是什么？
+   通过绝对地址访问内存单元                                         3、学会使用C语言的 * 号
+   1 // GPIOB 端口全部输出 高电平
+   2 *(unsigned int*)(0x40010C0C) = 0xFFFF;                                             什么是寄存器？
+
+   通过寄存器别名方式访问内存单元                                                                     给有特定功能的内存单元取
+   1 // GPIOB 端口全部输出 高电平                            一个别名，这个别名就是我
+   2 #define GPIOB_ODR   (unsignedint*)(0x40010C0C)
+   3 * GPIOB_ODR = 0xFF;                            们经常说的寄存器，这个给
+
+   为了方便操作，我们干脆把指针操作“*”也定义到寄存器别名里面 已经分配好地址的有特定功
+   1 // GPIOB 端口全部输出 高电平                           能的内存单元取别名的过程
+   2 #define GPIOB_ODR *(unsignedint*)(0x40010C0C)
+   3 GPIOB_ODR = 0xFF;                             就叫寄存器映射。
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                             (13/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+           寄存器映射
+ 总线基地址（总线是什么）
+
+
+
+                                                                                       ..\CMSIS\stm32f10x.h
+ GPIO基地址（外设是什么）
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                         (14/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+           寄存器映射                                                   使用结构体封装寄存器列表
+                                                                                 stm32f10x.h
+让 PB0 输出低/高电平，要怎么实现？
+#define PERIPH_BASE     ((unsigned int)0x40000000)
+#define APB2PERIPH_BASE (PERIPH_BASE + 0x00010000)
+#define GPIOB_BASE      (APB2PERIPH_BASE + 0x0C00)
+#define GPIOB_ODR       *(unsignedint*)(GPIOB_BASE+0x0C)
+
+// PB0输出输出低电平
+GPIOB_ODR &= ~(1<<0);
+
+// PB0输出输出高电平
+GPIOB_ODR |= (1<<0);
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                          (15/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+           寄存器映射                                                   使用结构体封装寄存器列表
+
+让 PB0 输出低/高电平，要怎么实现？
+#define PERIPH_BASE     ((unsigned int)0x40000000)
+#define APB2PERIPH_BASE (PERIPH_BASE + 0x00010000)
+#define GPIOB_BASE      (APB2PERIPH_BASE + 0x0C00)
+#define GPIOB_ODR       *(unsignedint*)(GPIOB_BASE+0x0C)
+
+// PB0输出输出低电平
+GPIOB_ODR &= ~(1<<0);
+
+// PB0输出输出高电平
+GPIOB_ODR |= (1<<0);
+
+
+
+
+                                   另一种方式                                                这就是
+                                                                                       寄存器编程
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                      (16/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      寄存器编程练习                                           以下 #define 实现了哪些 GPIO 口的定义
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (17/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+2 嵌入式C语言                                                                        2.6 struct结构体
+
+                                                                                2.7 enum
+                         2.1 STM32的数据类型
+                                                                                2.8 typedef
+                         2.2 const 关键字
+                                                                                2.9 #define
+                         2.3 static 关键字
+                                                                                2.10 #ifdef、#if条件编译
+                         2.4 volatile 关键字
+                                                                                2.11 指针
+                         2.5 extern 关键字
+                                                                                2.12 回调函数
+EE114 Embedded System -> Lecture 12 STM32 Programming                                             (18/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+2 嵌入式C语言
+                                                         1      程序总是从main函数开始执行；
+
+             嵌入式开发中既有                                    2      函数是C语言的基本结构；
+       底层硬件的开发又涉及
+                                                                函数由两部分组成：
+       上层应用的开发，即涉                                        3
+                                                                函数说明部分和函数体。
+       及系统的硬件和软件，
+       C语言既具有汇编语言                                        4
+                                                                一个C语言程序包含若干个源程序文件
+                                                                （.c文件）和头文件（.h文件）。
+       操作底层的优势，又具
+       有高级语言功能性强的                                               采用外设功能模块化设计方法，
+                                                         5
+       特点。                                                      一个外设功能模块包括一个源文件
+                                                                （.c文件）和一个头文件（.h文件）。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (19/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+2 嵌入式C语言                                                 嵌入式系统软件结构框图
+
+                                                                              启动代码
+
+                                                                               主函数
+            嵌入式系统
+      开发多采用模块                                           硬件驱动                                     业务逻辑
+
+      化、层次化的设                                外设         外设              外设             功能        功能         功能
+                                             模块1        模块2             模块N            模块1       模块2        模块N
+      计思想，系统层
+      次架构清晰，便                               源     头     源    头         源     头         源    头    源    头     源     头
+                                            文     文     文    文    ┅    文     文         文    文    文    文 ┅   文     文
+      于协同开发。                                件     件     件    件         件     件         件    件    件    件     件     件
+                                            .c    .h    .c   .h        .c    .h        .c   .h   .c   .h    .c    .h
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                        (20/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.1 STM32的数据类型
+                                                                            整型 int
+                                                                                       单精度 float
+          数据是嵌入式C语                                      基本类型                实型(浮点型)
+     言的基本操作对象。                                                                         双精度 double
+                                                                            字符型 char
+          数据类型是指数据                                数                         数组
+     在计算机内存中的存                                    据                         结构体
+                                                  类     复合类型
+     储方式。                                                                   共用体
+                                                  型
+                                                                            枚举型
+                                                                            指针类型
+                                                        派生类型
+                                                                            空类型
+EE114 Embedded System -> Lecture 12 STM32 Programming                                          (21/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.1 STM32的数据类型                                                   Recall 数据储存的大小端模式
+                                                                    Big-Endian vs. Little-Endian
+          不同CPU所定义的数据类型的长度不一致，ST公司为开发人员提供了基于
+       C语言的标准外设库，标准外设库中定义的数据类型的长度如下表所示。
+                          STM32对应的
+        C语言的数据类型                             说明
+                            数据类型
+       unsigned char        uint8_t  8位无符号数据（0 ~ 255）
+       unsigned short int   uint16_t 16位无符号数据（0 ~ 65535）
+       unsigned int         uint32_t 32位无符号数据（0 ~ 232-1）
+       unsigned long long   uint64_t 64位无符号数据（0 ~ 264-1）
+       signed char            int8_t 8位有符号数据（-128 ~ +127）
+       signed short int      int16_t 16位有符号数据（-32768 ~ +32767）
+       signed int            int32_t 32位有符号数据（-231 ~ 231-1）
+       signed long long      int64_t 64位有符号数据（-263 ~ 263-1）
+EE114 Embedded System -> Lecture 12 STM32 Programming                                              (22/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.1 STM32的数据类型                                                                 __I、__O 以及 __IO为
+                                                                            IO类型限定词，内核头文件
+     v3.5.0版本已不再使用旧的数据类型，                                                   core_cm3.h定义了标准外设库
+    为了兼容以前的版本，stm32f10x.h头文件                                                所使用的IO类型限定词。
+    还对标准外设库之前版本所使用的数据类                                                    IO类型限定词         类型      说明
+    型进行了说明。                                                                            volatile
+                 例 无符号8位                                                       __I
+                                                                                       const
+                                                                                                 只读操作
+                   整型数据有                                                      __O      volatile  只写操作
+                   unsigned char，                                             __IO     volatile 读和写操作
+                   uint8_t，
+                   u8 三种表示方式。
+                   uint8_t 为C99标准。
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                            (23/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.1 STM32的数据类型
+
+             stm32f10x.h头文件中常用的布尔类型变量的定义
+                                                                                   typedef enum
+                                                                  RESET
+                                                                   与               { RESET = 0,
+                  typedef enum                                     SET                 SET = !RESET
+                                                        DISABLE                    } FlagStatus, ITStatus;
+                  { DISABLE = 0,
+                                                           与
+                       ENABLE = !DISABLE                ENABLE
+                                                                   ERROR         typedef enum
+                  } FunctionalState;                                             { ERROR = 0,
+                                                                     与
+                                                                  SUCCESS           SUCCESS = !ERROR
+                                                                                 } ErrorStatus;
+    #define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                        (24/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.2 const关键字
+
+                                作用                                                     要求
+           用于定义只读的
+                                                           const                        const关键词修饰
+          变量，其值在编译                                                                     的变量在声明时必须
+          时不能被改变                                                                       初始化
+
+
+  为了在编译时防                       在C标准中，
+ 止变量的值被误修          格式         const定义的变量
+ 改，提高程序的安                     是全局的。
+ 全性和可靠性。  const 常量类型 常量名=常量表达式；
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                           (25/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.3 static关键词
+       作用
+                   修饰变量或函数。修饰后的变量称为静态变量。
+
+                   操作
+                                在全局变量之前加上关键字static，则该全局
+                        变量被定义成为一个静态全局变量。
+                                   目的
+                                                作用范围只在定义该变量的源文件内有效，
+                                         其他源文件不能引用该全局变量，避免了在其
+                                         他源文件中因引用相同名字的变量而引发错误，
+                                         有利于模块化程序设计。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (26/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                                         stm32f1xx_hal_dma.c
+ 2.3 static关键词
+                                                 #include "stm32f1xx_hal.h"
+                                                 static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t
+                                                 SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+                                                 ……
+        static编程要点1：                             HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma,
+         模块化的程序设计                                uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength)
+                                                 {
+        中，用static声明一个                               HAL_StatusTypeDef status = HAL_OK;
+        函数，则该函数只能                                   ……
+                                                    if(HAL_DMA_STATE_READY == hdma->State)
+        被该模块内的其它函                                   {
+        数调用。                                            DMA_SetConfig(hdma, SrcAddress, DstAddress, DataLength);
+                                                        ……
+                                                    }
+                                                 }
+
+            解析：DMA_SetConfig()函数只能被stm32f1xx_hal_dma.c的其它函数调用，
+               不能被其它模块的文件使用。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                       (27/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.3 static关键词                                    void fun_count( )
+                                                  {
+                                                    static int count_num = 0;
+                                                         // 声明一个静态局部变量，count_num用作计数器，初值为0。
+      static编程要点2：                                  count_num ++;
+                                                    printf("%d\n", count_num);
+       static除了用于静态                               }
+      全局变量，还用于定义                                  int main(void)
+                                                  {
+      静态局部变量，保证静                                    int i=0;
+      态局部变量在调用过程                                    for (i = 0;i <= 5;i++)
+                                                    {
+      中不被重新初始化。                                       fun_count( );
+                                                    }
+                                                    return 0;
+                                                  }
+
+                解析：在main函数中每调用一次fun_count( )函数，则静态局部变量
+               count_num加1， 而不是每次都被初始化为初值0。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (28/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.4 volatile关键字                                                                 应用
+                                                                                 场合
+     使用                                                                                ➢ 中断服务程序中修改的
+                   一个类型修饰符，“易变的”。
+     方式                                                                                供其他程序检测的变量需
+                    volatile char i;
+               使用volatile关键字定义了一个字符型的                                                  要使用 volatile；
+             变量i，指出i是随时可能发生变化的，每次                                                      ➢ 多任务环境下各任务间
+             使用的时候都必须从i的地址中读取。
+                                                                                       共享的标志应添加 volatile；
+
+        作用                                                                             ➢ 存储器映射的硬件寄存器
+                   使用volatile就是不让编译器进行优化，
+                  即每次读取或者修改值的时候，都必须重                                                   通常也要加 volatile 进行说
+                  新从内存中读取或者修改，而不是使用保                                                   明。
+                  存在寄存器里的备份。
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                  (29/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.5 extern关键词                                  作用
+                                                         指明此函数或变量的定义在别的文件中，提示编译
+                                                        器遇到此函数或变量时去其他模块中寻找其定义。
+    使用extern是一个声明
+    而不是重新定义                                                                            解析：
+                                                        #ifdef __cplusplus             如果定义了__cplusplus
+      extern int a;
+                                                        extern "C"{                    (C++编译器中自定义的宏)，
+   声明变量a，而不是在定义变                                        #endif                         则执行extern “C” { 语句。
+   量a，并未为a分配内存空间                                                                       C++支持函数重载，而C语言
+                                                        ……
+                                                                                       不支持函数重载，在C++环
+      extern int funA( )；                               #ifdef __cplusplus             境下使用C函数会出现链接
+                                                        }                              时找不到对应函数的情况，
+      声明函数 funA( )，此函
+                                                        #endif                         这时需要使用extern “C”进行
+      数已在其他文件中定义。
+                                                                                       链接指定，告知编译器使用
+                                             extern "C"进行链接指定，告知编                      C语言命名规则来处理函数。
+                                             译器这是采用C语言定义的函数
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                 (30/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                                               ADCx.h
+ 2.5 extern关键词                                          //声明全局变量 用于存放ADC的转换结果
+                                                        extern uint16_t ADC_ConvertedValue;
+       为保证全局变量和功能                                       //外部功能函数声明
+     函数的使用，extern一般                                     extern void ADC_Init(void); // ADC初始化函数
+                                                        ……
+     用在.h头文件中对某个模                                                              ADCx.c
+     块提供给其它模块调用的                                        #include "ADCx.h"
+     外部函数及变量进行声明，                                       ……
+     实际编程中只需要将该.h                                       static uint16_t pwd=1; //局部变量，仅作用于本函数
+                                                        uint16_t ADC_ConvertedValue; //全局变量
+     头文件包含进该模块对应                                        ……
+     的.c文件，即在该模块的.c                                     void ADC_Init(void)
+     文件中加入代码#include                                    {
+     "xxx.h"。                                             ……
+                                                        }
+                                                        ……
+EE114 Embedded System -> Lecture 12 STM32 Programming                                       (31/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.6 struct结构体
+
+                       作用                                        格式                             举例
+
+
+                                                        struct一般用法为：                   struct person
+         struct用于定义结构                                   struct [结构体名]                  { char name[8];
+        体类型，其作用是将                                       {                                 int age;
+        不同数据类型的数据                                         类型标识符 成员名1;                     char sex[8];
+        组合在一起，构造出                                         类型标识符 成员名2;                     char address[20];
+        一个新的数据类型。                                               ……                     } person_liu；
+                                                        } 结构体变量;
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                         (32/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.6 struct结构体
+                                                                struct person
+                                                                {
+      结构体变量（如上例中的                                                    char name[8];
+    person_liu）可以不在定义结构体                                             int age;
+    时定义，后续需要时再进行定义。                                                  char sex[8];
+                                                                     char address[20];
+                                                                };
+         定义格式                                                   struct person person_liu，person_zhang;
+
+             struct 结构体名 结构体变量；
+                                                                          结构体变量的使用采用如下形式：
+           使用这种定义方式可以很方便地同                                                  结构体变量名. 成员名
+          时定义多个结构体变量。                                                     如：person_liu.age=35;
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                               (33/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.7 enum关键词                                            enum Weekdays
+                                                        {                              枚举类型具有自动编号
+                                                           Monday = 1 ,                的功能，第一个枚举成
+    enum枚举类型的用法：                                           Tuesday ,                   员其默认值为整型的0，
+                                                           Wednesday,
+           enum 枚举名                                                                    后续枚举成员的值在前
+                                                           Thursday ,
+           {                                               Friday    ,                 一个成员上加1。
+               枚举成员1,                                      Saturday ,                   可以自定义枚举成
+               枚举成员2,                                      Sunday
+                                                                                       员的值，如果把第一个
+                                                        }Mydays, Olddays;
+               ……                                                                      枚举元素的值定义为 1，
+           }枚举变量;                                          枚举成员的值是常量， 那么第二枚举成员的
+          用来将一个变量或对象的                                      不是变量，不能被赋 值就为 2，以此类推，
+    所有可能的值一一列出，变量                                          值，但可以将枚举值 如上述例子中Friday
+    取值只限于列举出来的值。                                           赋给枚举变量。                     的值为 5。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                             (34/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.8 typedef                                                                    为已知的数据类型
+                                                                                起一个简单的别名
+    作用：
+      用来为复杂的声明定义一个简单                                                用法一：typedef的基本应用
+            的别名，方便记忆
+                                                                    格式：
+                                                                       typedef 类型名 自定义的别名；
+    目的:
+             给变量起一个容易记且意义明确的
+             新名字；                                                  举例：
+             简化一些比较复杂的类型声明。                                            typedef signed char int8_t;
+                                                                     //给数据类型signed char起个别名int8_t
+                          不是一个真正                                          typedef signed int int32_t;
+                          意义上的新类型                                       //给数据类型signed int起个别名int32_t
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                            (35/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.8 typedef
+
+    用法二：与结构体struct结合使用                                                   则可以使用GPIO_InitTypeDef定义
+    STM32标准外设库中stm32f10x_gpio.h                                         一个变量GPIO_InitStructure，从而调
+   头文件中利用结构体别名GPIO_InitTypeDef                                          用GPIO_Mode。
+
+       typedef struct                                                   GPIO_InitTypeDef GPIO_InitStructure;
+       {                                                                GPIO_InitStructure.GPIO_Mode =
+            uint16_t GPIO_Pin;                                          GPIO_Mode_Out_PP;
+            GPIOSpeed_TypeDef GPIO_Speed;
+            GPIOMode_TypeDef GPIO_Mode;                                 使用typedef为这个新建的结构体起了
+       } GPIO_InitTypeDef;                                         一个新的名字叫GPIO_InitTypeDef
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                    (36/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.8 typedef
+
+         用法三：与enum结合使用
+                                     解析1：利用typedef 关键字将此枚举类型
+         stm32f10x_gpio.h头文件中的代码。 定义一个别名 GPIOSpeed_TypeDef，这里
+                                     省略了枚举类型的枚举名，只用 typedef起
+            typedef enum
+                                     了个别名。
+            {
+                                     解析2： enum枚举类型共三个成员，
+               GPIO_Speed_10MHz = 1,
+                                     并将第一个枚举成员GPIO_Speed_10MHz
+               GPIO_Speed_2MHz,      赋值为1，enum枚举类型会将枚举成员的
+                     GPIO_Speed_50MHz                           赋值在第一个枚举成员赋值的基础上加 1，
+               } GPIOSpeed_TypeDef;                             因此，GPIO_Speed_2MHz默认值为 2。
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (37/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.9 #define
+        #define是C语言中的预处理命                                                         所谓预处理是指在编译之前所
+   令，它用于宏定义，用来将一个                                                             做的工作，由预处理程序负责完
+   标识符定义为一个字符串，该标                                                             成，编译时，系统将自动引用预
+   识符称为宏名，被定义的字符串                                                             处理程序对源程序中的预处理部
+   称为替换文本。                                                                    分进行处理。
+
+                                                          define
+      采用宏定义的目的主要是方便                                                               typedef与#define的区别：
+   程序编写，一般放在源文件的                                                              ➢ typedef是在编译阶段处理的;
+   前面，称为预处理部分。                                                                ➢ #define是在预处理阶段处理的。
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                   (38/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.9 #define
+
+         用法一：无参数宏定义 例1：#define UINT8_MAX 255
+                                                        解析：定义宏名UINT8_MAX，代表255。
+  定义格式：
+       #define <宏名> <字符串> 例2：#define _ _IO volatile;
+                                                        解析：定义宏名_ _IO，表示volatile，以后
+                                                        程序中再需要用到volatile，就可以使用_ _IO。
+          所定义的
+           宏名                                           例3：#define RCC_AHBPeriph_DMA1 ((uint32_t)0x00000001)
+                                                        解析：定义RCC_AHBPeriph_DMA1宏名，
+                可以是常数、字                                 代表32位的无符号数据0x00000001。
+                符串、表达式等
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                (39/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.9 #define
+
+
+      用法一：无参数宏定义
+
+
+              标准外设库v3.5.0的
+         stm32f10x_rcc.h文件
+         中宏APB2_peripheral
+         外设基地址的定义
+
+
+
+                                                             APB2_peripheral各外设基地址的定义
+EE114 Embedded System -> Lecture 12 STM32 Programming                                   (40/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 2.9 #define                                            用法二：带参数的宏定义
+                            定义格式：
+                                #define<宏名>（参数1，参数2，…参数n）<替换列表>
+       例4：#define SUM(x,y) (x+y)
+                  ……
+                  a = SUM(2,2)；
+       解析：将SUM(x,y)定义为x+y，预编译时会将SUM(x,y)替换为x+y，a的结果是4
+       例5：#define IS_GPIO_SPEED(SPEED) (((SPEED) == GPIO_Speed_10MHz) || ((SPEED)
+       == GPIO_Speed_2MHz) || ((SPEED) == GPIO_Speed_50MHz))
+       解析：使用宏定义#define将IS_GPIO_SPEED(SPEED)替换为GPIO_Speed_10MHz或者
+       GPIO_Speed_2MHz或者GPIO_Speed_50MHz。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (41/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+              在stm32f10x_rcc.c源文件中函数RCC_APB2PeriphClockCmd()
+ 2.9 #define
+             使用了IS_FUNCTIONAL_STATE(STATE)这个宏
+ 用法二：带参数的宏定义 RCC_APB2PeriphClockCmd()源码如下：
+                                               void RCC_APB2PeriphClockCmd(uint32_t RCC_APB2Periph,
+       STM32标准外设库                              FunctionalState NewState)
+     stm32f10x.h头文件中的代码：                       {       /* Check the parameters */
+                                                 assert_param(IS_RCC_APB2_PERIPH(RCC_APB2Periph));
+                                                 assert_param(IS_FUNCTIONAL_STATE(NewState));
+                                                if (NewState != DISABLE)
+ #define IS_FUNCTIONAL_STATE(STATE)
+ (((STATE) == DISABLE) || ((STATE) == ENABLE))    {
+                                                    RCC->APB2ENR |= RCC_APB2Periph;
+                                                  }
+                                                else
+    解析：该函数为外设时钟使能函                                {
+    数，第一个参数为要使能的外设，                                 RCC->APB2ENR &= ~RCC_APB2Periph;
+    第二个参数为是否使能。                                   }
+                                               }
+EE114 Embedded System -> Lecture 12 STM32 Programming                                      (42/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.10 #ifdef、#ifndef、#else、#if条件编译
+                                                            嵌入式C语言常用的条件编译命令
+      只有满足一定条件                                    条件编译              说明
+     才进行编译，一般用在                                   #define 宏定义
+     头文件或文件开头部分                                   #undef 撤销已定义的宏名
+                                                          条件编译命令，如果# if后面的表达式为true，则
+                                                  #if
+                                                          执行语句
+    嵌入式C语言常使用条件
+                #ifdef                                       判断某个宏是否被定义，若被定义，则执行语句
+   编译，通过条件判断来确
+                                                             判断某个宏是否未被定义，若未被定义，则执行
+   定是否对某段源程序进行  #ifndef
+                                                             语句，与#ifdef相反
+   编译。
+                                                             #else指令用于#if指令之后，当#if指令的条件不为
+    条件编译的用途：可以用 #elif                                        真时，就编译#else后面的代码，elif相当于else if
+   源程序产生不同版本。                                                条件编译的结束命令，用在#if、#ifdef、#ifndef
+                                                   #endif
+                                                             之后
+EE114 Embedded System -> Lecture 12 STM32 Programming                                   (43/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.10 #ifdef、#ifndef、#else、#if条件编译
+        形式一：
+                                                                       #ifdef IN_XXX
+           #ifdef 标识符                                                     #define XXX_EXT
+               程序段1                                                    #else
+           #else                                                          #define XXX_EXT extern
+               程序段2                                                    #endif
+           #endif                                                      …….
+                                                                       XXX_EXT volatile u16 Name;
+         功能：当指定的标识符已
+         被#define定义过，则只
+         编译程序段1，否则编译                                                 如果定义了IN_XXX，则定义
+         程序段2。                                                       XXX_EXT，否则定义XXX_EXT为
+                                                                     extern。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                               (44/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.10 #ifdef、#ifndef、#else、#if条件编译
+        形式二：                                            标准外设库v3.5.0中的stm32f10x_rcc.h头文件中的源码
+
+                                                        #ifndef STM32F10X_CL
+           #ifndef 标识符                                    #define RCC_USBCLKSource_PLLCLK_1Div5 ((uint8_t)0x00)
+               程序段1                                       #define RCC_USBCLKSource_PLLCLK_Div1 ((uint8_t)0x01)
+           #else                                          #define IS_RCC_USBCLK_SOURCE(SOURCE) (((SOURCE) ==
+               程序段2                                       RCC_USBCLKSource_PLLCLK_1Div5) ||\
+           #endif                                         ((SOURCE) == RCC_USBCLKSource_PLLCLK_Div1))
+                                                        #else
+                                                          #define RCC_OTGFSCLKSource_PLLVCO_Div3 ((uint8_t)0x00)
+        功能：当指定的标识符没                                       #define RCC_OTGFSCLKSource_PLLVCO_Div2 ((uint8_t)0x01)
+        有被#define定义过，则                                    #define IS_RCC_OTGFSCLK_SOURCE(SOURCE) (((SOURCE) ==
+        编译程序段1，否则编译                                     RCC_OTGFSCLKSource_PLLVCO_Div3)||\
+                                                          ((SOURCE) == RCC_OTGFSCLKSource_PLLVCO_Div2))
+        程序段2。
+                                                        #endif
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                     (45/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.10 #ifdef、#ifndef、#else、#if条件编译
+        形式三：                                            标准外设库v3.5.0中的stm32f10x_rcc.h头文件中的源码
+                      #ifdef STM32F10X_CL
+    #ifdef 标识符1（或表达式1） /* PREDIV1 clock source (for STM32 connectivity line devices) */
+       程序段1             #define RCC_PREDIV1_Source_HSE ((uint32_t)0x00000000)
+    #elif 标识符2（或表达式2） #define RCC_PREDIV1_Source_PLL2 ((uint32_t)0x00010000)
+       程序段2             #define IS_RCC_PREDIV1_SOURCE(SOURCE)
+    #endif              (((SOURCE)==RCC_PREDIV1_Source_HSE) ||\
+                            ((SOURCE) == RCC_PREDIV1_Source_PLL2))
+                      #elif defined (STM32F10X_LD_VL) || defined
+    功能：当定义了标识符1或表 (STM32F10X_MD_VL) ||\
+    达式1，则编译程序段1；否       defined (STM32F10X_HD_VL)
+    则，如果定义了标识符2或表       #define RCC_PREDIV1_Source_HSE ((uint32_t)0x00000000)
+    达式2，则编译程序段2。        #define IS_RCC_PREDIV1_SOURCE(SOURCE) (((SOURCE) ==
+                        RCC_PREDIV1_Source_HSE))
+                      #endif
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (46/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针
+                                                                两个要素：
+                                                                ◆值：某个对象的位置 (即内存地址)；
+               指针                                               ◆类型：是指对象所在位置上
+                      用于存放地址的变量                                                所存储数据的类型。
+                                                            指针理解2
+
+     指针理解1
+                                                                   ◆取地址运算符&指向一个变量的
+                  ◆有确定的数据类型                                        存储地址；
+              数据类型 *变量名；                                               int i;
+                                                                       int *p;
+              如 int *p ;
+           特殊的：void * 类型代表                                             p = &i;
+           通用指针                                                  //将int类型的指针p指向变量i的地址
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                      (47/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针
+                                                               指针理解4
+
+                                                                        ◆指针和数组
+   指针理解3
+
+           ◆取值运算符*访问指针变量所                                           在数组中使用指针，可以通过移动指针，
+                                                                    对数组中的元素进行搜索。
+           指向地址单元的内容；
+                                                                      int Data_Array[] = {1,2,3,4,5,6};
+            int i = 0;
+                                                                           // 定义一个数组
+            int *p;
+            p = &i;                                                   int *pr;     // 定义一个指针pr
+            printf("%d \n", *p);                                      pr = & Data_Array[0];
+          //通过*p获取 i 的值用于输出                                                // 将指针指向数组的首地址
+              *p = 200;                                             则，可以利用指针对数组的元素进行赋值
+          //通过*p修改变量i的值                                              *pr=8;       //用指针给数组的第一个元素赋值
+              printf("%d \n", i);                                    *(pr + 1)=9; //用指针给数组的第二个元素赋值
+          //输入i 的值，i=200                                             *(pr + 2)=7; //用指针给数组的第三个元素赋值
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                             (48/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针                                                        指针理解5
+
+                                                                    ◆ 将指针从一种类型强制转换成另外一
+        32位微处理器中int类型的变量占                                           种类型。
+      4个字节的空间。                                                      pr =（int *）0x42210188;
+                                                                   解析：0x42210188是一个32位的数据，表
+                                  ... ...
+         0x40010800                                                示的是存储空间中的一个地址，但是在程
+        0x40010804
+                                                        一个字节       序中如果写成
+                                  ... ...               一个bit
+                                                                      pr=0x42210188；
+        0x42210188
+                              00000000                             只是将0x42210188这个32位的数据赋给pr，
+                              01010101              int类型占4个字节
+                                                                   而使用强制类型转换 (int *)，则是告知编
+                              10100101                             译器这是一个整型数据所占内存空间的首
+                              00110011                             地址，如果没有这个类型转换，则编译器
+        0x4221018C
+                                                                   会报错。*pr表示取这个指针所指向内存空
+                                  ... ...
+                                                                   间中存储的数据，如图，*pr=0x0055。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                    (49/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针                                       函数指针的定义方式为：
+                                                函数返回值类型 (*指针变量名) (函数参数列表);
+
+
+
+
+       编译器会为                                定义一个指                  在程序中可               例如：
+      函数分配一段                                                      以通过这个函               int f（int x, int *p）;//函数
+                                        针变量来存放
+                                                                                       ……
+      连续的存储空                            该地址，这个                    数指针变量调               int (* fp) (int, int *);
+      间，其首地址                                                      用这个函数。                  //声明一个指针 fp
+                                        指针变量就叫
+                                                                                       fp = f; //将函数f赋给该指针
+      就是这个函数                            作                                              ……
+      名所定义的变                                                                           int y = 1;
+                                        函数指针变量，
+                                                                                       int result = fp(3, &y);
+      量的地址                              简称函数指针。                                           //用指针来调用f函数
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                     (50/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针                                                     STM32标准外设库中的指针应用
+                                                           通过宏定义为外设基地址0x40000000取一个宏名
+                                                        PERIPH_BASE，方便使用，stm32f10x.h中FLASH、
+        STM32标准外设库中，
+                                                        SRAM和PERIPH（外设）的基地址定义如下：
+       指针的类型为32位整型数据
+                                                         #define FLASH_BASE ((uint32_t)0x08000000)
+                                                         #define SRAM_BASE ((uint32_t)0x20000000)
+        STM32中片上外设都是
+                                                         #define PERIPH_BASE ((uint32_t)0x40000000)
+       挂接在不同的总线上的，
+       stm32f10x.h文件利用C语言                                STM32的总线有APB1、APB2和AHB总线组成，
+       的宏定义和指针来一步步                                      各自的总线基地址定义如下：
+       封装总线和外设的基地址。                                      #define APB1PERIPH_BASE PERIPH_BASE
+                                                         #define APB2PERIPH_BASE (PERIPH_BASE + 0x10000)
+                                                         #define AHBPERIPH_BASE (PERIPH_BASE + 0x20000)
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                 (51/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针                                                               ST公司的工程师采用了C语言结构
+                                                                     体的形式封装了这些寄存器组：
+                                                                       #define GPIOA ((GPIO_TypeDef *) GPIOA_BASE)
+                                                                       #define GPIOB ((GPIO_TypeDef *) GPIOB_BASE)
+    stm32f10x.h文件中定义了这7组GPIO
+                                                                       #define GPIOC ((GPIO_TypeDef *) GPIOC_BASE)
+   端口的基地址的宏。
+   #define GPIOA_BASE (APB2PERIPH_BASE + 0x0800)                       #define GPIOD ((GPIO_TypeDef *) GPIOD_BASE)
+   #define GPIOB_BASE (APB2PERIPH_BASE + 0x0C00)                       #define GPIOE ((GPIO_TypeDef *) GPIOE_BASE)
+   #define GPIOC_BASE (APB2PERIPH_BASE + 0x1000)                       #define GPIOF ((GPIO_TypeDef *) GPIOF_BASE)
+   #define GPIOD_BASE (APB2PERIPH_BASE + 0x1400)                       #define GPIOG ((GPIO_TypeDef *) GPIOG_BASE)
+   #define GPIOE_BASE (APB2PERIPH_BASE + 0x1800)
+   #define GPIOF_BASE (APB2PERIPH_BASE + 0x1C00)                         结构体类型后面加上“*”号，表示是
+   #define GPIOG_BASE (APB2PERIPH_BASE + 0x2000)                      结构体类型的指针，
+                                                                      (GPIO_TypeDef *)则是把GPIOA_BASE等的地址
+                                                                      强制转换为GPIO_TypeDef结构体类型的指针，
+                                                                      实际编程时可以直接用该宏名访问寄存器。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                        (52/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 2.11 指针                                                     有了寄存器的地址，就可以使用指针进行读写操作了。
+                                                                   GPIOA->BSRR | = (1 << 10) ;
+           GPIO_TypeDef的相关定义：                                         //等同于 *((int *) (0x 0x4001 0810) ) | = (1 <<10);
+           typedef struct                                          GPIOA->ODR =0xFF;
+           {                                                          //等同于 *((int *) (0x 0x4001 080C) ) = 0xFF;
+             __IO uint32_t CRL;                                   ST工程师把对底层寄存器的操作进行了封装，以
+             __IO uint32_t CRH;                                API的形式供开发人员调用，如STM32提供的库函数
+             __IO uint32_t IDR;                                GPIO_SetBits()，用于设置某位引脚为高电平：
+             __IO uint32_t ODR;                                 void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t
+             __IO uint32_t BSRR;                               GPIO_Pin)
+             __IO uint32_t BRR;                                 {
+             __IO uint32_t LCKR;                                   GPIOx->BSRR = GPIO_Pin;
+           } GPIO_TypeDef;                                      }
+                                                                  库函数GPIO_SetBits()实质上还是对寄存器BSRR进
+      声明了名为GPIO_TypeDef的结构体
+      类型，C语言中struct结构体中成员                                      行读写操作，只是进行了封装，开发人员只需调用此
+      在内存中是按顺序存储的。                                             函数就可以实现对BSRR寄存器的操作。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                (53/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+                                                                                       Pointer Video (12’)
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                        (54/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+                                                                                       Pointer Video (12’)
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                        (55/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (56/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                          STM32的HAL库stm32f1xx_hal_gpio.c源码
+ 2.12 回调函数
+                                                                                                  GPIO中断处理函数
+
+   ◆通过函数指针调用的函数。                                               void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
+                                                               {
+   ◆操作系统中的某些函数常需要                                                 if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != RESET)
+                                                                  {
+    调用用户定义的函数来实现其                                                      __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
+                                                                       HAL_GPIO_EXTI_Callback(GPIO_Pin);
+    功能，由于与常用的用户程序                                                 }
+                                                               }                                    调用回调函数
+       调用系统函数的调用方向相反，
+       因此将这种调用称为“回调”                                           __weak void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+                                                               {
+       （Callback），而被系统函数                                          UNUSED(GPIO_Pin);
+                                                               }
+       调用的函数称为“回调函数”。
+                                                                                                   STM32的HAL库中GPIO引脚
+   ◆回调函数是指通过调用其他函 STM32的HAL库的回调函数的函数体需要                                                              触发中断后的回调函数
+
+    数反过来调用某个函数。    用户自己编写，实质是通过中断处理函
+                                                        数调用回调函数来实现中断服务功能
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                  (57/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      STM32固件库
+ ◆传统单片机例如8051，通过查询寄存器表进行程序开发，琐碎而机械，相对于简单
+  微控制器寄存器数量少又很简单，可以通过直接配置寄存器的方式来开发。
+ ◆STM32单片机由于功能强到灵活，如果去查询寄存器手册开发就很不方便。
+ ◆开发者可通过调用这些函数接口，即API (Application Program Interface)，来配置
+  STM32的寄存器，具有开发快速、易于阅读和维护成本低等优点。
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (58/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                                                           用户代码
+      STM32固件库结构                                          用
+                                                          户
+                                                          层
+      STM32F10x_StdPeriph_Lib_V3.5.0                               CMSIS-DSP       CMSIS实时
+      (V3.6 released in 2021 )                                     DSP固件库
+
+
+                                                                                                        设备外设函数
+                                                                                    实时系统内核
+
+
+
+
+                                                          CMSIS层
+                                                                                                       (如STM32驱动)
+
+
+
+                                                                                      核内外设函数
+
+
+                                                                        SIMD
+                                                                                           外设寄存器定义&中断向量定义
+                                                                     Cortex-M4
+
+       为了解决不同芯片厂商生产的
+      Cortex微控制器软件的兼容性问
+      题 ， ARM 与 芯 片 厂 商 建 立 了
+                                                                                 SysTick
+                                                          MCU
+
+                                                                   Cortex                   NVIC中断   调试跟踪
+      CMSIS标准。                                                      内核
+                                                                                 实时系统
+                                                                                             控制器      模块
+                                                                                                            其它外设
+                                                                                 内核时钟
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                               (59/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      STM32固件库结构
+      STM32F10x_StdPeriph_Driver文件夹
+        Libraries\STM32F10x_StdPeriph_Driver
+        文件夹下有inc (include的缩写)和src
+        (source的缩写)这两个文件夹，这都属
+        于CMSIS的设备外设函数部分，由芯
+        片制造商在Cortex-M3核外加进去的。
+        在src和inc文件夹里的就是ST公司针对
+        每个STM32外设编写的库函数文件，
+        每个外设对应一个.c和.h后缀的文件，
+        这类文件称为：stm32fl0x_xxx.c和
+        stm32f10x_xxx.h文件，xxx表示外设名
+        称。
+      stm32f10x_it.c和stm32f10x_conf.h文件
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (60/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ STM32程序开发的模式
+                                                           基于寄存器的开发模式——优点
+                                                           ► 细节上更加了解和掌握STM32的架构、原理
+  程序开发模式：                                                  ► 程序代码简练、短小，实时性高
+  ► 基于寄存器开发                                                基于寄存器的开发模式——缺点
+  ► 基于ST公司官方提供的固件库开发 ► STM32的外设多，寄存器，每个寄存器的
+  ► 基于ST公司官方 HAL库或软件开发 功能位五花八门，眼花缭乱
+                       ► 程序后期维护、移植会相对困难
+  ► 其他方式
+
+                                                           基于寄存器的开发模式——要具备两个功夫
+  程序架构模式：                                                  ► 熟悉所使用的外设的初始化设置流程、读写方法
+                                                           ► 熟悉所涉及寄存器的功能、每个位的定义与作用
+  ► 单任务大循环模式
+  ► 嵌入式操作系统的模式                                             基于寄存器的开发模式——读写操作方法
+                                                           赋值语句设置或获取相关寄存器的值
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (61/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ STM32程序开发的模式                                              基于固件库的开发模式——优点
+                                                           ► 对硬件的理解要求相对较低，
+                                                             会调用函数就会写程序，容易上手
+  程序开发模式：                                                  ► 程序代码容错性好，后期维护相对简单
+  ► 基于寄存器开发
+                                                           基于固件库的开发模式——缺点
+  ► 基于ST公司官方提供的固件库开发 ► 程序冗余较多，代码相对会大一些，
+  ► 基于ST公司官方 HAL库或软件开发   运行速度相对会有所影响
+  ► 其他方式               ► 不易深透掌握STM32内部原理
+
+                                                           基于固件库的开发模式——要具备两个功夫
+  程序架构模式：                                                  ► 要有耐心，要学会看STM32的固件库
+                                                             官方手册和帮助系统的范例程序
+  ► 单任务大循环模式                                               ► 要学会所用固件库函数的功能与调用
+  ► 嵌入式操作系统的模式
+                                                           基于固件库的开发模式——读写操作方法
+                                                           ► 通过函数调用以设置或获取相关寄存器的值
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (62/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ STM32程序开发的模式                                                两种模式的比较——以点亮一个LED为例
+
+ ✓ 寄存器模式
+ ► ODR寄存器法
+ GPIOE->ODR|=1<<5;        //PE5、6初始化为高电平
+ GPIOE->ODR|=1<<6;        //PE5、6初始化为高电平
+ GPIOE->ODR&=0xFFFFFF9F; //PE5、6初始化为低电平
+ ► BSRR寄存器法
+ GPIOE->BSRR|=0x00600000; //清零PE5,PE6 ✓ 固件库模式
+ ► BRR寄存器法                            ► 多个引脚同时
+ GPIOE->BRR|=0x00000060; //清零PE5,PE6 GPIO_ResetBits(GPIOE,GPIO_Pin_5|GPIO_Pin_6);
+                                                            //PE5,PE6为低电平
+                                      GPIO_SetBits(GPIOE,GPIO_Pin_5|GPIO_Pin_6);
+                                                            //PE5,PE6为高电平
+                                                          ► 单个引脚
+                                                          GPIO_WriteBit(GPIOA,GPIO_Pin_3,1); //设置PA3高电平
+                                                          GPIO_WriteBit(GPIOA,GPIO_Pin_3,0); //设置PA3低电平
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                              (63/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      小结
+                                                                                       HAL库源码分析
+                           STM32最小系统
+                                                                                       • stm32f1xx.h
+                           • 电源电路                                                      • stm32f103xe.h
+                           • 时钟电路                                                      • stm32f1xx_hal.c
+                           • 复位电路                                                      • stm32f1xx_hal.h
+                           • 调试和下载电路                                                   • stm32f1xx_hal_gpio.c
+                           • LED指示电路                                                   • stm32f1xx_hal_gpio.h
+
+
+
+
+                                                        嵌入式C语言
+                                                        • 数据类型                         固件库 vs. HAL库编程
+                                                        • 各关键词
+                                                        • 指针
+                                                        • 回调函数
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                           (64/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                           使用                            的        定义，                复
+                                使用           复
+                                                            用                                                        指                器             ，
+
+                      设                              使用一   的          ，如 个           一个          ，
+
+                                                     使用               ，      单           ，                   一                   一使用       号                     ，        内
+
+
+
+                                                  使用
+
+                                                                                                             的           ，                                      取到            ，   复
+
+                                                 源                     源                     对           的           ，                             通过                 ，           设
+
+                                                  定义       内               定义            了，          复                    使用      号            数和      个   定义，                问             定义   使用   、       作用操作
+
+
+
+   件                            定义                   使用         定义常         使用      定义           定       的常              ，如            、                   为常         名   ，便          和
+
+               使用 定义                     使用          定义              过程，如                调试
+
+
+
+                                     数                                 有对外           数                       的       数       ，                 、   数             使用                   数，    数
+
+               对外       数            数使用                         数的调用       定        说        数      数       方式，如                 、指针                  说        数调用           的        ，如   源    、
+
+
+
+                                总    的   定义
+
+                            一位操作的        数                位、    位、    取一位       的       数，
+
+               特别说                                                    使用            定义       别名，                                 为基    数据              别名，            的数据
+
+                            基   数据       定义
+                                                                                    器                能 程 外                    ，                的问
+                                                                 使用
+                                                                                线程       下使用                     ，           存   一             访问          寄存器时使用，        取到      的
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                                                                                                     (65/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ STM32 字符串打印                                                               stdio.h
+   printf 函数                                                      vsprinf 函数
+   int printf(const char *format, ...)                            int vsprintf(char *str, const char *format,
+   作用：发送格式化输出到标准输出 stdout。                                        va_list arg)
+   sprintf 函数                                                     作用：使用参数列表发送格式化输出到字符串。
+   int sprintf(char *str, const char *format, ...)                vfprintf 函数
+   作用：把格式化的数据写入某个字符串缓冲区                                           int vprintf(const char *format, va_list arg)作用：
+   问题：没有限制内存大小，容易出现内存溢出。                                          使用参数列表发送格式化输出到标准输出 stdout。
+   snprintf 函数                                                    asprintf 函数              asprintf.h
+   int snprintf(char *str, size_t size, const char                int asprintf(char **strp, const char *fmt, ...);
+   *restrict format, ...)                                         增强版的sprintf(),在不确定字符串的长度时，非常
+   相比于sprintf函数，加入了size参数，可以用来                                    灵活方便，能够根据格式化的字符串长度，申请足够
+   限制最大的写入数据量，避免内存溢出；但是返                                          的内存空间。此外，使用完后，必须通过free()释放
+   回值不可靠，返回值为应该写入的字符长度，而                                          空间。
+   不是已经写入的字符长度，不能判断有没有发生                                          fputc & fgetc 函数        见USART 课件
+   截断；                                                            int fputc(int char, FILE *stream)
+   snprintf是一个在C99才被加入如标准的函数，                                     把参数 char 指定的字符（一个无符号字符）写入到
+   原来的各个编译器都有自己的实现，导致在不同                                          指定的流 stream 中，并把位置标识符往前移动。
+   编辑器和编译环境下会存在差异。                                                int fgetc(FILE *f) -> 从文件f中读出一个字符
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                      (66/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+              AI 小
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (67/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+    Q&A
+
+       • 什么是STM32最小系统？     • 下列关键字如何使用？
+                           extern, volatile, static, struct, enum
+       • STM32的软件开发环境有哪几种？
+                           #ifdef, #elseif, #endif, __IO, _I
+         各自有啥特点？
+       • STM32单片机的中断优先级有什
+         么特点？              • 下面代码中 & 和 * 表达什么意
+       • ST固件库中，函数的命名规则有     思？
+                           int Data_Array[] = {1,2,3,4,5,6};
+         哪些特点？             int *pr;
+       • 什么叫HAL？为什么要引入HAL  pr = & Data_Array[0];
+       • STM32的数据存储默认是小端模 *pr=8;
+         式还是大端模式？          *(pr + 1)=?; Data_Array[0]=?;
+                                                                    *(pr + 2)=?;       Data_Array[1]=?;
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                     (68/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                                                                                       0x20002fe8 xxxx xxxx
+                                                           #表示立即数
+                             00000802: nop                  什么进制？
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0 xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 xxxx xxxx
+                                                                                       0x20002ff8 xxxx xxxx
+                             0000080a: push {r5}
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff8
+                             00000812: pop {r5}                                          PC = 0x0000 0804
+                                                                                         r4 = xx
+                  SubFunc:00000910:                nop                                   r5 = xx
+                          00000912:                bx lr                                 LR = xx
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (69/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0 xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 xxxx xxxx
+                                                                                       0x20002ff8 xxxx xxxx
+                             0000080a: push {r5}
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff8
+                             00000812: pop {r5}                                          PC = 0x0000 0806
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = xx
+                          00000912:                bx lr                                 LR = xx
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (70/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0 xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 xxxx xxxx
+                                                                                       0x20002ff8 xxxx xxxx
+                             0000080a: push {r5}
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff8
+                             00000812: pop {r5}                                          PC = 0x0000 0808
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = xx
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (71/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0 xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 xxxx xxxx
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff4
+                             00000812: pop {r5}                                          PC = 0x0000 080a
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = xx
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (72/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0
+                                                                                                  xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 0x0000 0034
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff0
+                             00000812: pop {r5}                                          PC = 0x0000 080c
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = xx (Link Register)
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (73/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0
+                                                                                                  xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 0x0000 0034
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff0
+                             00000812: pop {r5}                                          PC = 0x0000 0910
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = 0x0000 0811
+
+          函数跳转瞬间，SP指针指向子函数第一条指令的                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+          地址即0x0910，返回地址保存在了Link Register里；                                     PUSH : push the contains of register into stack
+          LR保存为0x0811，这是由于ARM体系的向下兼容                                            POP : pop from the stack and put in register
+                                                                                BL : jump to subroutine, update LR (用于兼容旧指令)
+          Thumb指令集。                                                             BX : return from subroutine, with LR value
+           -> 请扩展了解 ARM和Thumb指令集。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (74/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0
+                                                                                                  xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 0x0000 0034
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff0
+                             00000812: pop {r5}                                          PC = 0x0000 0810
+                                                                                         r4 = 0x0000 0012
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = 0x0000 0811
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (75/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0
+                                                                                                  xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 0x0000 0034
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff4
+                             00000812: pop {r5}                                          PC = 0x0000 0812
+                                                                                         r4 = 0x0000 0034
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0034
+                          00000912:                bx lr                                 LR = 0x0000 0811
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (76/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+      脑风暴                        Cortex-M0+ CPU (32 bits)
+                                                                                       Register file after this instruction
+
+                             00000802: nop                                             0x20002fe8 xxxx xxxx
+                             00000804: movs r4,#18                                     0x20002fec xxxx xxxx
+                             00000806: movs r5,#52                                     0x20002ff0
+                                                                                                  xxxx xxxx
+                             00000808: push {r4}                                       0x20002ff4 0x0000 0034
+                             0000080a: push {r5}                                       0x20002ff8 0x0000 0012
+                             0000080c: bl SubFunc
+                             00000810: pop {r4}                                          SP = 0x2000 2ff8
+                             00000812: pop {r5}                                          PC = 0x0000 0814
+                                                                                         r4 = 0x0000 0034
+                  SubFunc:00000910:                nop                                   r5 = 0x0000 0012
+                          00000912:                bx lr                                 LR = 0x0000 0811
+                                                                                NOP : no operation, do nothing
+                                                                                MOVS : move data, update APSR register
+                             current executed instruction                       PUSH : push the contains of register into stack
+                                                                                POP : pop from the stack and put in register
+                             current stack pointer                              BL : jump to subroutine, update LR
+                                                                                BX : return from subroutine, with LR value
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                         (77/100)
+            STM32
+
+
+
+
+                                                        The   End!
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+                                                             HAL全 Hardware Abstract Layer，
+  3 HAL库开发与源                                   件            意为   抽象层，HAL库是STM32 发
+                                                            生   极为    的组成 分， 单独            ，
+                                                            而是以STM32CubeMX的形式         。
+                                      3.1 stm32f1xx.h源码分析
+
+                                           3.2 stm32f103xe.h
+
+                                           3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+
+                                       3.4 stm32f1xx_hal_gpio.c和stm32f1xx_hal_gpio.h
+
+      与标准外设库相比，HAL库封装得显得更加紧凑，并且源  通过对外设的对象 ，
+      使“层”的特点非常 显，   分外设也都通过句柄操作，极难 到寄存器的影子。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                     (79/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析                                         stm32f1xx.h是HAL库中非常重要的头文件，
+                                                          是STM32F1xx系列MCU的顶层头文件，意味着
+                                                          凡是使用STM32F1xx系列的芯片，其应用程序
+ #ifndef __STM32F1XX_H                                    都需要包含这个头文件。
+ #define __STM32F1XX_H                                  解析：如果没有定义宏__STM32F1XX_H，
+                                                        则定义宏__STM32F1XX_H。这是个条件编
+ #ifdef __cplusplus                                     译，目的是防止头文件被重复包含。
+ extern "C" {
+                                                        解析：这是一个条件编译，__cplusplus
+ #if !defined (STM32F1)                                 是C++中自定义的一个宏，plus是“+”的
+ #define STM32F1                                        意思。这段代码的作用是如果定义了C++，
+ #endif /* STM32F1 */                                   则用extern"C"{" 和 " }"来告诉编译器:
+                                                        这是一个用C语言写成的库函数，请用C
+   解析：                                                  语言的方式来链接编译它们。主要是因
+   如果没定义STM32F1，                                        为c++中存在重载，c++编译时会把函数
+   则定义STM32F1。                                          参数一起编译，而c语言只编译函数名。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (80/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析
+         #if !defined (STM32F100xB) && !defined (STM32F100xE) && !defined (STM32F101x6) && \
+         !defined (STM32F101xB) && !defined (STM32F101xE) && !defined (STM32F101xG) && !defined
+         (STM32F102x6) && !defined (STM32F102xB) && !defined (STM32F103x6) && \
+         !defined (STM32F103xB) && !defined (STM32F103xE) && !defined (STM32F103xG) && !defined
+         (STM32F105xC) && !defined (STM32F107xC)
+          /* #define STM32F100xB */
+          /* #define STM32F100xE */
+          /* #define STM32F101x6 */                解析：这段宏定义作用是编译器提示进行设备
+          /* #define STM32F101xB */              选型，如果没有发现任何STM32设备，则编译
+          /* #define STM32F101xE */
+          /* #define STM32F101xG */              器 在 编 译 时 会 提 示 错 误 信 息 ， 如 ： #error
+          /* #define STM32F102x6 */              "Please select first the target STM32F1xx device
+          /* #define STM32F102xB */              used in your application (in stm32f1xx.h file)"，
+          /* #define STM32F103x6 */
+          /* #define STM32F103xB */              这时就需要在这段代码中找到所使用的MCU，
+          /* #define STM32F103xE */              把相应系列的STM32芯片的注释去掉，就可以
+          /* #define STM32F103xG */              了，如使用的是STM32F103ZET6芯片，则需要
+          /* #define STM32F105xC */
+          /* #define STM32F107xC */              把STM32F103xE这段代码前后的注释去掉。
+         #endif
+EE114 Embedded System -> Lecture 12 STM32 Programming                                          (81/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析
+    #if !defined (USE_HAL_DRIVER)                                #define __STM32F1_CMSIS_VERSION_MAIN (0x04)
+    /**                                                               /*!< [31:24] main version */
+     * @brief Comment the line below if you will not             #define __STM32F1_CMSIS_VERSION_SUB1 (0x03)
+    use the peripherals drivers.                                      /*!< [23:16] sub1 version */
+      In this case, these drivers will not be included           #define __STM32F1_CMSIS_VERSION_SUB2 (0x01)
+    and the application code will                                      /*!< [15:8] sub2 version */
+    be based on direct access to peripherals registers           #define __STM32F1_CMSIS_VERSION_RC (0x00)
+      */                                                               /*!< [7:0] release candidate */
+     /*#define USE_HAL_DRIVER */                                 #define __STM32F1_CMSIS_VERSION
+    #endif /* USE_HAL_DRIVER */                                  ((__STM32F1_CMSIS_VERSION_MAIN << 24)\
+                                                                 |(__STM32F1_CMSIS_VERSION_SUB1 << 16)\
+     解析：这段代码用于定义是否使用外设驱动                                         |(__STM32F1_CMSIS_VERSION_SUB2 << 8 )\
+    库编写外设应用程序（这儿指HAL库或标准外                                        |(__STM32F1_CMSIS_VERSION_RC))
+    设库，即调用API函数的开发方式），如果想
+    使用基于寄存器的开发方式，即不使用ST提供                                               解析：CMSIS设备版本号的定义。
+    的HAL库，则把下面的代码注释掉。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                   (82/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析
+                                                                                       #elif defined(STM32F103x6)
+                                                                                         #include "stm32f103x6.h"
+  解析：stm32f1xx.h是                 #if defined(STM32F100xB)
+                                                                                       #elif defined(STM32F103xB)
+  STM32F1 MCU的顶层头文件， #include "stm32f100xb.h"                                            #include "stm32f103xb.h"
+                                  #elif defined(STM32F100xE)
+  由于STM32F1xx系列的芯片特 #include "stm32f100xe.h"                                           #elif defined(STM32F103xE)
+  别多，ST针对每种具体芯片 #elif defined(STM32F101x6)                                               #include "stm32f103xe.h"
+                                                                                       #elif defined(STM32F103xG)
+  型号定义了一个特有的设备                     #include "stm32f101x6.h"
+                                                                                         #include "stm32f103xg.h"
+  驱动头文件，用户在使用某 #elif defined(STM32F101xB)                                              #elif defined(STM32F105xC)
+                                   #include "stm32f101xb.h"
+  种具体芯片进行开发时，需                                                                           #include "stm32f105xc.h"
+                                  #elif defined(STM32F101xE)
+  要在这里选择包含具体芯片                     #include "stm32f101xe.h"
+                                                                                       #elif defined(STM32F107xC)
+  头文件，如果没有定义，则 #elif defined(STM32F101xG)                                                #include "stm32f107xc.h"
+  提示错误信息：Please select #include "stm32f101xg.h"                                        #else
+                                                                                        #error "Please select first the
+  first the target STM32F1xx      #elif defined(STM32F102x6)
+                                                                                       target STM32F1xx device used in
+  device used in your application #include "stm32f102x6.h"                             your application (in stm32f1xx.h
+                                  #elif defined(STM32F102xB)
+  (in stm32f1xx.h file)。           #include "stm32f102xb.h"
+                                                                                       file)"
+                                                                                       #endif
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                            (83/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析
+                                                                                            解析：FunctionalState为函
+                                                        typedef enum                        数状态，有两种状态，分
+                                                        {                                   别是DISABLE = 0（失能），
+                                                          RESET = 0,                         ENABLE = 1（使能）。
+   解析：为枚举类型                                               SET = !RESET
+   enum{RESET=0, SET = !RESET}                          } FlagStatus, ITStatus;
+   定义了两个别名FlagStatus                                    typedef enum
+   和ITStatus，FlagStatus为标                               {
+   志状态,其值有两种RESET=0                                       DISABLE = 0,                      解析：带参数的宏定义，
+   （重置）和 SET =1（置位）；                                      ENABLE = !DISABLE                 用于功能状态参数判断，
+                                                        } FunctionalState;                  在函数中调用它来判断所
+   ITStatus为中断标志类型，
+   其值有两种RESET = 0（重置）                                   #define                             输入的状态参数是不是
+                                                        IS_FUNCTIONAL_STATE(STATE)          ENABLE（使能）或
+   和SET =1（置位）。
+                                                        (((STATE) == DISABLE) || ((STATE)   DISABLE（失能），
+                                                        == ENABLE))                         如果是则返回1，如果参
+                                                                                            数不合法则返回0。
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                      (84/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.1 stm32f1xx.h源码分析                                                              解析：如果使用HAL驱动函数
+                                                                                  库，则应用程序中要include
+   typedef enum                                                                   一个stm32f1xx_hal.h头文件。
+   {                                  解析：ErrorStatus错误状态，
+     SUCCESS = 0U,                     SUCCESS = 0（正确），                                #if defined (USE_HAL_DRIVER)
+     ERROR = !SUCCESS                                                                  #include "stm32f1xx_hal.h"
+   } ErrorStatus;                       ERROR =1（错误）。
+                                                                                       #endif /* USE_HAL_DRIVER */
+
+   #define SET_BIT(REG, BIT) ((REG) |= (BIT))                                          #ifdef __cplusplus
+   #define CLEAR_BIT(REG, BIT) ((REG) &= ~(BIT))                                       }
+   #define READ_BIT(REG, BIT) ((REG) & (BIT))                                          #endif /* __cplusplus*/
+   #define CLEAR_REG(REG)      ((REG) = (0x0))                                         #endif /* __STM32F1xx_H */
+   #define WRITE_REG(REG, VAL) ((REG) = (VAL))
+   #define READ_REG(REG)      ((REG))
+   #define MODIFY_REG(REG, CLEARMASK, SETMASK)
+   WRITE_REG((REG), (((READ_REG(REG)) &                                 解析：STM32寄存器位的宏定
+   (~(CLEARMASK))) | (SETMASK)))                                         义，其作用相当于函数。
+   #define POSITION_VAL(VAL)
+   (__CLZ(__RBIT(VAL)))
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                               (85/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 3.2 stm32f103xe.h                                                   STM32F10x系列MCU
+                                                                      的中断向量的定义
+     stm32f103xe.h是STM32F1系列专
+    门针对STM32F103xE芯片定义的特
+    有的片上外设头文件。它包含了整                                                           存储空间的地址映射
+    个HAL库所共用的配置（中断向量、
+    寄存器的定义等），也是所有外设                                                                    所有片上外设寄存器
+    与用户函数的头文件所必须包含的                                                                      的结构体定义
+    一个头文件。
+                            #define GPIO_CRL_MODE_Pos (0U)
+                            #define GPIO_CRL_MODE_Msk (0x33333333UL << GPIO_CRL_MODE_Pos)
+                              /*!< 0x33333333 */
+                            #define GPIO_CRL_MODE      GPIO_CRL_MODE_Msk
+                              /*!< Port x mode bits */
+                            ……
+EE114 Embedded System -> Lecture 12 STM32 Programming                                              (86/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 3.2 stm32f103xe.h
+                                          #ifndef __STM32F103xE_H
+                                                                                  解析：条件编译，类似if-else
+                                          #define __STM32F103xE_H                 结构。当用C++编译器编译时，
+                                                                                  extern "C" { 告知编译器下面这
+     解析：条件编译，                             #ifdef __cplusplus                      段程序是用C语言编写的，请
+     防止头文件被重                              extern "C" {                            用C的方式进行编译。
+     复包含。                                 #endif
+
+                                          #define __CM3_REV 0x0200U
+                                             /*!< Core Revision r2p0           */
+                                          #define __MPU_PRESENT 0U
+                                             /*!< Other STM32 devices does not provide an MPU */
+                                          #define __NVIC_PRIO_BITS 4U
+     解析：                                     /*!< STM32 uses 4 Bits for the Priority Levels */
+                                          #define __Vendor_SysTickConfig 0U
+     与Cortex-M3内
+                                              /*!< Set to 1 if different SysTick Config is used */
+     核相关的宏定义。
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                (87/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                          /*!< Interrupt Number Definition */
+ 3.2 stm32f103xe.h     typedef enum
+                       {
+                           /*** Cortex-M3 Processor Exceptions Numbers ***/
+         MCU中断向量定义       NonMaskableInt_IRQn = -14,
+  解析：与Cortex-M3内核有关的异常     /*!< 2 Non Maskable Interrupt          */
+  中断，由ARM公司统一定义，编号 HardFault_IRQn                = -13,
+                          /*!< 3 Cortex-M3 Hard Fault Interrupt       */
+  均小于0，编号越小，意味着中断优 MemoryManagement_IRQn                   = -12,
+  先级越高。ARM公司设计的Cortex-    /*!< 4 Cortex-M3 Memory Management Interrupt */
+  M3内核可支持256个中断，包括15 BusFault_IRQn               = -11,
+  个内核中断和240个外部中断，并具 /*!< 5 Cortex-M3 Bus Fault Interrupt             */
+  有256级的可编程中断优先级设置， UsageFault_IRQn              = -10,
+                           /*!< 6 Cortex-M3 Usage Fault Interrupt      */
+  即除了3个固定的高优先级（Reset、 SVCall_IRQn                = -5,
+  NMI、硬件失效），其他中断和异         /*!< 11 Cortex-M3 SV Call Interrupt       */
+  常的优先级是可以由用户设置的。 DebugMonitor_IRQn = -4,
+  但使用Cortex-M3内核的芯片制造商     /*!< 12 Cortex-M3 Debug Monitor Interrupt */
+  （如ST、NXP公司等）往往不需要 PendSV_IRQn                  = -2,
+                           /*!< 14 Cortex-M3 Pend SV Interrupt       */
+  用到那么多中断，ST根据需求针对 SysTick_IRQn                  = -1,
+  具体的MCU进行了裁剪。             /*!< 15 Cortex-M3 System Tick Interrupt      */
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (88/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 3.2 stm32f103xe.h                                          /** STM32 specific Interrupt Numbers ******/
+                                                         WWDG_IRQn = 0,
+                                                           /*!< Window WatchDog Interrupt          */
+                                                         PVD_IRQn        = 1,
+         MCU中断向量定义                                          /*!< PVD through EXTI Line detection Interrupt */
+                                                         TAMPER_IRQn = 2, /*!< Tamper Interrupt                  */
+                                                         RTC_IRQn         = 3, /*!< RTC global Interrupt         */
+         解析：STM32的中断向                                    FLASH_IRQn      = 4, /*!< FLASH global Interrupt        */
+         量表，这个是由ST公司                                     RCC_IRQn         = 5, /*!< RCC global Interrupt          */
+                                                         EXTI0_IRQn       = 6, /*!< EXTI Line0 Interrupt          */
+         针对具体的STM32芯片                                    EXTI1_IRQn       = 7, /*!< EXTI Line1 Interrupt          */
+         设计的中断，
+                                                          …… ……… ..
+         STM32F103系列芯片有
+         60个可屏蔽中断，中断                                     DMA2_Channel3_IRQn = 58,
+         向量编号为0~59。                                          /*!< DMA2 Channel 3 global Interrupt           */
+                                                         DMA2_Channel4_5_IRQn = 59,
+                                                            /*!< DMA2 Channel 4 and Channel 5 global Interrupt         */
+                                                        } IRQn_Type;
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                             (89/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+ 3.2 stm32f103xe.h                                      所有片上外设寄存器的结构体定义
+        #include "core_cm3.h"                             __IO uint32_t SQR2;
+        #include                                          __IO uint32_t SQR3;
+        "system_stm32f1xx.h"                              __IO uint32_t JSQR;
+        #include <stdint.h>                               __IO uint32_t JDR1;
+                                                          __IO uint32_t JDR2;
+        typedef struct                                    __IO uint32_t JDR3;     解析：STM32F103xE芯片
+        {                                                 __IO uint32_t JDR4;     的片上外设寄存器的结构
+          __IO uint32_t SR;                               __IO uint32_t DR;
+          __IO uint32_t CR1;                            } ADC_TypeDef;
+                                                                                  体定义。
+          __IO uint32_t CR2;                            ……
+          __IO uint32_t SMPR1;                          typedef struct
+          __IO uint32_t SMPR2;                          {
+          __IO uint32_t JOFR1;                            __IO uint32_t CR;
+          __IO uint32_t JOFR2;                              /*!< WWDG Control register,   Address offset: 0x00 */
+          __IO uint32_t JOFR3;                            __IO uint32_t CFR;
+          __IO uint32_t JOFR4;                             /*!< WWDG Configuration register, Address offset: 0x04 */
+          __IO uint32_t HTR;                              __IO uint32_t SR;
+          __IO uint32_t LTR;                               /*!< WWDG Status register,    Address offset: 0x08 */
+          __IO uint32_t SQR1;                           } WWDG_TypeDef;
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                              (90/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+                                                    #define FLASH_BASE    0x08000000UL       /*FLASH 基地址*/
+ 3.2 stm32f103xe.h                                  #define FLASH_BANK1_END 0x0807FFFFUL /*FLASH bank1结束地址 */
+                                                    #define SRAM_BASE     0x20000000UL       /*SRAM 基地址 */
+                                                    #define PERIPH_BASE   0x40000000UL       /*外设基地址*/
+  存储空间的地址映射                                           /*!外设总线地址*/
+                                                    #define APB1PERIPH_BASE    PERIPH_BASE
+解析：应用程序的编写是通过                                       #define APB2PERIPH_BASE    (PERIPH_BASE + 0x00010000UL)
+调用HAL库的接口函数实现相                                      #define AHBPERIPH_BASE    (PERIPH_BASE + 0x00020000UL)
+应的功能，其实质是调用标准                                       #define TIM2_BASE        (APB1PERIPH_BASE + 0x00000000UL)
+                                                    ……
+外设库函数来完成相应寄存器                                       #define GPIOA_BASE       (APB2PERIPH_BASE + 0x00000800UL)
+的操作。                                                ……
+   地址利用指针转换为寄存                                      #define ADC1_BASE        (APB2PERIPH_BASE + 0x00002400UL)
+器：通过宏定义 #define GPIOB                               ……
+                                                    #define USART1_BASE      (APB2PERIPH_BASE + 0x00003800UL)
+((GPIO_TypeDef *)GPIOB_BASE)，
+转换为GPIO结构体的指针，这                                     #define TIM2            ((TIM_TypeDef *)TIM2_BASE)
+样就可以操作结构体的成员                                        .. …
+                                                    #define GPIOA           ((GPIO_TypeDef *)GPIOA_BASE)
+（也即寄存器）。                                            ……
+                                                    #define DMA1_Channel2 ((DMA_Channel_TypeDef *)DMA1_Channel2_BASE)
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                           (91/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+
+                    stm32f1xx_hal.c和stm32f1xx_hal.h
+               是STM32F1系列MCU的HAL库相关的源文件和头文件。
+
+                                                        stm32f1xx_hal.c
+
+
+
+           HAL的初始化                              复位函数                       HAL通用的
+                                                                                       ……
+          函数HAL_Init()                         HAL_DeInit()                  API函数
+
+
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                       (92/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+     /* ----包含的头文件--*/
+   #include "stm32f1xx_hal.h"
+                                                                              HAL_TICK_FREQ_DEFAULT定
+   ……
+   __IO uint32_t uwTick;                                                     义在stm32f1xx_hal.h头文件中，
+      //定义一个32位的无符号整型变量uwTick
+                                                                             是别名为HAL_TickFreqTypeDef
+   uint32_t uwTickPrio = (1UL << __NVIC_PRIO_BITS);
+      /* 无效的优先级PRIO */                                                       的一个枚举成员，其值为1ms：
+   HAL_TickFreqTypeDef uwTickFreq =
+   HAL_TICK_FREQ_DEFAULT;
+      /* 1KHz */                                                       typedef enum
+                                                                       {
+                                                                         HAL_TICK_FREQ_10HZ = 100U,
+           解析：定义滴答定时器的时基，                                                HAL_TICK_FREQ_100HZ = 10U,
+            HAL_TICK_FREQ_1KHZ为1ms，                                      HAL_TICK_FREQ_1KHZ = 1U,
+                                                                         HAL_TICK_FREQ_DEFAULT =
+            HAL_TICK_FREQ_100HZ为10ms，
+                                                                       AL_TICK_FREQ_1KHZ
+            HAL_TICK_FREQ_10HZ为100ms。                                  } HAL_TickFreqTypeDef;
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                 (93/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+  HAL_StatusTypeDef HAL_Init(void)
+  {                                                                        解析：HAL的初始化函数HAL_Init()，
+  #if (PREFETCH_ENABLE != 0)                                                通过配置Flash预取功能实现指令
+  #if defined(STM32F101x6) || defined(STM32F101xB) ||                       和数据的预取缓存。
+  defined(STM32F101xE) || defined(STM32F101xG) || \
+  defined(STM32F102x6) || defined(STM32F102xB) || \
+  defined(STM32F103x6) || defined(STM32F103xB) ||                          通过HAL_NVIC_SetPriorityGrouping( )
+  defined(STM32F103xE) || defined(STM32F103xG) || \                        函数设置中断优先级分组为
+  defined(STM32F105xC) || defined(STM32F107xC)                             NVIC_PRIORITYGROUP_4，调用
+    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();                                  HAL_InitTick()函数配置系统滴答定
+  #endif
+  #endif /* PREFETCH_ENABLE */
+                                                                           时器SysTick产生1ms的时间基准，调
+    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);                    用HAL_MspInit回调函数，执行外设
+    HAL_InitTick(TICK_INT_PRIORITY);                                       驱动的初始化（如GPIO、串口、
+    HAL_MspInit();                                                         DMA等），从而完成系统初始化。
+  return HAL_OK;
+  }
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                  (94/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+    __weak void HAL_MspInit(void)
+                                                                                       解析：HAL_MspInit( )为回调
+    {                                                                                  函数，函数体内部是空的，
+      /* NOTE : This function should not be modified, when                             由程序开发人员完成。注意：
+    the callback is needed,                                                            函数有个前缀__weak，表示
+    the HAL_MspInit could be implemented in the user file                              弱定义，用户可以重定义。
+      */
+    }
+    __weak HAL_StatusTypeDef                                        /*配置系统滴答定时器SysTick的中断优先级*/
+    HAL_InitTick(uint32_t TickPriority)                         if (TickPriority < (1UL << __NVIC_PRIO_BITS))
+    {                                                             {
+        /*配置系统滴答定时器产生                                               HAL_NVIC_SetPriority(SysTick_IRQn, TickPriority, 0U);
+          时基为1ms的中断*/                                               uwTickPrio = TickPriority;
+    if (HAL_SYSTICK_Config(SystemCoreClock /                      }
+    (1000U / uwTickFreq)) > 0U)                                 else
+      {                                                           { return HAL_ERROR; }
+    return HAL_ERROR;                                           return HAL_OK;
+      }                                                         }
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                             (95/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.3 stm32f1xx_hal.c和stm32f1xx_hal.h
+        __weak void HAL_IncTick(void)
+        { uwTick += uwTickFreq;
+                                                                 解析：调用了函数 HAL_Init 后，
+        }
+                                                                 SysTick 相关的函数就可以使用
+        __weak uint32_t HAL_GetTick(void)
+        { return uwTick;                                         解析：HAL_GetTic( )函数用于获取
+        }                                                        计数器uwTick的值。
+        __weak void HAL_Delay(uint32_t Delay)
+        {                                                        解析：HAL_Delay( )延时函数通过循环读取
+        uint32_t tickstart = HAL_GetTick();                      uwTick 计数器的值与输入Delay的值相比较，
+        uint32_t wait = Delay;
+        if (wait < HAL_MAX_DELAY)
+                                                                 根据差值来实现延迟功能，输入参数Delay
+          { wait += (uint32_t)(uwTickFreq);                      为需要延时的时间，单位为毫秒（ms）
+          }                                                        HAL_Delay( )延时函数是在应用程序中
+        while ((HAL_GetTick() - tickstart) < wait)               调用较多的一个函数。
+          { }
+        }
+EE114 Embedded System -> Lecture 12 STM32 Programming                                     (96/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.4 stm32f1xx_hal_gpio.c 和stm32f1xx_hal_gpio.h
+
+
+
+              stm32f1xx_hal_xxx.h
+                                                                         stm32f1xx_hal_xxx.c
+                 某一个具体外设的
+                 头文件，主要包含                                                某一个功能外设硬件驱
+                 具体外设功能的结                                                动HAL库函数的源文件，
+                 构体的定义以及外                                                是xxx外设所用HAL库函
+                 设HAL库函数的声明。                                             数的具体实现。
+
+
+EE114 Embedded System -> Lecture 12 STM32 Programming                                          (97/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.4 stm32f1xx_hal_gpio.c 和stm32f1xx_hal_gpio.h
+            /* Define to prevent recursive inclusion ---*/
+         #ifndef STM32F1xx_HAL_GPIO_H
+         #define STM32F1xx_HAL_GPIO_H
+                                                              解析：定义一个struct结构体的
+         #ifdef __cplusplus                                   别名GPIO_InitTypeDef，其成员
+         extern "C" {                                         变量有四个，Pin代表引脚，
+         #endif                                               Mode表示输入输出模式，Pull
+         #include "stm32f1xx_hal_def.h “                      表示上拉下拉，Speed表示速度。
+         typedef struct
+         { uint32_t Pin;
+             uint32_t Mode;
+             uint32_t Pull;
+             uint32_t Speed;                             解析：定义一个enum枚举类型的别名
+         } GPIO_InitTypeDef;                             GPIO_PinState，用于表示GPIO引脚置位和
+         typedef enum                                    复位的定义，GPIO_PIN_RESET表示GPIO引
+         { GPIO_PIN_RESET = 0u,                          脚复位，即置“0”；GPIO_PIN_SET表示
+             GPIO_PIN_SET
+                                                         GPIO引脚置位，即置“1”。
+         } GPIO_PinState;
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (98/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.4 stm32f1xx_hal_gpio.c 和stm32f1xx_hal_gpio.h
+     /* Define to prevent recursive inclusion ---*/                     解析：GPIO引脚定义。
+   #define GPIO_PIN_0 ((uint16_t)0x0001)
+      /* Pin 0 selected */#define GPIO_MODE_INPUT 0x00000000u
+                               /*输入模式 */
+   #define GPIO_PIN_1 ((uint16_t)0x0002)
+      /* Pin 1 selected */#define GPIO_MODE_OUTPUT_PP     0x00000001u
+   …….                         /*推挽输出模式 */
+                          #define GPIO_MODE_OUTPUT_OD 0x00000011u
+   #define GPIO_PIN_15 ((uint16_t)0x8000)
+      /* Pin 15 selected */   /*开漏输出模式 */
+                          #define GPIO_MODE_AF_PP
+   #define GPIO_PIN_All ((uint16_t)0xFFFF)             0x00000002u
+     /* All pins selected */  /*复用推挽输出模式 */
+                          #define GPIO_MODE_AF_OD
+   #define GPIO_PIN_MASK 0x0000FFFFu                   0x00000012u
+                              /*复用开漏输出模式 */
+    /* PIN mask for assert test */
+                          #define GPIO_MODE_AF_INPUT GPIO_MODE_INPUT
+                             /*复用输入模式 */
+       解析：GPIO引脚输入输出模式定义， … …
+       输出模式主要有推挽、开漏模式。    #define GPIO_MODE_EVT_RISING_FALLING
+                          0x10320000u
+EE114 Embedded System -> Lecture 12 STM32 Programming                                  (99/100)
+Progress: STM32最小系统 >> 寄存器编程 >> 嵌入式C语言 >> STM32 固件库 >> STM32程序开发 >> 小结 >> STM32 HAL库
+
+
+
+
+ 3.4 stm32f1xx_hal_gpio.c 和stm32f1xx_hal_gpio.h
+     /* Define to prevent recursive inclusion ---*/
+   #define GPIO_SPEED_FREQ_LOW (GPIO_CRL_MODE0_1)
+     /*!< Low speed */
+                                                                               解析：GPIO引脚输出速度的
+   #define GPIO_SPEED_FREQ_MEDIUM                                              定义，有三种：低速、中速、
+   (GPIO_CRL_MODE0_0)                                                          高速，这里的输出速度指的是
+     /*!< Medium speed */                                                      I/O引脚的响应速度。
+   #define GPIO_SPEED_FREQ_HIGH (GPIO_CRL_MODE0)
+     /*!< High speed */
+                                          /*--- GPIO初始化及复位函数---*/
+                                          void HAL_GPIO_Init(GPIO_TypeDef *GPIOx, GPIO_InitTypeDef *GPIO_Init);
+ stm32f1xx_hal_gpio.h                     void HAL_GPIO_DeInit(GPIO_TypeDef *GPIOx, uint32_t GPIO_Pin);
+ 头文件中除了相应的                                /* ---GPIO引脚功能操作函数---*/
+ 宏定义，源码最后一                                GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+                                          void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+ 部分是GPIO HAL库的                            void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+ 函数声明。                                    HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+                                          void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin);
+                                          void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+EE114 Embedded System -> Lecture 12 STM32 Programming                                                                   (100/100)
+
