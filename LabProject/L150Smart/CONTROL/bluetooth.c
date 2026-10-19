@@ -56,6 +56,76 @@ u8 Usart3_Receive_buf[1];          //串口3接收中断数据存放的缓冲区
 u8 Uart5_Receive_buf[1];          //串口5接收中断数据存放的缓冲区
 u8 PID_Send;			//用于手机app获取参数界面的变量
 u8 Flag_Direction;		//用于手机app的方向变量，顺时针一圈共8个方向，数值是1--8,停止时数值为0
+#define APP_CMD_AUTO_UPPER      0x41  /* 'A': smart cruise before manual control is active */
+#define APP_CMD_MANUAL_UPPER    0x42  /* 'B': APP manual before manual control is active */
+#define APP_CMD_AUTO            0x61  /* 'a': smart cruise at any time */
+#define APP_CMD_MANUAL          0x62  /* 'b': APP manual at any time */
+#define APP_CMD_MAPPING         0x53  /* 'S': local mapping navigation */
+
+static void APP_Enter_Smart_Cruise_Mode(void)
+{
+	Mode = Smart_Cruise_Mode;
+	APP_ON_Flag = RC_OFF;
+	PS2_ON_Flag = RC_OFF;
+	Remote_ON_Flag = RC_OFF;
+	ROS_ON_Flag = RC_OFF;
+	Flag_Direction = 0;
+	Move_X = 0;
+	Move_Z = 0;
+	Smart_Cruise_Reset();
+}
+
+static void APP_Enter_Mapping_Nav_Mode(void)
+{
+	Mode = Lidar_Mapping_Nav_Mode;
+	APP_ON_Flag = RC_OFF;
+	PS2_ON_Flag = RC_OFF;
+	Remote_ON_Flag = RC_OFF;
+	ROS_ON_Flag = RC_OFF;
+	Flag_Direction = 0;
+	Move_X = 0;
+	Move_Z = 0;
+	Lidar_Mapping_Nav_Reset();
+}
+
+static void APP_Enter_Manual_Mode(void)
+{
+	Mode = Normal_Mode;
+	APP_ON_Flag = RC_ON;
+	PS2_ON_Flag = RC_OFF;
+	Remote_ON_Flag = RC_OFF;
+	ROS_ON_Flag = RC_OFF;
+	Flag_Direction = 0;
+	Move_X = 0;
+	Move_Z = 0;
+	RC_Velocity = Default_Velocity;
+	if(Car_Num == Akm_Car)
+		RC_Turn_Velocity = Bluetooth_Turn_Angle;
+	else
+		RC_Turn_Velocity = Default_Turn_Bias;
+}
+
+static u8 APP_Mode_Command_Process(u8 bluetooth_receive)
+{
+	if(bluetooth_receive == APP_CMD_AUTO ||
+		(APP_ON_Flag == RC_OFF && bluetooth_receive == APP_CMD_AUTO_UPPER))
+	{
+		APP_Enter_Smart_Cruise_Mode();
+		return 1;
+	}
+	else if(bluetooth_receive == APP_CMD_MANUAL ||
+		(APP_ON_Flag == RC_OFF && bluetooth_receive == APP_CMD_MANUAL_UPPER))
+	{
+		APP_Enter_Manual_Mode();
+		return 1;
+	}
+	else if(bluetooth_receive == APP_CMD_MAPPING)
+	{
+		APP_Enter_Mapping_Nav_Mode();
+		return 1;
+	}
+	return 0;
+}
 /**************************************************************************
 Function: BLUETOOTH_USART_IRQHandler
 Input   : none
@@ -136,6 +206,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef*huart) //接收回调函数
 	  static u8 Flag_PID,i,j,Receive[50];
 	  static float Data;						//app界面接收参数用到的变量	  
 		  bluetooth_receive=Usart3_Receive_buf[0]; 
+		  if(APP_Mode_Command_Process((u8)bluetooth_receive))
+		  {
+			  temp_count = 0;
+			  Flag_PID = 0;
+			  i = 0;
+			  j = 0;
+			  Data = 0;
+			  memset(Receive, 0, sizeof(u8)*50);
+			  HAL_UART_Receive_IT(&huart3,Usart3_Receive_buf,sizeof(Usart3_Receive_buf));
+			  return;
+		  }
 		  if(APP_ON_Flag == RC_OFF)						//未开启蓝牙控制，只接收数据进行简单的分析
 	  	{
 			  if(bluetooth_receive == 0x41)
@@ -143,15 +224,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef*huart) //接收回调函数
 				  if((++temp_count) == 5)					//需要连续发送5次前进的指令，上拉转盘一段时间可开始app控制
 				  {
 					  temp_count = 0;
-					  APP_ON_Flag = RC_ON;		
-					  PS2_ON_Flag = RC_OFF;
-						Remote_ON_Flag = RC_OFF;
-					  ROS_ON_Flag=RC_OFF;
-					  RC_Velocity = Default_Velocity;		//此时速度恢复默认速度
-					  if(Car_Num == Akm_Car)				//阿克曼车的转向为角度，蓝牙控制时转向角度默认不变
-						  RC_Turn_Velocity = Bluetooth_Turn_Angle;
-					  else								//其他车型是两轮差速
-						  RC_Turn_Velocity = Default_Turn_Bias;
+					  APP_Enter_Manual_Mode();
 				  }
 			  }
 			  else 

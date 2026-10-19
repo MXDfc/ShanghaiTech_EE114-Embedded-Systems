@@ -195,6 +195,47 @@ void Show(void)
 		if(Flag_Stop) OLED_ShowString(105,50,"OFF");
 		else OLED_ShowString(105,50,"ON ");
 	}
+	else if(Mode == Lidar_Mapping_Nav_Mode)
+	{
+		OLED_ShowString(0,0,"Mode:MapNav");
+
+		OLED_ShowString(0,10,"S:");
+		OLED_ShowNumber(12,10,MapNav_Telemetry.state,1,12);
+		OLED_ShowString(30,10,"B:");
+		OLED_ShowNumber(42,10,MapNav_Telemetry.best_clear_mm,4,12);
+		OLED_ShowString(82,10,"O:");
+		OLED_ShowNumber(94,10,MapNav_Telemetry.occupied_cells,3,12);
+
+		OLED_ShowString(0,20,"A:");
+		if(MapNav_Telemetry.best_angle_deg<0) OLED_ShowString(12,20,"-");
+		else OLED_ShowString(12,20,"+");
+		OLED_ShowNumber(20,20,myabs(MapNav_Telemetry.best_angle_deg),3,12);
+		OLED_ShowString(58,20,"N:");
+		OLED_ShowNumber(70,20,MapNav_Telemetry.nearest_mm,4,12);
+
+		OLED_ShowString(0,30,"VX:");
+		if(Move_X<0) OLED_ShowString(24,30,"-");
+		else OLED_ShowString(24,30,"+");
+		OLED_ShowNumber(32,30,myabs(Move_X*1000),3,12);
+		OLED_ShowString(66,30,"VZ:");
+		if(Move_Z<0) OLED_ShowString(90,30,"-");
+		else OLED_ShowString(90,30,"+");
+		OLED_ShowNumber(98,30,myabs(Move_Z*100),3,12);
+
+		OLED_ShowString(0,40,"U:");
+		OLED_ShowNumber(14,40,MapNav_Telemetry.map_updates,4,12);
+		OLED_ShowString(66,40,"ND:");
+		OLED_ShowNumber(86,40,MapNav_Telemetry.no_data_ticks,3,12);
+
+		OLED_ShowString(0,50,"AKM");
+		OLED_ShowString(62,50,".");
+		OLED_ShowString(86,50,"V");
+		OLED_ShowNumber(48,50,Voltage/100,2,12);
+		OLED_ShowNumber(70,50,Voltage/10%10,1,12);
+		OLED_ShowNumber(78,50,Voltage%10,1,12);
+		if(Flag_Stop) OLED_ShowString(105,50,"OFF");
+		else OLED_ShowString(105,50,"ON ");
+	}
 	else if(Mode == Lab_Lidar_Radar_Mode)
 	{
 		OLED_ShowString(0,0,"Mode:LabRad");
@@ -247,6 +288,7 @@ void Show(void)
 		else if(Mode==Lidar_Along_Mode)		  OLED_ShowString(50,0,"Along  ");
 		else if(Mode==Lab_Lidar_Radar_Mode)	OLED_ShowString(50,0,"LabRad ");
 		else if(Mode==Smart_Cruise_Mode)	OLED_ShowString(50,0,"Smart  ");
+		else if(Mode==Lidar_Mapping_Nav_Mode) OLED_ShowString(50,0,"MapNav ");
 //		else if(Mode==Measure_Distance_Mode)	OLED_ShowString(50,0,"Measure");//超声波测量距离
 
 		//====================第二行显示小车控制方式================//

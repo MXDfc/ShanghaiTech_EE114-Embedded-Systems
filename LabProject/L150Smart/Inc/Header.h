@@ -41,6 +41,7 @@ All rights reserved
 #include "pid.h"
 #include "Lidar.h"
 #include "smart_cruise.h"
+#include "lidar_mapping_nav.h"
 #include "control.h"
 #include "capture.h"
 #include "ELE_CCD.h"
